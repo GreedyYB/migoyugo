@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/index.js",
     "client": "cd client && npm start",
-    "build": "cd client && npm run build",
+    "build": "npm run install-client && cd client && npm run build",
     "start": "node server/index.js",
     "install-client": "cd client && npm install",
     "install-server": "npm install",
@@ -15,18 +15,23 @@
     "heroku-postbuild": "npm run install-client && npm run build"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^2.7.0",
+    "socket.io": "^4.7.2",
+    "sqlite3": "^5.1.7",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.0",
+    "nodemon": "^3.0.1"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": "22.x",
+    "npm": "9.x"
   },
   "keywords": [
     "flux",
@@ -37,4 +42,4 @@
   ],
   "author": "",
   "license": "MIT"
-} 
+}

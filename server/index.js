@@ -5,6 +5,10 @@ const cors = require('cors');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
+// Import authentication modules
+const { initializeDatabase, createUser, getUserByEmail, getUserByUsername, verifyPassword } = require('./database');
+const { generateToken, authenticateToken, optionalAuth } = require('./auth');
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -16,6 +20,9 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 5000;
 
+// Initialize database
+initializeDatabase().catch(console.error);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -23,7 +30,125 @@ app.use(express.json());
 // Serve static files from React build
 app.use(express.static(path.join(__dirname, '../client/build')));
 
-// API routes would go here (none needed for this app)
+// Authentication routes
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, username, password } = req.body;
+    
+    // Validate input
+    if (!email || !username || !password) {
+      return res.status(400).json({ error: 'Email, username, and password are required' });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+    
+    // Validate username
+    const usernameRegex = /^[a-zA-Z][a-zA-Z0-9]{5,19}$/;
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({ error: 'Username must be 6-20 characters, start with a letter, and contain only letters and numbers' });
+    }
+    
+    // Validate password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character' });
+    }
+    
+    // Check if user already exists
+    const existingUserByEmail = await getUserByEmail(email);
+    if (existingUserByEmail) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    
+    const existingUserByUsername = await getUserByUsername(username);
+    if (existingUserByUsername) {
+      return res.status(400).json({ error: 'Username already taken' });
+    }
+    
+    // Create user
+    const user = await createUser(email, username, password);
+    const token = generateToken(user);
+    
+    res.status(201).json({
+      message: 'User created successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        wins: user.wins,
+        losses: user.losses,
+        draws: user.draws
+      },
+      token
+    });
+    
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    
+    // Get user by email
+    const user = await getUserByEmail(email);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    
+    // Verify password
+    const isValidPassword = await verifyPassword(password, user.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    
+    // Generate token
+    const token = generateToken(user);
+    
+    res.json({
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        wins: user.wins,
+        losses: user.losses,
+        draws: user.draws
+      },
+      token
+    });
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Protected route example - get user profile
+app.get('/api/auth/profile', authenticateToken, (req, res) => {
+  res.json({
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      username: req.user.username,
+      wins: req.user.wins,
+      losses: req.user.losses,
+      draws: req.user.draws,
+      created_at: req.user.created_at
+    }
+  });
+});
 
 // Catch all handler: send back React's index.html file for any non-API routes
 app.get('*', (req, res) => {
@@ -84,9 +209,10 @@ function wouldCreateLineTooLong(board, row, col, playerColor) {
 
 function checkForVectors(board, row, col, playerColor) {
   const directions = [
-    [-1, -1], [-1, 0], [-1, 1],
-    [0, -1],           [0, 1],
-    [1, -1],  [1, 0],  [1, 1]
+    [-1, 0],  // up
+    [-1, 1],  // up-right diagonal  
+    [0, 1],   // right
+    [1, 1]    // down-right diagonal
   ];
   
   const vectors = [];
@@ -197,23 +323,60 @@ function hasLegalMoves(board, playerColor) {
 
 function countNodes(board, playerColor) {
   let count = 0;
+  console.log(`DEBUG SERVER: Counting nodes for ${playerColor}`);
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      if (board[row][col] && board[row][col].isNode && board[row][col].color === playerColor) {
-        count++;
+      const cell = board[row][col];
+      if (cell && cell.isNode && cell.color === playerColor) {
+        // Count node value based on its type
+        let nodeValue = 1; // default
+        switch (cell.nodeType) {
+          case 'standard':
+            nodeValue = 1;
+            break;
+          case 'double':
+            nodeValue = 2;
+            break;
+          case 'triple':
+            nodeValue = 3;
+            break;
+          case 'quadruple':
+            nodeValue = 4;
+            break;
+          default:
+            nodeValue = 1; // fallback for nodes without nodeType
+        }
+        console.log(`DEBUG SERVER: Node at ${row},${col} type=${cell.nodeType} value=${nodeValue}`);
+        count += nodeValue;
       }
     }
   }
+  console.log(`DEBUG SERVER: Total count for ${playerColor}: ${count}`);
   return count;
 }
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
+  
+  // Get user info from auth data
+  const authData = socket.handshake.auth;
+  let playerName = '';
+  let userId = null;
+  
+  if (authData.isGuest) {
+    playerName = `Guest${Math.floor(Math.random() * 9000) + 1000}`;
+  } else if (authData.user && authData.user.username) {
+    playerName = authData.user.username;
+    userId = authData.user.id;
+  } else {
+    playerName = `Player${Math.floor(Math.random() * 9000) + 1000}`;
+  }
+  
+  console.log(`${playerName} connected ${authData.isGuest ? '(guest)' : '(authenticated)'}`);
 
   socket.on('findMatch', () => {
     const playerId = socket.id;
-    const playerName = `Player${Math.floor(Math.random() * 9000) + 1000}`;
     
     if (waitingPlayers.length > 0) {
       // Match with waiting player
@@ -223,8 +386,8 @@ io.on('connection', (socket) => {
       const gameState = {
         id: gameId,
         players: {
-          white: { id: opponent.id, name: opponent.name, socket: opponent.socket },
-          black: { id: playerId, name: playerName, socket: socket }
+          white: { id: opponent.id, name: opponent.name, userId: opponent.userId, socket: opponent.socket },
+          black: { id: playerId, name: playerName, userId: userId, socket: socket }
         },
         board: createEmptyBoard(),
         currentPlayer: 'white',
@@ -273,7 +436,7 @@ io.on('connection', (socket) => {
       
     } else {
       // Add to waiting list
-      waitingPlayers.push({ id: playerId, name: playerName, socket });
+      waitingPlayers.push({ id: playerId, name: playerName, userId: userId, socket });
       socket.emit('waitingForOpponent');
     }
   });
@@ -297,7 +460,9 @@ io.on('connection', (socket) => {
     // If vectors were formed, make this cell a node
     if (nodeType) {
       game.board[row][col] = { color: playerColor, isNode: true, nodeType };
-      game.scores[playerColor] = countNodes(game.board, playerColor);
+      // Recalculate scores for both players (vector formation can affect both)
+      game.scores.white = countNodes(game.board, 'white');
+      game.scores.black = countNodes(game.board, 'black');
     }
     
     // Check for nexus (winning condition)
@@ -369,6 +534,212 @@ io.on('connection', (socket) => {
       winner,
       reason: 'resignation'
     });
+  });
+
+  socket.on('test-connection', (data) => {
+    console.log(`\n=== TEST CONNECTION ===`);
+    console.log(`Test connection received from ${socket.id}:`, data);
+    console.log(`Socket rooms:`, Array.from(socket.rooms));
+    console.log(`All connected sockets:`, Array.from(io.sockets.sockets.keys()));
+    
+    // Send back a response
+    socket.emit('test-connection-response', {
+      message: 'Test connection successful',
+      serverSocketId: socket.id,
+      timestamp: Date.now(),
+      originalData: data
+    });
+    
+    // If this is part of a game, check the opponent
+    if (data.gameId) {
+      const game = games.get(data.gameId);
+      if (game) {
+        console.log(`Game found for test - Status: ${game.gameStatus}`);
+        console.log(`Game players:`, {
+          white: { id: game.players.white.id, name: game.players.white.name },
+          black: { id: game.players.black.id, name: game.players.black.name }
+        });
+        
+        const playerColor = game.players.white.id === socket.id ? 'white' : 'black';
+        const opponentColor = playerColor === 'white' ? 'black' : 'white';
+        const opponentSocketId = game.players[opponentColor].id;
+        
+        console.log(`Opponent socket ID: ${opponentSocketId}`);
+        const opponentSocket = io.sockets.sockets.get(opponentSocketId);
+        if (opponentSocket) {
+          console.log(`✓ Opponent socket found and connected: ${opponentSocket.connected}`);
+          console.log(`Opponent socket rooms:`, Array.from(opponentSocket.rooms));
+          
+          // Send test message to opponent
+          io.to(opponentSocketId).emit('test-connection-from-opponent', {
+            message: `Test message from ${game.players[playerColor].name}`,
+            from: playerColor,
+            timestamp: Date.now()
+          });
+          console.log(`✓ Sent test message to opponent`);
+        } else {
+          console.log(`✗ Opponent socket ${opponentSocketId} not found!`);
+        }
+      } else {
+        console.log(`✗ Game ${data.gameId} not found`);
+      }
+    }
+    console.log(`=== END TEST CONNECTION ===\n`);
+  });
+
+  socket.on('requestRematch', ({ gameId }) => {
+    console.log(`\n=== REMATCH REQUEST DEBUG ===`);
+    console.log(`Rematch request received from ${socket.id} for game ${gameId}`);
+    console.log(`Current games:`, Array.from(games.keys()));
+    console.log(`Current connected sockets:`, Array.from(io.sockets.sockets.keys()));
+    
+    const game = games.get(gameId);
+    
+    if (!game) {
+      console.log(`ERROR: Game ${gameId} not found in games map`);
+      console.log(`Available games:`, Array.from(games.entries()).map(([id, g]) => ({
+        id,
+        status: g.gameStatus,
+        players: { white: g.players.white.id, black: g.players.black.id }
+      })));
+      return;
+    }
+    
+    console.log(`Game found - Status: ${game.gameStatus}`);
+    console.log(`Game players:`, {
+      white: { id: game.players.white.id, name: game.players.white.name },
+      black: { id: game.players.black.id, name: game.players.black.name }
+    });
+    
+    if (game.gameStatus !== 'finished') {
+      console.log(`ERROR: Game ${gameId} is not finished (status: ${game.gameStatus})`);
+      return;
+    }
+    
+    const playerColor = game.players.white.id === socket.id ? 'white' : 'black';
+    const opponentColor = playerColor === 'white' ? 'black' : 'white';
+    const opponentSocketId = game.players[opponentColor].id;
+    
+    console.log(`Player colors: ${playerColor} (${socket.id}) vs ${opponentColor} (${opponentSocketId})`);
+    
+    // Check if opponent socket exists
+    const opponentSocket = io.sockets.sockets.get(opponentSocketId);
+    if (opponentSocket) {
+      console.log(`✓ Opponent socket found and connected: ${opponentSocket.connected}`);
+      console.log(`Opponent socket rooms:`, Array.from(opponentSocket.rooms));
+    } else {
+      console.log(`✗ ERROR: Opponent socket ${opponentSocketId} not found!`);
+      console.log(`Available sockets:`, Array.from(io.sockets.sockets.keys()));
+      return;
+    }
+    
+    // Mark this player as requesting rematch
+    if (!game.rematchRequests) {
+      game.rematchRequests = {};
+    }
+    game.rematchRequests[playerColor] = true;
+    
+    console.log(`Sending rematch request to opponent ${opponentSocketId}...`);
+    
+    // Notify opponent about rematch request
+    const rematchData = {
+      gameId,
+      requester: playerColor,
+      requesterName: game.players[playerColor].name
+    };
+    console.log(`Rematch data:`, rematchData);
+    
+    io.to(opponentSocketId).emit('rematchRequested', rematchData);
+    console.log(`✓ Emitted rematchRequested event to ${opponentSocketId}`);
+    
+    // Notify requester that request was sent
+    socket.emit('rematchRequestSent', { gameId });
+    console.log(`✓ Sent confirmation to requester ${socket.id}`);
+    console.log(`=== END REMATCH REQUEST DEBUG ===\n`);
+  });
+
+  socket.on('respondToRematch', ({ gameId, accept }) => {
+    console.log(`Rematch response received from ${socket.id} for game ${gameId}: ${accept ? 'accepted' : 'declined'}`);
+    const game = games.get(gameId);
+    if (!game || game.gameStatus !== 'finished') return;
+    
+    const playerColor = game.players.white.id === socket.id ? 'white' : 'black';
+    const opponentColor = playerColor === 'white' ? 'black' : 'white';
+    const opponentSocketId = game.players[opponentColor].id;
+    
+    if (accept) {
+      // Both players agreed to rematch - create new game
+      const newGameId = uuidv4();
+      
+      // Swap colors for the rematch
+      const newGameState = {
+        id: newGameId,
+        players: {
+          white: game.players[opponentColor], // Swap colors
+          black: game.players[playerColor]
+        },
+        board: createEmptyBoard(),
+        currentPlayer: 'white',
+        gameStatus: 'active',
+        moveHistory: [],
+        scores: { white: 0, black: 0 },
+        lastMove: null
+      };
+      
+      games.set(newGameId, newGameState);
+      
+      // Remove old game
+      games.delete(gameId);
+      
+      // Update socket rooms
+      socket.leave(gameId);
+      io.sockets.sockets.get(opponentSocketId)?.leave(gameId);
+      socket.join(newGameId);
+      io.sockets.sockets.get(opponentSocketId)?.join(newGameId);
+      
+      // Notify both players about new game
+      const whitePlayerName = newGameState.players.white.name;
+      const blackPlayerName = newGameState.players.black.name;
+      
+      io.to(newGameState.players.white.id).emit('rematchAccepted', {
+        gameId: newGameId,
+        playerColor: 'white',
+        opponentName: blackPlayerName,
+        gameState: {
+          board: newGameState.board,
+          currentPlayer: newGameState.currentPlayer,
+          scores: newGameState.scores,
+          players: {
+            white: whitePlayerName,
+            black: blackPlayerName
+          }
+        }
+      });
+      
+      io.to(newGameState.players.black.id).emit('rematchAccepted', {
+        gameId: newGameId,
+        playerColor: 'black',
+        opponentName: whitePlayerName,
+        gameState: {
+          board: newGameState.board,
+          currentPlayer: newGameState.currentPlayer,
+          scores: newGameState.scores,
+          players: {
+            white: whitePlayerName,
+            black: blackPlayerName
+          }
+        }
+      });
+      
+    } else {
+      // Rematch declined
+      io.to(opponentSocketId).emit('rematchDeclined', { gameId });
+      
+      // Clean up rematch requests
+      if (game.rematchRequests) {
+        delete game.rematchRequests[opponentColor];
+      }
+    }
   });
 
   socket.on('disconnect', () => {
