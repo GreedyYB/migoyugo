@@ -284,15 +284,20 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
     score += 1000 * vectors.length; // Massive bonus for forming vectors
   }
   
-  // PRIORITY 2: Block Opponent Vectors (prevent opponent from winning)
+  // PRIORITY 2: Block Opponent Threats (prevent opponent from winning)
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       if (isValidMove(board, r, c, opponentColor)) {
         const opponentTestBoard = board.map(row => [...row]);
         opponentTestBoard[r][c] = { color: opponentColor, isNode: false };
         const opponentVectors = checkForVectors(opponentTestBoard, r, c, opponentColor);
-        if (opponentVectors.length > 0 && r === row && c === col) {
-          score += 800; // High bonus for blocking opponent vectors
+        
+        // Check for nexus threat (opponent can win immediately)
+        opponentTestBoard[r][c] = { color: opponentColor, isNode: true, nodeType: 'standard' };
+        const opponentNexus = checkForNexus(opponentTestBoard, r, c, opponentColor);
+        
+        if ((opponentVectors.length > 0 || opponentNexus) && r === row && c === col) {
+          score += opponentNexus ? 9000 : 800; // Massive bonus for blocking nexus, high for vectors
         }
       }
     }
@@ -360,16 +365,19 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2'): {row:
     return topMoves[Math.floor(Math.random() * topMoves.length)];
     
   } else {
-    // AI-2: Keep existing simple logic for now (will enhance later for Level 2)
-    const centerMoves = validMoves.filter(move => 
-      move.row >= 2 && move.row <= 5 && move.col >= 2 && move.col <= 5
-    );
+    // Level 2 (~1400 Elo): Strong strategic play with consistent threat blocking
+    validMoves.sort((a, b) => b.score - a.score);
     
-    if (centerMoves.length > 0) {
-      return centerMoves[Math.floor(Math.random() * centerMoves.length)];
+    // Check if there are any critical blocking moves (800+ points = threat blocking)
+    const criticalMoves = validMoves.filter(move => move.score >= 800);
+    if (criticalMoves.length > 0) {
+      // Always take the highest scoring critical move (perfect threat blocking)
+      return criticalMoves[0];
     }
     
-    return validMoves[Math.floor(Math.random() * validMoves.length)];
+    // For non-critical moves, pick from top 5 moves for stronger but varied play
+    const topMoves = validMoves.slice(0, Math.min(5, validMoves.length));
+    return topMoves[Math.floor(Math.random() * topMoves.length)];
   }
 };
 
