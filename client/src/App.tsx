@@ -310,6 +310,13 @@ const playSound = (soundName: 'ion' | 'vector' | 'nexus') => {
   }
 };
 
+// Helper function to get API URL
+const getApiUrl = () => {
+  return process.env.NODE_ENV === 'production' 
+    ? process.env.REACT_APP_API_URL || 'https://web-production-7dd44.up.railway.app'
+    : '';
+};
+
 const App: React.FC = () => {
   // Authentication state
   const [authState, setAuthState] = useState<AuthState>({
@@ -386,7 +393,7 @@ const App: React.FC = () => {
       const token = localStorage.getItem('authToken');
       if (token) {
         try {
-          const response = await fetch('/api/auth/profile', {
+          const response = await fetch(`${getApiUrl()}/api/auth/profile`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -427,7 +434,7 @@ const App: React.FC = () => {
       
       // Determine socket URL based on environment
       const socketUrl = process.env.NODE_ENV === 'production' 
-        ? window.location.origin 
+        ? process.env.REACT_APP_API_URL || 'https://web-production-7dd44.up.railway.app'
         : 'http://localhost:5000';
       
       console.log('Connecting to socket:', socketUrl, 'NODE_ENV:', process.env.NODE_ENV);
@@ -665,7 +672,7 @@ const App: React.FC = () => {
   const handleLogin = async (email: string, password: string) => {
     try {
       setAuthError('');
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${getApiUrl()}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -710,7 +717,7 @@ const App: React.FC = () => {
         return;
       }
       
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch(`${getApiUrl()}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, username, password })
