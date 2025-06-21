@@ -269,13 +269,83 @@ const getPasswordStrengthMessage = (password: string): string => {
 };
 
 // Simple AI logic
-const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2'): {row: number, col: number} | null => {
-  const validMoves: {row: number, col: number}[] = [];
+// AI Helper Functions
+const evaluateMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black', difficulty: 'ai-1' | 'ai-2'): number => {
+  let score = 0;
+  const opponentColor = playerColor === 'white' ? 'black' : 'white';
   
+  // Create a copy of the board with the move played
+  const testBoard = board.map(r => [...r]);
+  testBoard[row][col] = { color: playerColor, isNode: false };
+  
+  // PRIORITY 1: Vector Formation (immediate win condition)
+  const vectors = checkForVectors(testBoard, row, col, playerColor);
+  if (vectors.length > 0) {
+    score += 1000 * vectors.length; // Massive bonus for forming vectors
+  }
+  
+  // PRIORITY 2: Block Opponent Vectors (prevent opponent from winning)
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (isValidMove(board, r, c, opponentColor)) {
+        const opponentTestBoard = board.map(row => [...row]);
+        opponentTestBoard[r][c] = { color: opponentColor, isNode: false };
+        const opponentVectors = checkForVectors(opponentTestBoard, r, c, opponentColor);
+        if (opponentVectors.length > 0 && r === row && c === col) {
+          score += 800; // High bonus for blocking opponent vectors
+        }
+      }
+    }
+  }
+  
+  // PRIORITY 3: Check for Nexus Formation (game winner)
+  testBoard[row][col] = { color: playerColor, isNode: true, nodeType: 'standard' };
+  const nexus = checkForNexus(testBoard, row, col, playerColor);
+  if (nexus) {
+    score += 10000; // Instant win
+  }
+  
+  // PRIORITY 4: Node Building (scoring opportunities)
+  if (vectors.length > 0) {
+    const nodeValue = vectors.length === 1 ? 1 : vectors.length === 2 ? 2 : vectors.length === 3 ? 3 : 4;
+    score += nodeValue * 100; // Bonus based on node type
+  }
+  
+  // PRIORITY 5: Center Control (general good play)
+  const centerDistance = Math.abs(row - 3.5) + Math.abs(col - 3.5);
+  score += (7 - centerDistance) * 10; // Prefer center positions
+  
+  // PRIORITY 6: Support Structures (set up future vectors)
+  let supportCount = 0;
+  const directions = [[-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1]];
+  for (const [dr, dc] of directions) {
+    const adjRow = row + dr;
+    const adjCol = col + dc;
+    if (adjRow >= 0 && adjRow < 8 && adjCol >= 0 && adjCol < 8) {
+      if (board[adjRow][adjCol] && board[adjRow][adjCol]!.color === playerColor) {
+        supportCount++;
+      }
+    }
+  }
+  score += supportCount * 20; // Bonus for connecting with own pieces
+  
+  // Level 1 specific: Add some small evaluation noise to make it less perfect
+  if (difficulty === 'ai-1') {
+    score += Math.random() * 40 - 20; // ±20 point variation
+  }
+  
+  return score;
+};
+
+const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2'): {row: number, col: number} | null => {
+  const validMoves: {row: number, col: number, score: number}[] = [];
+  
+  // Evaluate all valid moves
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       if (isValidMove(board, row, col, 'black')) {
-        validMoves.push({row, col});
+        const score = evaluateMove(board, row, col, 'black', difficulty);
+        validMoves.push({row, col, score});
       }
     }
   }
@@ -283,10 +353,14 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2'): {row:
   if (validMoves.length === 0) return null;
   
   if (difficulty === 'ai-1') {
-    // Random move
-    return validMoves[Math.floor(Math.random() * validMoves.length)];
+    // Level 1 (~1000 Elo): Logical but imperfect play
+    // Sort moves by score and pick from top 3 moves to add variety while staying competitive
+    validMoves.sort((a, b) => b.score - a.score);
+    const topMoves = validMoves.slice(0, Math.min(3, validMoves.length));
+    return topMoves[Math.floor(Math.random() * topMoves.length)];
+    
   } else {
-    // AI-2: Slightly smarter - prefer center positions
+    // AI-2: Keep existing simple logic for now (will enhance later for Level 2)
     const centerMoves = validMoves.filter(move => 
       move.row >= 2 && move.row <= 5 && move.col >= 2 && move.col <= 5
     );
@@ -469,10 +543,29 @@ const App: React.FC = () => {
           ...data.gameState,
           gameStatus: 'active'
         }));
+        
+        // Apply standard timer settings for online games
+        if (data.timerSettings) {
+          console.log('Applying standard timer settings from server:', data.timerSettings);
+          setTimerEnabled(data.timerSettings.timerEnabled);
+          setMinutesPerPlayer(data.timerSettings.minutesPerPlayer);
+          setIncrementSeconds(data.timerSettings.incrementSeconds);
+          
+          // Initialize timers
+          if (data.timerSettings.timerEnabled) {
+            const timeInSeconds = data.timerSettings.minutesPerPlayer * 60;
+            setTimers({
+              white: timeInSeconds,
+              black: timeInSeconds
+            });
+            setActiveTimer(data.gameState.currentPlayer);
+          }
+        }
+        
         setIsGameStarted(true);
         setShowMatchmaking(false);
         setIsSearchingMatch(false);
-        showToast(`Game start - you are playing as ${data.playerColor}`);
+        showToast(`Game start - you are playing as ${data.playerColor} (${data.timerSettings?.timerEnabled ? `${data.timerSettings.minutesPerPlayer}+${data.timerSettings.incrementSeconds}` : 'no timer'})`);
       });
 
       newSocket.on('waitingForOpponent', () => {
@@ -876,20 +969,35 @@ const App: React.FC = () => {
     }
   }, [gameState.board, gameState.currentPlayer, setMoveHistory, setGameState, setNotification, setActiveTimer]);
 
-  // AI move logic
+  // AI move logic with human-like thinking time
   useEffect(() => {
     if (isGameStarted && 
         gameState.gameStatus === 'active' && 
         (gameMode === 'ai-1' || gameMode === 'ai-2') && 
         gameState.currentPlayer === 'black') {
       
+      // Variable thinking time based on AI level (makes AI feel more human)
+      let minThinkTime, maxThinkTime;
+      if (gameMode === 'ai-1') {
+        minThinkTime = 2000; // 2 seconds minimum
+        maxThinkTime = 4000; // 4 seconds maximum
+      } else {
+        // ai-2
+        minThinkTime = 2000; // 2 seconds minimum  
+        maxThinkTime = 5000; // 5 seconds maximum
+      }
+      
+      const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
+      console.log(`${gameMode.toUpperCase()} thinking for ${thinkTime}ms...`);
+      
       const timeout = setTimeout(() => {
-        const aiMove = getAIMove(gameState.board, gameMode);
+        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2');
         if (aiMove) {
+          console.log(`${gameMode.toUpperCase()} selected move:`, aiMove);
           // Use the same makeLocalMove function that human players use
           makeLocalMove(aiMove.row, aiMove.col);
         }
-      }, 1000); // 1 second delay for AI move
+      }, thinkTime);
       
       return () => clearTimeout(timeout);
     }
@@ -974,7 +1082,14 @@ const App: React.FC = () => {
     
     if (socket) {
       console.log('Emitting findMatch to server...');
-      socket.emit('findMatch');
+      // Always use standard settings for online multiplayer
+      const standardSettings = {
+        timerEnabled: true,
+        minutesPerPlayer: 10,
+        incrementSeconds: 0
+      };
+      console.log('Using standard timer settings for online game:', standardSettings);
+      socket.emit('findMatch', standardSettings);
       setIsSearchingMatch(true);
     } else {
       console.error('No socket available for findMatch');
@@ -1854,6 +1969,20 @@ const App: React.FC = () => {
                  authState.isGuest ? `Guest${Math.floor(Math.random() * 9000) + 1000}` : 'Anonymous'}
               </strong>
             </div>
+            
+            {/* Standard timer settings info */}
+            <div style={{ margin: '15px 0', padding: '10px', backgroundColor: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '4px' }}>
+              <div style={{ fontSize: '0.9rem', color: '#495057', textAlign: 'center' }}>
+                <strong>⏱️ Standard Time Control</strong>
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#007bff', textAlign: 'center', marginTop: '5px' }}>
+                10 minutes + 0 seconds increment
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#666', textAlign: 'center', marginTop: '3px' }}>
+                All online games use this time control
+              </div>
+            </div>
+            
             <p>{isSearchingMatch ? 'Searching for a match...' : 'Ready to find an opponent?'}</p>
             <div className="notification-buttons">
               {!isSearchingMatch ? (
