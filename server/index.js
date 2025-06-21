@@ -14,7 +14,7 @@ const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? [process.env.RAILWAY_STATIC_URL, process.env.FRONTEND_URL].filter(Boolean)
+      ? process.env.FRONTEND_URL || true
       : "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true
@@ -37,7 +37,7 @@ initializeDatabase().catch(console.error);
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.RAILWAY_STATIC_URL, process.env.FRONTEND_URL].filter(Boolean)
+    ? process.env.FRONTEND_URL || true
     : "http://localhost:3000",
   credentials: true
 }));
