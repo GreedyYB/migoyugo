@@ -13,18 +13,34 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.NODE_ENV === 'production' ? false : "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: process.env.NODE_ENV === 'production' 
+      ? [process.env.RAILWAY_STATIC_URL, process.env.FRONTEND_URL].filter(Boolean)
+      : "http://localhost:3000",
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 const PORT = process.env.PORT || 5000;
 
+// Log environment info for debugging
+console.log('=== ENVIRONMENT INFO ===');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', PORT);
+console.log('RAILWAY_STATIC_URL:', process.env.RAILWAY_STATIC_URL);
+console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
+console.log('========================');
+
 // Initialize database
 initializeDatabase().catch(console.error);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.RAILWAY_STATIC_URL, process.env.FRONTEND_URL].filter(Boolean)
+    : "http://localhost:3000",
+  credentials: true
+}));
 app.use(express.json());
 
 // Serve static files from React build

@@ -12,7 +12,8 @@
     "install-client": "cd client && npm install",
     "install-server": "npm install",
     "install-all": "npm run install-server && npm run install-client",
-    "heroku-postbuild": "npm run install-client && npm run build"
+    "heroku-postbuild": "npm run install-client && npm run build",
+    "railway-build": "npm run install-client && npm run build"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
