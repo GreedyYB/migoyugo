@@ -391,8 +391,17 @@ io.on('connection', (socket) => {
   
   console.log(`${playerName} connected ${authData.isGuest ? '(guest)' : '(authenticated)'}`);
 
-  socket.on('findMatch', () => {
+  socket.on('findMatch', (timerSettings) => {
     const playerId = socket.id;
+    
+    // Use standard timer settings for all online games
+    const standardTimer = {
+      timerEnabled: true,
+      minutesPerPlayer: 10,
+      incrementSeconds: 0
+    };
+    
+    console.log(`Player ${playerName} looking for match with timer:`, standardTimer);
     
     if (waitingPlayers.length > 0) {
       // Match with waiting player
@@ -410,7 +419,8 @@ io.on('connection', (socket) => {
         gameStatus: 'active',
         moveHistory: [],
         scores: { white: 0, black: 0 },
-        lastMove: null
+        lastMove: null,
+        timerSettings: standardTimer
       };
       
       games.set(gameId, gameState);
@@ -424,6 +434,7 @@ io.on('connection', (socket) => {
         gameId,
         playerColor: 'white',
         opponentName: playerName,
+        timerSettings: standardTimer,
         gameState: {
           board: gameState.board,
           currentPlayer: gameState.currentPlayer,
@@ -439,6 +450,7 @@ io.on('connection', (socket) => {
         gameId,
         playerColor: 'black',
         opponentName: opponent.name,
+        timerSettings: standardTimer,
         gameState: {
           board: gameState.board,
           currentPlayer: gameState.currentPlayer,

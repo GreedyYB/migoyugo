@@ -469,10 +469,29 @@ const App: React.FC = () => {
           ...data.gameState,
           gameStatus: 'active'
         }));
+        
+        // Apply standard timer settings for online games
+        if (data.timerSettings) {
+          console.log('Applying standard timer settings from server:', data.timerSettings);
+          setTimerEnabled(data.timerSettings.timerEnabled);
+          setMinutesPerPlayer(data.timerSettings.minutesPerPlayer);
+          setIncrementSeconds(data.timerSettings.incrementSeconds);
+          
+          // Initialize timers
+          if (data.timerSettings.timerEnabled) {
+            const timeInSeconds = data.timerSettings.minutesPerPlayer * 60;
+            setTimers({
+              white: timeInSeconds,
+              black: timeInSeconds
+            });
+            setActiveTimer(data.gameState.currentPlayer);
+          }
+        }
+        
         setIsGameStarted(true);
         setShowMatchmaking(false);
         setIsSearchingMatch(false);
-        showToast(`Game start - you are playing as ${data.playerColor}`);
+        showToast(`Game start - you are playing as ${data.playerColor} (${data.timerSettings?.timerEnabled ? `${data.timerSettings.minutesPerPlayer}+${data.timerSettings.incrementSeconds}` : 'no timer'})`);
       });
 
       newSocket.on('waitingForOpponent', () => {
@@ -974,7 +993,14 @@ const App: React.FC = () => {
     
     if (socket) {
       console.log('Emitting findMatch to server...');
-      socket.emit('findMatch');
+      // Always use standard settings for online multiplayer
+      const standardSettings = {
+        timerEnabled: true,
+        minutesPerPlayer: 10,
+        incrementSeconds: 0
+      };
+      console.log('Using standard timer settings for online game:', standardSettings);
+      socket.emit('findMatch', standardSettings);
       setIsSearchingMatch(true);
     } else {
       console.error('No socket available for findMatch');
@@ -1854,6 +1880,20 @@ const App: React.FC = () => {
                  authState.isGuest ? `Guest${Math.floor(Math.random() * 9000) + 1000}` : 'Anonymous'}
               </strong>
             </div>
+            
+            {/* Standard timer settings info */}
+            <div style={{ margin: '15px 0', padding: '10px', backgroundColor: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '4px' }}>
+              <div style={{ fontSize: '0.9rem', color: '#495057', textAlign: 'center' }}>
+                <strong>⏱️ Standard Time Control</strong>
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#007bff', textAlign: 'center', marginTop: '5px' }}>
+                10 minutes + 0 seconds increment
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#666', textAlign: 'center', marginTop: '3px' }}>
+                All online games use this time control
+              </div>
+            </div>
+            
             <p>{isSearchingMatch ? 'Searching for a match...' : 'Ready to find an opponent?'}</p>
             <div className="notification-buttons">
               {!isSearchingMatch ? (
