@@ -1522,7 +1522,6 @@ const App: React.FC = () => {
             <button 
               className="btn action-btn" 
               onClick={isGameStarted && gameState.gameStatus === 'active' ? resignGame : startGame}
-              disabled={gameMode === 'online' && !isGameStarted && (!authState.isAuthenticated && !authState.isGuest)}
               style={{ height: '40px', padding: '0 24px' }}
             >
               {isGameStarted && gameState.gameStatus === 'active' ? 'Resign' : 'Start'}
