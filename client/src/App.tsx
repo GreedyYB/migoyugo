@@ -269,13 +269,83 @@ const getPasswordStrengthMessage = (password: string): string => {
 };
 
 // Simple AI logic
-const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2'): {row: number, col: number} | null => {
-  const validMoves: {row: number, col: number}[] = [];
+// AI Helper Functions
+const evaluateMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black', difficulty: 'ai-1' | 'ai-2' | 'ai-3'): number => {
+  let score = 0;
+  const opponentColor = playerColor === 'white' ? 'black' : 'white';
   
+  // Create a copy of the board with the move played
+  const testBoard = board.map(r => [...r]);
+  testBoard[row][col] = { color: playerColor, isNode: false };
+  
+  // PRIORITY 1: Vector Formation (immediate win condition)
+  const vectors = checkForVectors(testBoard, row, col, playerColor);
+  if (vectors.length > 0) {
+    score += 1000 * vectors.length; // Massive bonus for forming vectors
+  }
+  
+  // PRIORITY 2: Block Opponent Vectors (prevent opponent from winning)
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (isValidMove(board, r, c, opponentColor)) {
+        const opponentTestBoard = board.map(row => [...row]);
+        opponentTestBoard[r][c] = { color: opponentColor, isNode: false };
+        const opponentVectors = checkForVectors(opponentTestBoard, r, c, opponentColor);
+        if (opponentVectors.length > 0 && r === row && c === col) {
+          score += 800; // High bonus for blocking opponent vectors
+        }
+      }
+    }
+  }
+  
+  // PRIORITY 3: Check for Nexus Formation (game winner)
+  testBoard[row][col] = { color: playerColor, isNode: true, nodeType: 'standard' };
+  const nexus = checkForNexus(testBoard, row, col, playerColor);
+  if (nexus) {
+    score += 10000; // Instant win
+  }
+  
+  // PRIORITY 4: Node Building (scoring opportunities)
+  if (vectors.length > 0) {
+    const nodeValue = vectors.length === 1 ? 1 : vectors.length === 2 ? 2 : vectors.length === 3 ? 3 : 4;
+    score += nodeValue * 100; // Bonus based on node type
+  }
+  
+  // PRIORITY 5: Center Control (general good play)
+  const centerDistance = Math.abs(row - 3.5) + Math.abs(col - 3.5);
+  score += (7 - centerDistance) * 10; // Prefer center positions
+  
+  // PRIORITY 6: Support Structures (set up future vectors)
+  let supportCount = 0;
+  const directions = [[-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1]];
+  for (const [dr, dc] of directions) {
+    const adjRow = row + dr;
+    const adjCol = col + dc;
+    if (adjRow >= 0 && adjRow < 8 && adjCol >= 0 && adjCol < 8) {
+      if (board[adjRow][adjCol] && board[adjRow][adjCol]!.color === playerColor) {
+        supportCount++;
+      }
+    }
+  }
+  score += supportCount * 20; // Bonus for connecting with own pieces
+  
+  // Level 1 specific: Add some small evaluation noise to make it less perfect
+  if (difficulty === 'ai-1') {
+    score += Math.random() * 40 - 20; // ±20 point variation
+  }
+  
+  return score;
+};
+
+const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3'): {row: number, col: number} | null => {
+  const validMoves: {row: number, col: number, score: number}[] = [];
+  
+  // Evaluate all valid moves
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       if (isValidMove(board, row, col, 'black')) {
-        validMoves.push({row, col});
+        const score = evaluateMove(board, row, col, 'black', difficulty);
+        validMoves.push({row, col, score});
       }
     }
   }
@@ -283,10 +353,26 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2'): {row:
   if (validMoves.length === 0) return null;
   
   if (difficulty === 'ai-1') {
-    // Random move
+    // Level 1 (~1000 Elo): Logical but imperfect play
+    // Sort moves by score and pick from top 3 moves to add variety while staying competitive
+    validMoves.sort((a, b) => b.score - a.score);
+    const topMoves = validMoves.slice(0, Math.min(3, validMoves.length));
+    return topMoves[Math.floor(Math.random() * topMoves.length)];
+    
+  } else if (difficulty === 'ai-2') {
+    // AI-2: Keep existing simple logic for now (will enhance later for Level 2)
+    const centerMoves = validMoves.filter(move => 
+      move.row >= 2 && move.row <= 5 && move.col >= 2 && move.col <= 5
+    );
+    
+    if (centerMoves.length > 0) {
+      return centerMoves[Math.floor(Math.random() * centerMoves.length)];
+    }
+    
     return validMoves[Math.floor(Math.random() * validMoves.length)];
+    
   } else {
-    // AI-2: Slightly smarter - prefer center positions
+    // AI-3: Future implementation - for now, use AI-2 logic
     const centerMoves = validMoves.filter(move => 
       move.row >= 2 && move.row <= 5 && move.col >= 2 && move.col <= 5
     );
@@ -339,7 +425,7 @@ const App: React.FC = () => {
   });
 
   // UI state
-  const [gameMode, setGameMode] = useState<'human' | 'ai-1' | 'ai-2' | 'online'>('human');
+  const [gameMode, setGameMode] = useState<'human' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('human');
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -895,20 +981,38 @@ const App: React.FC = () => {
     }
   }, [gameState.board, gameState.currentPlayer, setMoveHistory, setGameState, setNotification, setActiveTimer]);
 
-  // AI move logic
+  // AI move logic with human-like thinking time
   useEffect(() => {
     if (isGameStarted && 
         gameState.gameStatus === 'active' && 
-        (gameMode === 'ai-1' || gameMode === 'ai-2') && 
+        (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && 
         gameState.currentPlayer === 'black') {
       
+      // Variable thinking time based on AI level (makes AI feel more human)
+      let minThinkTime, maxThinkTime;
+      if (gameMode === 'ai-1') {
+        minThinkTime = 2000; // 2 seconds minimum
+        maxThinkTime = 4000; // 4 seconds maximum
+      } else if (gameMode === 'ai-2') {
+        minThinkTime = 2000; // 2 seconds minimum  
+        maxThinkTime = 5000; // 5 seconds maximum
+      } else {
+        // Future ai-3 would be 3000-6000ms
+        minThinkTime = 3000;
+        maxThinkTime = 6000;
+      }
+      
+      const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
+      console.log(`${gameMode.toUpperCase()} thinking for ${thinkTime}ms...`);
+      
       const timeout = setTimeout(() => {
-        const aiMove = getAIMove(gameState.board, gameMode);
+        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3');
         if (aiMove) {
+          console.log(`${gameMode.toUpperCase()} selected move:`, aiMove);
           // Use the same makeLocalMove function that human players use
           makeLocalMove(aiMove.row, aiMove.col);
         }
-      }, 1000); // 1 second delay for AI move
+      }, thinkTime);
       
       return () => clearTimeout(timeout);
     }
@@ -924,7 +1028,7 @@ const App: React.FC = () => {
       socket?.emit('makeMove', { gameId, row, col });
     } else {
       // Local game (human vs human or vs AI)
-      if (gameMode === 'ai-1' || gameMode === 'ai-2') {
+      if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') {
         // In AI mode, only allow human (white) moves
         if (gameState.currentPlayer !== 'white') return;
       }
@@ -970,7 +1074,10 @@ const App: React.FC = () => {
         lastMove: null,
         players: { 
           white: 'White', 
-          black: gameMode === 'human' ? 'Black' : `CORE ${gameMode.toUpperCase()}`
+          black: gameMode === 'human' ? 'Black' : 
+                 gameMode === 'ai-1' ? 'CORE LEVEL 1 (~1000 ELO)' :
+                 gameMode === 'ai-2' ? 'CORE LEVEL 2 (~1400 ELO)' :
+                 gameMode === 'ai-3' ? 'CORE LEVEL 3 (~1700 ELO)' : 'CORE AI'
         }
       });
       setIsGameStarted(true);
