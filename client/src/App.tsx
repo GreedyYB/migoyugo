@@ -915,21 +915,31 @@ const App: React.FC = () => {
   };
 
   const startGame = () => {
-    console.log('startGame called with mode:', gameMode);
-    console.log('auth state:', authState);
-    console.log('environment:', process.env.NODE_ENV);
-    console.log('current origin:', window.location.origin);
+    console.log('===== START GAME CLICKED =====');
+    console.log('Game mode:', gameMode);
+    console.log('Auth state:', {
+      isAuthenticated: authState.isAuthenticated,
+      isGuest: authState.isGuest,
+      user: authState.user,
+    });
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Current URL:', window.location.href);
     
     if (gameMode === 'online') {
+      console.log('📡 ONLINE MODE SELECTED');
       // Check authentication status for online play
       if (!authState.isAuthenticated && !authState.isGuest) {
-        console.log('User not authenticated, showing login modal');
+        console.log('🔐 User not authenticated - showing login modal');
+        console.log('Setting showLogin to true...');
         // Show login modal directly for a more streamlined experience
         setShowLogin(true);
+        console.log('Login modal should now be visible');
         return;
       }
-      console.log('User authenticated, setting showMatchmaking to true');
+      console.log('✅ User authenticated - showing matchmaking modal');
+      console.log('Setting showMatchmaking to true...');
       setShowMatchmaking(true);
+      console.log('Matchmaking modal should now be visible');
     } else {
       // Local game start
       const newBoard = Array(8).fill(null).map(() => Array(8).fill(null));
