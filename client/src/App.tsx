@@ -1,0 +1,2021 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import io, { Socket } from 'socket.io-client';
+import './flux-styles.css';
+
+// Types
+interface Cell {
+  color: 'white' | 'black' | null;
+  isNode: boolean;
+  nodeType?: 'standard' | 'double' | 'triple' | 'quadruple';
+}
+
+interface GameState {
+  board: (Cell | null)[][];
+  currentPlayer: 'white' | 'black';
+  scores: { white: number; black: number };
+  gameStatus: 'waiting' | 'active' | 'finished';
+  lastMove: { row: number; col: number; player: 'white' | 'black' } | null;
+  players: { white: string; black: string };
+}
+
+interface MoveHistoryEntry {
+  row: number;
+  col: number;
+  player: 'white' | 'black';
+  vectors: number;
+  moveNumber: number;
+}
+
+// Authentication types
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  stats: {
+    gamesPlayed: number;
+    wins: number;
+    losses: number;
+  };
+}
+
+interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  isGuest: boolean;
+}
+
+const INITIAL_BOARD: (Cell | null)[][] = Array(8).fill(null).map(() => Array(8).fill(null));
+
+// Local game logic functions
+const isValidMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black'): boolean => {
+  if (row < 0 || row >= 8 || col < 0 || col >= 8) return false;
+  if (board[row][col] !== null) return false;
+  return !wouldCreateLineTooLong(board, row, col, playerColor);
+};
+
+const wouldCreateLineTooLong = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black'): boolean => {
+  const directions = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1]
+  ];
+
+  for (const [dr, dc] of directions) {
+    let count = 1;
+    
+    // Count in positive direction
+    let r = row + dr, c = col + dc;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && 
+           board[r][c] && board[r][c]!.color === playerColor) {
+      count++;
+      r += dr;
+      c += dc;
+    }
+    
+    // Count in negative direction
+    r = row - dr;
+    c = col - dc;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && 
+           board[r][c] && board[r][c]!.color === playerColor) {
+      count++;
+      r -= dr;
+      c -= dc;
+    }
+    
+    if (count > 4) return true;
+  }
+  
+  return false;
+};
+
+const checkForVectors = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black') => {
+  const directions = [
+    [-1, 0],  // up
+    [-1, 1],  // up-right diagonal  
+    [0, 1],   // right
+    [1, 1]    // down-right diagonal
+  ];
+  
+  const vectors = [];
+  
+  for (const [dr, dc] of directions) {
+    const line = [{row, col}];
+    
+    // Collect in positive direction
+    let r = row + dr, c = col + dc;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && 
+           board[r][c] && board[r][c]!.color === playerColor) {
+      line.push({row: r, col: c});
+      r += dr;
+      c += dc;
+    }
+    
+    // Collect in negative direction
+    r = row - dr;
+    c = col - dc;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && 
+           board[r][c] && board[r][c]!.color === playerColor) {
+      line.unshift({row: r, col: c});
+      r -= dr;
+      c -= dc;
+    }
+    
+    if (line.length === 4) {
+      vectors.push(line);
+    }
+  }
+  
+  return vectors;
+};
+
+const processVectors = (board: (Cell | null)[][], vectors: any[], row: number, col: number) => {
+  if (vectors.length === 0) return { nodeType: null, removedCells: [] };
+  
+  const removedCells: {row: number, col: number}[] = [];
+  
+  // Remove ions from vectors (except nodes and the new placement)
+  vectors.forEach(vector => {
+    vector.forEach((cell: {row: number, col: number}) => {
+      if (!(cell.row === row && cell.col === col) && 
+          board[cell.row][cell.col] && 
+          !board[cell.row][cell.col]!.isNode) {
+        removedCells.push({row: cell.row, col: cell.col});
+        board[cell.row][cell.col] = null;
+      }
+    });
+  });
+  
+  // Determine node type based on number of vectors
+  let nodeType: 'standard' | 'double' | 'triple' | 'quadruple' = 'standard';
+  if (vectors.length === 2) nodeType = 'double';
+  else if (vectors.length === 3) nodeType = 'triple';
+  else if (vectors.length === 4) nodeType = 'quadruple';
+  
+  return { nodeType, removedCells };
+};
+
+const checkForNexus = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black') => {
+  const directions = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1]
+  ];
+  
+  for (const [dr, dc] of directions) {
+    const line = [{row, col}];
+    
+    // Collect in positive direction
+    let r = row + dr, c = col + dc;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && 
+           board[r][c] && board[r][c]!.isNode && board[r][c]!.color === playerColor) {
+      line.push({row: r, col: c});
+      r += dr;
+      c += dc;
+    }
+    
+    // Collect in negative direction
+    r = row - dr;
+    c = col - dc;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && 
+           board[r][c] && board[r][c]!.isNode && board[r][c]!.color === playerColor) {
+      line.unshift({row: r, col: c});
+      r -= dr;
+      c -= dc;
+    }
+    
+    if (line.length === 4) {
+      return line;
+    }
+  }
+  
+  return null;
+};
+
+const hasLegalMoves = (board: (Cell | null)[][], playerColor: 'white' | 'black'): boolean => {
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (isValidMove(board, row, col, playerColor)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+const countNodes = (board: (Cell | null)[][], playerColor: 'white' | 'black'): number => {
+  let count = 0;
+  console.log(`DEBUG: Counting nodes for ${playerColor}`);
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const cell = board[row][col];
+      if (cell && cell.isNode && cell.color === playerColor) {
+        // Count node value based on its type
+        let nodeValue = 1; // default
+        switch (cell.nodeType) {
+          case 'standard':
+            nodeValue = 1;
+            break;
+          case 'double':
+            nodeValue = 2;
+            break;
+          case 'triple':
+            nodeValue = 3;
+            break;
+          case 'quadruple':
+            nodeValue = 4;
+            break;
+          default:
+            nodeValue = 1; // fallback for nodes without nodeType
+        }
+        console.log(`DEBUG: Node at ${row},${col} type=${cell.nodeType} value=${nodeValue}`);
+        count += nodeValue;
+      }
+    }
+  }
+  console.log(`DEBUG: Total count for ${playerColor}: ${count}`);
+  return count;
+};
+
+// Authentication validation functions
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validateUsername = (username: string): boolean => {
+  const usernameRegex = /^[a-zA-Z][a-zA-Z0-9]{5,19}$/;
+  return usernameRegex.test(username);
+};
+
+const validatePassword = (password: string): boolean => {
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*]/.test(password);
+  const hasMinLength = password.length >= 8;
+  
+  return hasUppercase && hasLowercase && hasNumber && hasSpecialChar && hasMinLength;
+};
+
+const getPasswordStrengthMessage = (password: string): string => {
+  const issues = [];
+  if (password.length < 8) issues.push('at least 8 characters');
+  if (!/[A-Z]/.test(password)) issues.push('one uppercase letter');
+  if (!/[a-z]/.test(password)) issues.push('one lowercase letter');
+  if (!/\d/.test(password)) issues.push('one number');
+  if (!/[!@#$%^&*]/.test(password)) issues.push('one special character (!@#$%^&*)');
+  
+  return issues.length > 0 ? `Password must contain: ${issues.join(', ')}` : '';
+};
+
+// Simple AI logic
+const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2'): {row: number, col: number} | null => {
+  const validMoves: {row: number, col: number}[] = [];
+  
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (isValidMove(board, row, col, 'black')) {
+        validMoves.push({row, col});
+      }
+    }
+  }
+  
+  if (validMoves.length === 0) return null;
+  
+  if (difficulty === 'ai-1') {
+    // Random move
+    return validMoves[Math.floor(Math.random() * validMoves.length)];
+  } else {
+    // AI-2: Slightly smarter - prefer center positions
+    const centerMoves = validMoves.filter(move => 
+      move.row >= 2 && move.row <= 5 && move.col >= 2 && move.col <= 5
+    );
+    
+    if (centerMoves.length > 0) {
+      return centerMoves[Math.floor(Math.random() * centerMoves.length)];
+    }
+    
+    return validMoves[Math.floor(Math.random() * validMoves.length)];
+  }
+};
+
+// Sound function
+const playSound = (soundName: 'ion' | 'vector' | 'nexus') => {
+  try {
+    const audio = new Audio(`/sounds/${soundName}.mp3`);
+    audio.volume = 0.3; // Set to 30% volume
+    audio.play().catch(e => console.log('Sound play failed:', e));
+  } catch (e) {
+    console.log('Sound loading failed:', e);
+  }
+};
+
+const App: React.FC = () => {
+  // Authentication state
+  const [authState, setAuthState] = useState<AuthState>({
+    isAuthenticated: false,
+    user: null,
+    isGuest: false
+  });
+  const [showLogin, setShowLogin] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+  const [authError, setAuthError] = useState('');
+
+  // Game state
+  const [gameState, setGameState] = useState<GameState>({
+    board: INITIAL_BOARD,
+    currentPlayer: 'white',
+    scores: { white: 0, black: 0 },
+    gameStatus: 'waiting',
+    lastMove: null,
+    players: { white: 'White', black: 'Black' }
+  });
+
+  // UI state
+  const [gameMode, setGameMode] = useState<'human' | 'ai-1' | 'ai-2' | 'online'>('human');
+  const [isGameStarted, setIsGameStarted] = useState(false);
+  const [showRules, setShowRules] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showMatchmaking, setShowMatchmaking] = useState(false);
+  const [isSearchingMatch, setIsSearchingMatch] = useState(false);
+  const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
+  const [opponentName, setOpponentName] = useState('');
+  const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
+  const [toast, setToast] = useState<string>('');
+  const [notification, setNotification] = useState<{
+    title: string;
+    message: string;
+    show: boolean;
+  }>({ title: '', message: '', show: false });
+
+  // Review mode state
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [reviewMoveIndex, setReviewMoveIndex] = useState(0);
+  const [originalGameState, setOriginalGameState] = useState<GameState | null>(null);
+  const [holdTimeout, setHoldTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [holdInterval, setHoldInterval] = useState<NodeJS.Timeout | null>(null);
+
+  // Timer state
+  const [timerEnabled, setTimerEnabled] = useState(true);
+  const [minutesPerPlayer, setMinutesPerPlayer] = useState(10);
+  const [incrementSeconds, setIncrementSeconds] = useState(0);
+  const [timers, setTimers] = useState({ white: 600, black: 600 }); // in seconds
+  const [activeTimer, setActiveTimer] = useState<'white' | 'black' | null>(null);
+
+  // Socket connection
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [gameId, setGameId] = useState<string>('');
+
+  // Rematch state
+  const [rematchState, setRematchState] = useState<{
+    requested: boolean;
+    requestedBy: string;
+    waitingForResponse: boolean;
+  }>({
+    requested: false,
+    requestedBy: '',
+    waitingForResponse: false
+  });
+
+  // Resign confirmation modal state
+  const [showResignConfirmation, setShowResignConfirmation] = useState(false);
+
+  // Check for existing authentication on app load
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          const response = await fetch('/api/auth/profile', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setAuthState({
+              isAuthenticated: true,
+              user: data.user,
+              isGuest: false
+            });
+          } else {
+            // Token is invalid, remove it
+            localStorage.removeItem('authToken');
+          }
+        } catch (error) {
+          // Connection error, keep token but don't authenticate yet
+          localStorage.removeItem('authToken');
+        }
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
+  // Initialize socket connection for online play
+  useEffect(() => {
+    console.log('Socket effect triggered with gameMode:', gameMode);
+    if (gameMode === 'online') {
+      const token = localStorage.getItem('authToken');
+      console.log('Creating socket connection...', {
+        production: process.env.NODE_ENV === 'production',
+        connectionURL: process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000',
+        hasToken: !!token,
+        authState
+      });
+      
+      // Determine socket URL based on environment
+      const socketUrl = process.env.NODE_ENV === 'production' 
+        ? window.location.origin 
+        : 'http://localhost:5000';
+      
+      console.log('Connecting to socket:', socketUrl, 'NODE_ENV:', process.env.NODE_ENV);
+      
+      const newSocket = io(socketUrl, {
+        auth: {
+          token: token,
+          isGuest: authState.isGuest,
+          user: authState.user
+        }
+      });
+      setSocket(newSocket);
+
+      newSocket.on('connect', () => {
+        console.log('Socket connected successfully:', newSocket.id);
+      });
+
+      newSocket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+      });
+
+      newSocket.on('disconnect', (reason) => {
+        console.log('Socket disconnected:', reason);
+      });
+
+      newSocket.on('gameStart', (data) => {
+        setGameId(data.gameId);
+        setPlayerColor(data.playerColor);
+        setOpponentName(data.opponentName);
+        setGameState(prev => ({
+          ...prev,
+          ...data.gameState,
+          gameStatus: 'active'
+        }));
+        setIsGameStarted(true);
+        setShowMatchmaking(false);
+        setIsSearchingMatch(false);
+        showToast(`Game start - you are playing as ${data.playerColor}`);
+      });
+
+      newSocket.on('waitingForOpponent', () => {
+        setIsSearchingMatch(true);
+      });
+
+      newSocket.on('moveUpdate', (moveData) => {
+        // Play appropriate sound effects
+        if (moveData.gameOver && moveData.nexus) {
+          playSound('nexus'); // Nexus formed
+        } else if (moveData.vectors > 0) {
+          playSound('vector'); // Vector formed
+        } else {
+          playSound('ion'); // Regular ion placement
+        }
+
+        setGameState(prev => ({
+          ...prev,
+          board: moveData.board,
+          currentPlayer: moveData.currentPlayer,
+          scores: moveData.scores,
+          lastMove: { row: moveData.row, col: moveData.col, player: moveData.player },
+          gameStatus: moveData.gameOver ? 'finished' : 'active'
+        }));
+
+        // Add to move history
+        setMoveHistory(prev => [
+          ...prev,
+          {
+            row: moveData.row,
+            col: moveData.col,
+            player: moveData.player,
+            vectors: moveData.vectors,
+            moveNumber: prev.length + 1
+          }
+        ]);
+
+        if (moveData.gameOver) {
+          let message = '';
+          if (moveData.winner === 'draw') {
+            message = 'Game ended in a draw!';
+          } else if (moveData.nexus) {
+            message = `${moveData.winner} wins by Nexus!`;
+          } else {
+            message = `${moveData.winner} wins by node count!`;
+          }
+          setNotification({
+            title: 'Game Over',
+            message,
+            show: true
+          });
+          setActiveTimer(null);
+        }
+      });
+
+      newSocket.on('gameEnd', (data) => {
+        setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
+        setNotification({
+          title: 'Game Over',
+          message: data.reason === 'resignation' ? 
+            `${data.winner} wins by resignation!` : 
+            `${data.winner} wins!`,
+          show: true
+        });
+        setActiveTimer(null);
+      });
+
+      newSocket.on('opponentDisconnected', () => {
+        setNotification({
+          title: 'Opponent Disconnected',
+          message: 'Your opponent has disconnected from the game.',
+          show: true
+        });
+        setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
+        setActiveTimer(null);
+      });
+
+      // Debug: Listen for all socket events
+      newSocket.onAny((event, ...args) => {
+        console.log(`Socket event received: ${event}`, args);
+      });
+
+      // Rematch event handlers
+      newSocket.on('rematchRequested', (data) => {
+        console.log('*** REMATCH REQUESTED EVENT RECEIVED ***');
+        console.log('Rematch requested by:', data.requesterName, 'Full data:', data);
+        setRematchState({
+          requested: true,
+          requestedBy: data.requesterName,
+          waitingForResponse: false
+        });
+        
+        // Force update the notification to show the rematch request
+        setNotification(prev => ({
+          ...prev,
+          show: true // Make sure modal stays open
+        }));
+      });
+
+      newSocket.on('rematchRequestSent', () => {
+        console.log('Rematch request sent confirmation received');
+        setRematchState(prev => ({
+          ...prev,
+          waitingForResponse: true
+        }));
+        showToast('Rematch request sent to opponent');
+      });
+
+      newSocket.on('rematchAccepted', (data) => {
+        console.log('Rematch accepted, starting new game:', data);
+        // Reset rematch state
+        setRematchState({
+          requested: false,
+          requestedBy: '',
+          waitingForResponse: false
+        });
+        
+        // Set up new game
+        setGameId(data.gameId);
+        setPlayerColor(data.playerColor);
+        setOpponentName(data.opponentName);
+        setGameState(prev => ({
+          ...prev,
+          ...data.gameState,
+          gameStatus: 'active'
+        }));
+        setMoveHistory([]);
+        setNotification({ title: '', message: '', show: false });
+        showToast(`Rematch started - you are now playing as ${data.playerColor}`);
+      });
+
+      newSocket.on('rematchDeclined', () => {
+        console.log('Rematch declined by opponent');
+        setRematchState({
+          requested: false,
+          requestedBy: '',
+          waitingForResponse: false
+        });
+        // Close the modal completely and show toast notification
+        setNotification({
+          title: '',
+          message: '',
+          show: false
+        });
+        showToast('Opponent declined the rematch');
+      });
+
+      return () => {
+        newSocket.close();
+      };
+    }
+  }, [gameMode, authState.isGuest, authState.user]);
+
+  // Timer logic
+  useEffect(() => {
+    if (!timerEnabled || !isGameStarted || gameState.gameStatus !== 'active' || !activeTimer) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTimers(prev => {
+        const newTimers = { ...prev };
+        newTimers[activeTimer] -= 1;
+        
+        if (newTimers[activeTimer] <= 0) {
+          // Time out
+          const winner = activeTimer === 'white' ? 'black' : 'white';
+          setNotification({
+            title: 'Time Out',
+            message: `${winner} wins on time!`,
+            show: true
+          });
+          setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
+          setActiveTimer(null);
+        }
+        
+        return newTimers;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timerEnabled, isGameStarted, gameState.gameStatus, activeTimer]);
+
+  const showToast = useCallback((message: string, duration: number = 4000) => {
+    setToast(message);
+    setTimeout(() => setToast(''), duration);
+  }, []);
+
+  // Start timer when game starts or player changes
+  useEffect(() => {
+    if (isGameStarted && gameState.gameStatus === 'active' && timerEnabled) {
+      setActiveTimer(gameState.currentPlayer);
+    }
+  }, [isGameStarted, gameState.currentPlayer, gameState.gameStatus, timerEnabled]);
+
+  // Authentication handlers
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      setAuthError('');
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Store token in localStorage
+        localStorage.setItem('authToken', data.token);
+        
+        setAuthState({
+          isAuthenticated: true,
+          user: data.user,
+          isGuest: false
+        });
+        setShowLogin(false);
+        showToast(`Welcome back, ${data.user.username}!`);
+      } else {
+        setAuthError(data.error || 'Login failed');
+      }
+    } catch (error) {
+      setAuthError('Connection error. Please try again.');
+    }
+  };
+
+  const handleSignup = async (email: string, username: string, password: string) => {
+    try {
+      setAuthError('');
+      
+      // Validate inputs
+      if (!validateEmail(email)) {
+        setAuthError('Please enter a valid email address');
+        return;
+      }
+      if (!validateUsername(username)) {
+        setAuthError('Username must be 6-20 characters, start with a letter, and contain only letters and numbers');
+        return;
+      }
+      if (!validatePassword(password)) {
+        setAuthError(getPasswordStrengthMessage(password));
+        return;
+      }
+      
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, username, password })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Store token and automatically log the user in
+        localStorage.setItem('authToken', data.token);
+        
+        setAuthState({
+          isAuthenticated: true,
+          user: data.user,
+          isGuest: false
+        });
+        
+        setShowSignup(false);
+        showToast(`Welcome, ${data.user.username}! Account created successfully.`);
+      } else {
+        setAuthError(data.error || 'Signup failed');
+      }
+    } catch (error) {
+      setAuthError('Connection error. Please try again.');
+    }
+  };
+
+  const handlePlayAsGuest = () => {
+    setAuthState({
+      isAuthenticated: false,
+      user: null,
+      isGuest: true
+    });
+    setShowMatchmaking(true);
+  };
+
+  const handleLogout = () => {
+    // Clear stored token
+    localStorage.removeItem('authToken');
+    
+    setAuthState({
+      isAuthenticated: false,
+      user: null,
+      isGuest: false
+    });
+    if (gameMode === 'online') {
+      setGameMode('human');
+      resetGame();
+    }
+    showToast('Logged out successfully');
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const makeLocalMove = useCallback((row: number, col: number) => {
+    if (!isValidMove(gameState.board, row, col, gameState.currentPlayer)) return;
+    
+    const currentPlayer = gameState.currentPlayer;
+    const newBoard = gameState.board.map(r => [...r]);
+    
+    // Place the ion
+    newBoard[row][col] = { color: currentPlayer, isNode: false };
+    
+    // Check for vectors
+    const vectors = checkForVectors(newBoard, row, col, currentPlayer);
+    const { nodeType } = processVectors(newBoard, vectors, row, col);
+    
+    // If vectors were formed, make this cell a node
+    if (nodeType) {
+      newBoard[row][col] = { color: currentPlayer, isNode: true, nodeType };
+    }
+    
+    // Update scores
+    const newScores = {
+      white: countNodes(newBoard, 'white'),
+      black: countNodes(newBoard, 'black')
+    };
+    
+    // Check for nexus (winning condition)
+    const nexus = checkForNexus(newBoard, row, col, currentPlayer);
+    let gameOver = false;
+    let winner: 'white' | 'black' | 'draw' | null = null;
+    
+    // Play appropriate sound based on what happened
+    if (nexus) {
+      gameOver = true;
+      winner = currentPlayer;
+      playSound('nexus'); // Nexus sound takes priority
+    } else if (nodeType) {
+      playSound('vector'); // Vector sound if no nexus
+    } else {
+      playSound('ion'); // Regular ion placement
+    }
+    
+    if (!nexus) {
+      // Check if next player has legal moves
+      const nextPlayer = currentPlayer === 'white' ? 'black' : 'white';
+      if (!hasLegalMoves(newBoard, nextPlayer)) {
+        gameOver = true;
+        if (newScores.white > newScores.black) winner = 'white';
+        else if (newScores.black > newScores.white) winner = 'black';
+        else winner = 'draw';
+      }
+    }
+    
+    // Add to move history
+    setMoveHistory(prev => [
+      ...prev,
+      {
+        row,
+        col,
+        player: currentPlayer,
+        vectors: vectors.length,
+        moveNumber: prev.length + 1
+      }
+    ]);
+    
+    if (gameOver) {
+      setGameState(prev => ({
+        ...prev,
+        board: newBoard,
+        scores: newScores,
+        lastMove: { row, col, player: currentPlayer },
+        gameStatus: 'finished'
+      }));
+      
+      let message = '';
+      if (winner === 'draw') {
+        message = 'Game ended in a draw!';
+      } else if (nexus) {
+        message = `${winner} wins by Nexus!`;
+      } else {
+        message = `${winner} wins by node count!`;
+      }
+      setNotification({
+        title: 'Game Over',
+        message,
+        show: true
+      });
+      setActiveTimer(null);
+    } else {
+      // Switch to next player
+      const nextPlayer = currentPlayer === 'white' ? 'black' : 'white';
+      setGameState(prev => ({
+        ...prev,
+        board: newBoard,
+        currentPlayer: nextPlayer,
+        scores: newScores,
+        lastMove: { row, col, player: currentPlayer },
+        gameStatus: 'active'
+      }));
+    }
+  }, [gameState.board, gameState.currentPlayer, setMoveHistory, setGameState, setNotification, setActiveTimer]);
+
+  // AI move logic
+  useEffect(() => {
+    if (isGameStarted && 
+        gameState.gameStatus === 'active' && 
+        (gameMode === 'ai-1' || gameMode === 'ai-2') && 
+        gameState.currentPlayer === 'black') {
+      
+      const timeout = setTimeout(() => {
+        const aiMove = getAIMove(gameState.board, gameMode);
+        if (aiMove) {
+          // Use the same makeLocalMove function that human players use
+          makeLocalMove(aiMove.row, aiMove.col);
+        }
+      }, 1000); // 1 second delay for AI move
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [gameState.currentPlayer, gameState.gameStatus, isGameStarted, gameMode, gameState.board, makeLocalMove]);
+
+  const handleCellClick = (row: number, col: number) => {
+    if (!isGameStarted || gameState.gameStatus !== 'active' || isReviewMode) return;
+    
+    if (gameMode === 'online') {
+      if (!playerColor || gameState.currentPlayer !== playerColor) return;
+      if (gameState.board[row][col] !== null) return;
+      
+      socket?.emit('makeMove', { gameId, row, col });
+    } else {
+      // Local game (human vs human or vs AI)
+      if (gameMode === 'ai-1' || gameMode === 'ai-2') {
+        // In AI mode, only allow human (white) moves
+        if (gameState.currentPlayer !== 'white') return;
+      }
+      
+      makeLocalMove(row, col);
+    }
+  };
+
+  const startGame = () => {
+    console.log('startGame called with mode:', gameMode);
+    console.log('auth state:', authState);
+    console.log('environment:', process.env.NODE_ENV);
+    console.log('current origin:', window.location.origin);
+    
+    if (gameMode === 'online') {
+      // Check authentication status for online play
+      if (!authState.isAuthenticated && !authState.isGuest) {
+        console.log('User not authenticated, showing login modal');
+        // Show login modal directly for a more streamlined experience
+        setShowLogin(true);
+        return;
+      }
+      console.log('User authenticated, setting showMatchmaking to true');
+      setShowMatchmaking(true);
+    } else {
+      // Local game start
+      const newBoard = Array(8).fill(null).map(() => Array(8).fill(null));
+      setGameState({
+        board: newBoard,
+        currentPlayer: 'white',
+        scores: { white: 0, black: 0 },
+        gameStatus: 'active',
+        lastMove: null,
+        players: { 
+          white: 'White', 
+          black: gameMode === 'human' ? 'Black' : `CORE ${gameMode.toUpperCase()}`
+        }
+      });
+      setIsGameStarted(true);
+      setMoveHistory([]);
+      
+      if (timerEnabled) {
+        const totalSeconds = minutesPerPlayer * 60;
+        setTimers({ white: totalSeconds, black: totalSeconds });
+        setActiveTimer('white');
+      }
+    }
+  };
+
+  const findMatch = () => {
+    console.log('findMatch called', {
+      hasSocket: !!socket,
+      socketConnected: socket?.connected,
+      socketId: socket?.id
+    });
+    
+    if (socket) {
+      console.log('Emitting findMatch to server...');
+      socket.emit('findMatch');
+      setIsSearchingMatch(true);
+    } else {
+      console.error('No socket available for findMatch');
+    }
+  };
+
+  const cancelMatchmaking = () => {
+    if (socket) {
+      socket.emit('cancelMatchmaking');
+    }
+    setShowMatchmaking(false);
+    setIsSearchingMatch(false);
+  };
+
+  const requestRematch = () => {
+    console.log('Request rematch clicked!', {
+      hasSocket: !!socket,
+      gameId,
+      socketConnected: socket?.connected,
+      gameStatus: gameState.gameStatus,
+      socketId: socket?.id
+    });
+
+    if (!socket || !gameId || gameState.gameStatus !== 'finished') {
+      console.log('Cannot request rematch - missing requirements');
+      return;
+    }
+
+    console.log('Emitting requestRematch to server...', {
+      gameId,
+      socketId: socket.id,
+      connected: socket.connected
+    });
+
+    socket.emit('requestRematch', { gameId });
+  };
+
+  const respondToRematch = (accept: boolean) => {
+    if (socket && gameId) {
+      socket.emit('respondToRematch', { gameId, accept });
+    }
+    
+    if (!accept) {
+      // Reset rematch state and close modal on decline
+      setRematchState({
+        requested: false,
+        requestedBy: '',
+        waitingForResponse: false
+      });
+      setNotification({
+        title: '',
+        message: '',
+        show: false
+      });
+    }
+  };
+
+  const resignGame = () => {
+    // Show confirmation modal instead of immediately resigning
+    setShowResignConfirmation(true);
+  };
+
+  const confirmResignation = () => {
+    setShowResignConfirmation(false);
+    
+    if (gameMode === 'online' && socket && gameId) {
+      // Online game - send resign to server
+      socket.emit('resign', { gameId });
+    } else {
+      // Local game - handle resignation locally
+      const winner = gameState.currentPlayer === 'white' ? 'black' : 'white';
+      setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
+      setNotification({
+        title: 'Game Over',
+        message: `${winner} wins by resignation!`,
+        show: true
+      });
+      setIsGameStarted(false);
+      setActiveTimer(null);
+    }
+  };
+
+  const cancelResignation = () => {
+    setShowResignConfirmation(false);
+  };
+
+  const resetGame = () => {
+    setGameState({
+      board: INITIAL_BOARD,
+      currentPlayer: 'white',
+      scores: { white: 0, black: 0 },
+      gameStatus: 'waiting',
+      lastMove: null,
+      players: { white: 'White', black: 'Black' }
+    });
+    setIsGameStarted(false);
+    setMoveHistory([]);
+    setActiveTimer(null);
+    setPlayerColor(null);
+    setOpponentName('');
+    setGameId('');
+    setRematchState({
+      requested: false,
+      requestedBy: '',
+      waitingForResponse: false
+    });
+    if (timerEnabled) {
+      const totalSeconds = minutesPerPlayer * 60;
+      setTimers({ white: totalSeconds, black: totalSeconds });
+    }
+  };
+
+  const getNotation = (col: number, row: number): string => {
+    const colLetter = String.fromCharCode(97 + col); // a-h
+    const rowNumber = 8 - row; // 8-1
+    return colLetter + rowNumber;
+  };
+
+  // Review mode functions
+  const enterReviewMode = () => {
+    if (moveHistory.length === 0) return;
+    
+    setOriginalGameState({ ...gameState });
+    setIsReviewMode(true);
+    setReviewMoveIndex(0);
+    
+    // Reset to initial board state
+    const initialBoard = Array(8).fill(null).map(() => Array(8).fill(null));
+    setGameState(prev => ({
+      ...prev,
+      board: initialBoard,
+      currentPlayer: 'white',
+      scores: { white: 0, black: 0 },
+      lastMove: null
+    }));
+  };
+
+  const exitReviewMode = () => {
+    if (originalGameState) {
+      setGameState(originalGameState);
+      setOriginalGameState(null);
+    }
+    setIsReviewMode(false);
+    setReviewMoveIndex(0);
+  };
+
+  const goToMove = useCallback((moveIndex: number) => {
+    if (moveIndex < 0 || moveIndex > moveHistory.length) return;
+    
+    setReviewMoveIndex(moveIndex);
+    
+    // Reconstruct board state up to this move
+    const board = Array(8).fill(null).map(() => Array(8).fill(null));
+    let currentPlayer: 'white' | 'black' = 'white';
+    
+    for (let i = 0; i < moveIndex; i++) {
+      const move = moveHistory[i];
+      const { row, col, player } = move;
+      
+      // Place the ion
+      board[row][col] = { color: player, isNode: false };
+      
+      // Check for vectors and process them
+      const vectors = checkForVectors(board, row, col, player);
+      const { nodeType } = processVectors(board, vectors, row, col);
+      
+      // If vectors were formed, make this cell a node
+      if (nodeType) {
+        board[row][col] = { color: player, isNode: true, nodeType };
+      }
+      
+      currentPlayer = player === 'white' ? 'black' : 'white';
+    }
+    
+    const scores = {
+      white: countNodes(board, 'white'),
+      black: countNodes(board, 'black')
+    };
+    
+    const lastMove = moveIndex > 0 ? {
+      row: moveHistory[moveIndex - 1].row,
+      col: moveHistory[moveIndex - 1].col,
+      player: moveHistory[moveIndex - 1].player
+    } : null;
+    
+    setGameState(prev => ({
+      ...prev,
+      board,
+      currentPlayer,
+      scores,
+      lastMove
+    }));
+  }, [moveHistory, setReviewMoveIndex, setGameState]);
+
+  const firstMove = () => {
+    goToMove(0);
+  };
+
+  const lastMove = () => {
+    goToMove(moveHistory.length);
+  };
+
+  const previousMove = useCallback(() => {
+    if (reviewMoveIndex > 0) {
+      goToMove(reviewMoveIndex - 1);
+    }
+  }, [reviewMoveIndex, goToMove]);
+
+  const nextMove = useCallback(() => {
+    if (reviewMoveIndex < moveHistory.length) {
+      goToMove(reviewMoveIndex + 1);
+    }
+  }, [reviewMoveIndex, moveHistory.length, goToMove]);
+
+  // Hold-to-scroll functionality
+  const startHoldScroll = (direction: 'prev' | 'next', event?: React.MouseEvent | React.TouchEvent) => {
+    event?.preventDefault();
+    
+    // Clear any existing timeouts/intervals
+    if (holdTimeout) {
+      clearTimeout(holdTimeout);
+      setHoldTimeout(null);
+    }
+    if (holdInterval) {
+      clearInterval(holdInterval);
+      setHoldInterval(null);
+    }
+    
+    const scrollFunction = direction === 'prev' ? previousMove : nextMove;
+    
+    // Immediate first move
+    scrollFunction();
+    
+    // Wait 0.5 seconds before starting continuous scroll
+    const timeout = setTimeout(() => {
+      // Then continue scrolling every 500ms (2 moves per second)
+      const interval = setInterval(() => {
+        scrollFunction();
+      }, 500);
+      
+      setHoldInterval(interval);
+      setHoldTimeout(null); // Clear timeout reference since it's done
+    }, 500);
+    
+    setHoldTimeout(timeout);
+  };
+
+  const stopHoldScroll = (event?: React.MouseEvent | React.TouchEvent) => {
+    event?.preventDefault();
+    
+    // Clear timeout if still waiting
+    if (holdTimeout) {
+      clearTimeout(holdTimeout);
+      setHoldTimeout(null);
+    }
+    
+    // Clear interval if scrolling
+    if (holdInterval) {
+      clearInterval(holdInterval);
+      setHoldInterval(null);
+    }
+  };
+
+  // Cleanup hold timeout and interval when component unmounts or review mode exits
+  useEffect(() => {
+    return () => {
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+      }
+      if (holdInterval) {
+        clearInterval(holdInterval);
+      }
+    };
+  }, [holdTimeout, holdInterval]);
+
+  useEffect(() => {
+    if (!isReviewMode) {
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        setHoldTimeout(null);
+      }
+      if (holdInterval) {
+        clearInterval(holdInterval);
+        setHoldInterval(null);
+      }
+    }
+  }, [isReviewMode, holdTimeout, holdInterval]);
+
+  const renderCell = (row: number, col: number) => {
+    const cell = gameState.board[row][col];
+    const isLastMove = gameState.lastMove?.row === row && gameState.lastMove?.col === col;
+    
+    return (
+      <div
+        key={`${row}-${col}`}
+        className={`cell ${isLastMove ? 'last-move' : ''}`}
+        onClick={() => handleCellClick(row, col)}
+      >
+        {cell && (
+          <>
+            {/* Always render the ion (colored piece) */}
+            <div className={`ion ${cell.color} ${isLastMove ? 'new-ion' : ''}`} />
+            {/* If it's a node, also render the node indicator on top (no animation to avoid transform conflicts) */}
+            {cell.isNode && (
+              <div 
+                className={`node ${cell.nodeType || 'standard'}`} 
+                title={`Node type: ${cell.nodeType || 'standard'}`}
+              />
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const renderBoard = () => {
+    return (
+      <div className={`board ${isReviewMode ? 'review-mode' : 'current-state'}`} id="game-board">
+        {gameState.board.map((row, rowIndex) =>
+          row.map((_, colIndex) => renderCell(rowIndex, colIndex))
+        )}
+      </div>
+    );
+  };
+
+  const renderMoveHistory = () => {
+    return (
+      <div className={`game-log ${isReviewMode ? 'with-review-controls' : ''}`} id="game-log">
+        {Array.from({ length: Math.ceil(moveHistory.length / 2) }, (_, pairIndex) => {
+          const whiteMove = moveHistory[pairIndex * 2];
+          const blackMove = moveHistory[pairIndex * 2 + 1];
+          const moveNumber = pairIndex + 1;
+          
+          return (
+            <div key={pairIndex} className="log-entry">
+              <span className="move-number">{moveNumber}.</span>
+              <span 
+                className={`white-move ${isReviewMode && whiteMove && reviewMoveIndex - 1 === pairIndex * 2 ? 'highlighted-move' : ''}`}
+                onClick={() => isReviewMode && whiteMove ? goToMove(pairIndex * 2 + 1) : undefined}
+                style={{ cursor: isReviewMode && whiteMove ? 'pointer' : 'default' }}
+              >
+                {whiteMove ? (
+                  <span>
+                    {getNotation(whiteMove.col, whiteMove.row)}
+                    {whiteMove.vectors > 0 && <span className="node-indicator">●</span>}
+                  </span>
+                ) : ''}
+              </span>
+              <span 
+                className={`black-move ${isReviewMode && blackMove && reviewMoveIndex - 1 === pairIndex * 2 + 1 ? 'highlighted-move' : ''}`}
+                onClick={() => isReviewMode && blackMove ? goToMove(pairIndex * 2 + 2) : undefined}
+                style={{ cursor: isReviewMode && blackMove ? 'pointer' : 'default' }}
+              >
+                {blackMove ? (
+                  <span>
+                    {getNotation(blackMove.col, blackMove.row)}
+                    {blackMove.vectors > 0 && <span className="node-indicator">●</span>}
+                  </span>
+                ) : ''}
+              </span>
+            </div>
+          );
+        })}
+        
+        {/* Review mode controls */}
+        {isReviewMode && (
+          <div id="review-section">
+            <div className="review-controls">
+              <button 
+                className="btn" 
+                id="first-move-btn"
+                onClick={firstMove}
+                disabled={reviewMoveIndex <= 0}
+                title="First Move"
+              >
+                <span className="arrow-icon">⏮</span>
+              </button>
+              <button 
+                className="btn" 
+                id="prev-move-btn"
+                onMouseDown={(e) => startHoldScroll('prev', e)}
+                onMouseUp={(e) => stopHoldScroll(e)}
+                onMouseLeave={(e) => stopHoldScroll(e)}
+                onTouchStart={(e) => startHoldScroll('prev', e)}
+                onTouchEnd={(e) => stopHoldScroll(e)}
+                disabled={reviewMoveIndex <= 0}
+                title="Previous Move (Hold to scroll)"
+              >
+                <span className="arrow-icon">◀</span>
+              </button>
+              <span className="move-counter">
+                Move {reviewMoveIndex} of {moveHistory.length}
+              </span>
+              <button 
+                className="btn" 
+                id="next-move-btn"
+                onMouseDown={(e) => startHoldScroll('next', e)}
+                onMouseUp={(e) => stopHoldScroll(e)}
+                onMouseLeave={(e) => stopHoldScroll(e)}
+                onTouchStart={(e) => startHoldScroll('next', e)}
+                onTouchEnd={(e) => stopHoldScroll(e)}
+                disabled={reviewMoveIndex >= moveHistory.length}
+                title="Next Move (Hold to scroll)"
+              >
+                <span className="arrow-icon">▶</span>
+              </button>
+              <button 
+                className="btn" 
+                id="last-move-btn"
+                onClick={lastMove}
+                disabled={reviewMoveIndex >= moveHistory.length}
+                title="Last Move"
+              >
+                <span className="arrow-icon">⏭</span>
+              </button>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '5px' }}>
+              <button 
+                className="btn" 
+                onClick={exitReviewMode}
+                style={{ fontSize: '12px', padding: '4px 12px' }}
+              >
+                Exit Review
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="App">
+      <header>
+        <h1>Flux</h1>
+        {(authState.isAuthenticated || authState.isGuest) && (
+          <div style={{ 
+            position: 'absolute', 
+            top: '20px', 
+            right: '20px', 
+            fontSize: '14px', 
+            color: '#666',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            {authState.isAuthenticated ? (
+              <>
+                <span>Welcome, {authState.user?.username}!</span>
+                <button 
+                  className="btn" 
+                  onClick={handleLogout}
+                  style={{ fontSize: '12px', padding: '4px 8px', height: 'auto' }}
+                >
+                  Logout
+                </button>
+              </>
+            ) : authState.isGuest ? (
+              <span>Playing as Guest</span>
+            ) : null}
+          </div>
+        )}
+      </header>
+
+      <div className="game-container">
+        <div className="game-board-area">
+          {/* Top player info */}
+          <div className="player-bar-row" style={{ display: 'flex', alignItems: 'center' }}>
+            <div className="player-info" style={{ marginRight: '10px', width: 'calc(var(--board-size) + 4px)', boxSizing: 'border-box' }}>
+              <div className={`player ${gameState.currentPlayer === 'white' ? 'active' : ''}`} id="player-white">
+                <div className="player-color white"></div>
+                <span>
+                  {(() => {
+                    if (!isGameStarted) {
+                      return 'White';
+                    } else if (gameMode === 'online' && playerColor) {
+                      // Multiplayer game - show actual usernames with color
+                      const whiteName = playerColor === 'white' ? 
+                        (authState.user?.username || 'Guest') : 
+                        opponentName;
+                      return `${whiteName} (white)`;
+                    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2') && authState.isAuthenticated) {
+                      // AI game with authenticated user - show username for white (human player)
+                      return `${authState.user?.username} (white)`;
+                    } else {
+                      // Local human vs human or unauthenticated - use gameState players
+                      return gameState.players.white;
+                    }
+                  })()}
+                </span>
+                <span>Nodes: <span id="white-score">{gameState.scores.white}</span></span>
+              </div>
+              {timerEnabled && (
+                <div className="player-timer" id="white-timer">
+                  {formatTime(timers.white)}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Game board */}
+          <div className="board-with-labels">
+            <div>
+              {renderBoard()}
+            </div>
+          </div>
+
+          {/* Bottom player info */}
+          <div className="player-info bottom" style={{ width: 'calc(var(--board-size) + 4px)', boxSizing: 'border-box' }}>
+            <div className={`player ${gameState.currentPlayer === 'black' ? 'active' : ''}`} id="player-black">
+              <div className="player-color black"></div>
+              <span>
+                {(() => {
+                  if (!isGameStarted) {
+                    return 'Black';
+                  } else if (gameMode === 'online' && playerColor) {
+                    // Multiplayer game - show actual usernames with color
+                    const blackName = playerColor === 'black' ? 
+                      (authState.user?.username || 'Guest') : 
+                      opponentName;
+                    return `${blackName} (black)`;
+                  } else if ((gameMode === 'ai-1' || gameMode === 'ai-2') && authState.isAuthenticated) {
+                    // AI game - black is always the AI, show AI name with color
+                    return `${gameState.players.black} (black)`;
+                  } else {
+                    // Local human vs human or unauthenticated - use gameState players
+                    return gameState.players.black;
+                  }
+                })()}
+              </span>
+              <span>Nodes: <span id="black-score">{gameState.scores.black}</span></span>
+            </div>
+            {timerEnabled && (
+              <div className="player-timer" id="black-timer">
+                {formatTime(timers.black)}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Game controls */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          {/* Action buttons */}
+          <div className="player-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '256px', marginBottom: '5px' }}>
+            <button 
+              className="btn action-btn" 
+              onClick={isGameStarted && gameState.gameStatus === 'active' ? resignGame : startGame}
+              disabled={gameMode === 'online' && !isGameStarted && (!authState.isAuthenticated && !authState.isGuest)}
+              style={{ height: '40px', padding: '0 24px' }}
+            >
+              {isGameStarted && gameState.gameStatus === 'active' ? 'Resign' : 'Start'}
+            </button>
+            <button 
+              className="btn action-btn" 
+              onClick={resetGame}
+              style={{ height: '40px', padding: '0 24px' }}
+            >
+              Reset
+            </button>
+          </div>
+
+          {/* Game controls area */}
+          <div className="game-controls-area" style={{ height: 'calc(var(--board-size) + 4px)', width: '256px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            {!isGameStarted && (
+              <div id="pregame-controls">
+                <div className="option-row">
+                  <label htmlFor="game-mode-select">Opponent:</label>
+                  <select 
+                    id="game-mode-select" 
+                    className="control-select"
+                    value={gameMode}
+                    onChange={(e) => setGameMode(e.target.value as any)}
+                  >
+                    <option value="human">Local Play</option>
+                    <option value="ai-1">CORE AI-1</option>
+                    <option value="ai-2">CORE AI-2</option>
+                    <option value="online">Online Multiplayer</option>
+                  </select>
+                </div>
+
+                <div className="option-row">
+                  <label htmlFor="timer-toggle">Game Timer:</label>
+                  <div className="toggle-container">
+                    <span className="toggle-label">Off</span>
+                    <label className="toggle small">
+                      <input 
+                        type="checkbox" 
+                        id="timer-toggle" 
+                        checked={timerEnabled}
+                        onChange={(e) => setTimerEnabled(e.target.checked)}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                    <span className={`toggle-label ${timerEnabled ? 'active' : ''}`}>On</span>
+                  </div>
+                </div>
+
+                {timerEnabled && (
+                  <div className="timer-settings" id="timer-settings">
+                    <div className="timer-row">
+                      <div className="option-cell">
+                        <label htmlFor="minutes-per-player">Minutes:</label>
+                        <select 
+                          id="minutes-per-player" 
+                          className="control-select"
+                          value={minutesPerPlayer}
+                          onChange={(e) => setMinutesPerPlayer(parseInt(e.target.value))}
+                        >
+                          <option value="60">60</option>
+                          <option value="30">30</option>
+                          <option value="15">15</option>
+                          <option value="10">10</option>
+                          <option value="5">5</option>
+                          <option value="3">3</option>
+                        </select>
+                      </div>
+                      <div className="option-cell">
+                        <label htmlFor="increment-seconds">Increment:</label>
+                        <select 
+                          id="increment-seconds" 
+                          className="control-select"
+                          value={incrementSeconds}
+                          onChange={(e) => setIncrementSeconds(parseInt(e.target.value))}
+                        >
+                          <option value="10">10 sec</option>
+                          <option value="5">5 sec</option>
+                          <option value="2">2 sec</option>
+                          <option value="0">0 sec</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Game log */}
+            <div id="game-log-container">
+              <div className="review-button-container" style={{ width: '236px', margin: '20px auto 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h2 style={{ fontSize: '1.2em', margin: '0' }}>Game Log</h2>
+                {moveHistory.length > 0 && !isReviewMode && (
+                  <button 
+                    className="review-button" 
+                    onClick={enterReviewMode}
+                    style={{ display: 'inline-block' }}
+                  >
+                    Review
+                  </button>
+                )}
+              </div>
+              {renderMoveHistory()}
+            </div>
+          </div>
+
+          {/* Utility buttons */}
+          <div className="utility-buttons-container" style={{ width: '256px', display: 'flex', alignItems: 'center', height: '40px', marginTop: '5px', marginLeft: '-4px' }}>
+            <div className="utility-buttons" style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+              <button className="btn" style={{ height: '40px', flex: 1, margin: '0 5px' }}>Tutorial</button>
+              <button 
+                className="btn" 
+                onClick={() => setShowRules(true)}
+                style={{ height: '40px', flex: 1, margin: '0 5px' }}
+              >
+                Rules
+              </button>
+              <button 
+                className="btn" 
+                onClick={() => setShowSettings(true)}
+                style={{ height: '40px', flex: 1, margin: '0 5px' }}
+              >
+                Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Rules popup */}
+      {showRules && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowRules(false)} />
+          <div className="notification rules-popup" style={{ display: 'block' }}>
+            <h2>Flux Game Rules</h2>
+            
+            <h3>Overview</h3>
+            <p>Flux is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Ions") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
+            
+            <h3>Core Rules</h3>
+            <ul>
+              <li>Players take turns placing Ions (white or black) on an 8×8 board.</li>
+              <li>White always moves first.</li>
+              <li>The goal is to form "Vectors" (unbroken lines of exactly 4 Ions of the same color) horizontally, vertically, or diagonally.</li>
+              <li>Players cannot form lines longer than 4 Ions of the same color.</li>
+              <li>When a Vector is formed, the last Ion placed becomes a "Node" (marked with a red indicator) that stays on the board permanently.</li>
+              <li>All other Ions in the Vector are removed from the board (except for existing Nodes).</li>
+            </ul>
+            
+            <h3>Node Values</h3>
+            <p>Creating multiple Vectors simultaneously creates more valuable Nodes:</p>
+            <ul>
+              <li>1 Vector = Standard Node (red dot)</li>
+              <li>2 Vectors at once = Double Node (red horizontal oval)</li>
+              <li>3 Vectors at once = Triple Node (red triangle)</li>
+              <li>4 Vectors at once = Quadruple Node (red diamond)</li>
+            </ul>
+            
+            <h3>Winning the Game</h3>
+            <ul>
+              <li>The main objective is to form a "Nexus" (a Vector of 4 Nodes) to win the game.</li>
+              <li>If no player can form a Nexus and no more legal moves are possible, the player with the most Nodes wins.</li>
+              <li>If both players have the same number of Nodes, the game is a draw.</li>
+            </ul>
+            
+            <button className="btn" onClick={() => setShowRules(false)}>Close Rules</button>
+          </div>
+        </>
+      )}
+
+      {/* Settings popup */}
+      {showSettings && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowSettings(false)} />
+          <div className="notification settings-dialog" style={{ display: 'block' }}>
+            <h2>Settings</h2>
+            <div className="settings-section">
+              <h3>Theme</h3>
+              <select className="control-select">
+                <option value="classic">Classic</option>
+                <option value="dark">Dark Mode</option>
+                <option value="high-contrast">High Contrast</option>
+                <option value="nature">Nature</option>
+                <option value="ocean">Ocean</option>
+              </select>
+            </div>
+            <div className="notification-buttons">
+              <button className="btn" onClick={() => setShowSettings(false)}>Close</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Login modal */}
+      {showLogin && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowLogin(false)} />
+          <div className="notification" style={{ display: 'block', maxWidth: '400px' }}>
+            <h2>Log In</h2>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              handleLogin(
+                formData.get('email') as string,
+                formData.get('password') as string
+              );
+            }}>
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="login-email" style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
+                <input
+                  type="email"
+                  id="login-email"
+                  name="email"
+                  required
+                  style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px' }}
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="login-password" style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
+                <input
+                  type="password"
+                  id="login-password"
+                  name="password"
+                  required
+                  style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px' }}
+                />
+              </div>
+              {authError && (
+                <div style={{ color: 'red', marginBottom: '15px', fontSize: '14px' }}>
+                  {authError}
+                </div>
+              )}
+              <div className="notification-buttons">
+                <button type="submit" className="btn">Log In</button>
+                <button type="button" className="btn" onClick={() => { setShowLogin(false); setShowSignup(true); }}>
+                  Sign Up Instead
+                </button>
+                <button type="button" className="btn" onClick={() => { setShowLogin(false); handlePlayAsGuest(); }}>
+                  Play as Guest
+                </button>
+                <button type="button" className="btn" onClick={() => setShowLogin(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
+
+      {/* Signup modal */}
+      {showSignup && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowSignup(false)} />
+          <div className="notification" style={{ display: 'block', maxWidth: '400px' }}>
+            <h2>Sign Up</h2>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              handleSignup(
+                formData.get('email') as string,
+                formData.get('username') as string,
+                formData.get('password') as string
+              );
+            }}>
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="signup-email" style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
+                <input
+                  type="email"
+                  id="signup-email"
+                  name="email"
+                  required
+                  style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px' }}
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="signup-username" style={{ display: 'block', marginBottom: '5px' }}>Username (6-20 characters):</label>
+                <input
+                  type="text"
+                  id="signup-username"
+                  name="username"
+                  required
+                  minLength={6}
+                  maxLength={20}
+                  pattern="[a-zA-Z][a-zA-Z0-9]{5,19}"
+                  title="Username must be 6-20 characters, start with a letter, and contain only letters and numbers"
+                  style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px' }}
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="signup-password" style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
+                <input
+                  type="password"
+                  id="signup-password"
+                  name="password"
+                  required
+                  minLength={8}
+                  style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px' }}
+                />
+                <small style={{ fontSize: '12px', color: '#666', display: 'block', marginTop: '5px' }}>
+                  Must contain: 8+ characters, uppercase, lowercase, number, and special character (!@#$%^&*)
+                </small>
+              </div>
+              {authError && (
+                <div style={{ color: 'red', marginBottom: '15px', fontSize: '14px' }}>
+                  {authError}
+                </div>
+              )}
+              <div className="notification-buttons">
+                <button type="submit" className="btn">Sign Up</button>
+                <button type="button" className="btn" onClick={() => { setShowSignup(false); setShowLogin(true); }}>
+                  Log In Instead
+                </button>
+                <button type="button" className="btn" onClick={() => { setShowSignup(false); handlePlayAsGuest(); }}>
+                  Play as Guest
+                </button>
+                <button type="button" className="btn" onClick={() => setShowSignup(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
+
+      {/* Matchmaking modal */}
+      {showMatchmaking && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} />
+          <div className="notification" style={{ display: 'block', position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2000 }}>
+            <h2>Online Multiplayer</h2>
+            <div style={{ marginBottom: '15px', fontSize: '0.9rem', color: '#666' }}>
+              Playing as: <strong>
+                {authState.isAuthenticated ? authState.user?.username : 
+                 authState.isGuest ? `Guest${Math.floor(Math.random() * 9000) + 1000}` : 'Anonymous'}
+              </strong>
+            </div>
+            <p>{isSearchingMatch ? 'Searching for a match...' : 'Ready to find an opponent?'}</p>
+            <div className="notification-buttons">
+              {!isSearchingMatch ? (
+                <>
+                  <button className="btn" onClick={findMatch}>Find Match</button>
+                  <button className="btn" onClick={() => setShowMatchmaking(false)}>Cancel</button>
+                </>
+              ) : (
+                <button className="btn" onClick={cancelMatchmaking}>Cancel Search</button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Game notification */}
+      {notification.show && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} />
+          <div className="notification" style={{ display: 'block' }}>
+            <h2>{notification.title}</h2>
+            {notification.title === 'Play Online' && !authState.isAuthenticated && !authState.isGuest ? (
+              <div className="notification-buttons">
+                <button className="btn" onClick={() => { setNotification(prev => ({ ...prev, show: false })); setShowLogin(true); }}>
+                  Log In
+                </button>
+                <button className="btn" onClick={() => { setNotification(prev => ({ ...prev, show: false })); setShowSignup(true); }}>
+                  Sign Up
+                </button>
+                <button className="btn" onClick={() => { setNotification(prev => ({ ...prev, show: false })); handlePlayAsGuest(); }}>
+                  Play as Guest
+                </button>
+                <button className="btn" onClick={() => setNotification(prev => ({ ...prev, show: false }))}>
+                  Cancel
+                </button>
+              </div>
+            ) : notification.title === 'Game Over' && gameMode === 'online' && gameState.gameStatus === 'finished' ? (
+              <>
+                <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5' }}>{notification.message}</p>
+                {rematchState.requested ? (
+                  <>
+                    <div style={{ margin: '15px 0', padding: '10px', backgroundColor: '#f0f8ff', border: '1px solid #007bff', borderRadius: '4px' }}>
+                      <p style={{ margin: '0', fontWeight: 'bold', color: '#007bff' }}>
+                        🎯 {rematchState.requestedBy} has challenged you to a rematch!
+                      </p>
+                      <p style={{ margin: '5px 0 0 0', fontSize: '0.9em', color: '#666' }}>
+                        Do you accept the challenge?
+                      </p>
+                    </div>
+                    <div className="notification-buttons">
+                      <button className="btn" onClick={() => respondToRematch(true)} style={{ backgroundColor: '#28a745', color: 'white' }}>
+                        ⚔️ Accept Rematch
+                      </button>
+                      <button className="btn" onClick={() => respondToRematch(false)} style={{ backgroundColor: '#dc3545', color: 'white' }}>
+                        ❌ Decline
+                      </button>
+                      <button className="btn" onClick={() => {
+                        // Auto-decline rematch when closing modal if a challenge is pending
+                        respondToRematch(false);
+                      }}>
+                        Close
+                      </button>
+                    </div>
+                  </>
+                ) : rematchState.waitingForResponse ? (
+                  <>
+                    <div style={{ margin: '15px 0', padding: '10px', backgroundColor: '#fff3cd', border: '1px solid #ffc107', borderRadius: '4px' }}>
+                      <p style={{ margin: '0', fontWeight: 'bold', color: '#856404' }}>
+                        ⏳ Waiting for opponent's response...
+                      </p>
+                      <p style={{ margin: '5px 0 0 0', fontSize: '0.9em', color: '#666' }}>
+                        Your rematch challenge has been sent!
+                      </p>
+                    </div>
+                    <div className="notification-buttons">
+                      <button className="btn" onClick={() => setNotification(prev => ({ ...prev, show: false }))}>
+                        Continue Waiting
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ margin: '15px 0', padding: '10px', backgroundColor: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '4px' }}>
+                      <p style={{ margin: '0', fontWeight: 'bold', color: '#495057' }}>
+                        🔄 Want to play again?
+                      </p>
+                      <p style={{ margin: '5px 0 0 0', fontSize: '0.9em', color: '#666' }}>
+                        Challenge your opponent to a rematch! Colors will be swapped.
+                      </p>
+                    </div>
+                    <div className="notification-buttons">
+                      <button 
+                        className="btn" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Button clicked - event fired!');
+                          requestRematch();
+                        }}
+                        style={{ 
+                          backgroundColor: '#007bff', 
+                          color: 'white',
+                          zIndex: 1002,
+                          position: 'relative',
+                          pointerEvents: 'auto',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🎯 Request Rematch
+                      </button>
+
+                      <button className="btn" onClick={() => setNotification(prev => ({ ...prev, show: false }))}>
+                        Close
+                      </button>
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5' }}>{notification.message}</p>
+                <div className="notification-buttons">
+                  <button className="btn" onClick={() => setNotification(prev => ({ ...prev, show: false }))}>
+                    Close
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Resign Confirmation Modal */}
+      {showResignConfirmation && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} />
+          <div className="notification" style={{ display: 'block' }}>
+            <h2>⚠️ Confirm Resignation</h2>
+            <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5', margin: '20px 0' }}>
+              Are you sure you want to resign this game?
+              {'\n\n'}Your opponent will be declared the winner.
+            </p>
+            <div className="notification-buttons">
+              <button 
+                className="btn" 
+                onClick={confirmResignation}
+                style={{ 
+                  backgroundColor: '#dc3545', 
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              >
+                🏳️ Yes, Resign
+              </button>
+              <button 
+                className="btn" 
+                onClick={cancelResignation}
+                style={{ 
+                  backgroundColor: '#28a745', 
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              >
+                ⚔️ Continue Playing
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="toast" style={{ display: 'block' }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
