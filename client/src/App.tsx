@@ -270,7 +270,7 @@ const getPasswordStrengthMessage = (password: string): string => {
 
 // Simple AI logic
 // AI Helper Functions
-const evaluateMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black', difficulty: 'ai-1' | 'ai-2' | 'ai-3'): number => {
+const evaluateMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black', difficulty: 'ai-1' | 'ai-2'): number => {
   let score = 0;
   const opponentColor = playerColor === 'white' ? 'black' : 'white';
   
@@ -337,7 +337,7 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
   return score;
 };
 
-const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3'): {row: number, col: number} | null => {
+const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2'): {row: number, col: number} | null => {
   const validMoves: {row: number, col: number, score: number}[] = [];
   
   // Evaluate all valid moves
@@ -359,20 +359,8 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3
     const topMoves = validMoves.slice(0, Math.min(3, validMoves.length));
     return topMoves[Math.floor(Math.random() * topMoves.length)];
     
-  } else if (difficulty === 'ai-2') {
-    // AI-2: Keep existing simple logic for now (will enhance later for Level 2)
-    const centerMoves = validMoves.filter(move => 
-      move.row >= 2 && move.row <= 5 && move.col >= 2 && move.col <= 5
-    );
-    
-    if (centerMoves.length > 0) {
-      return centerMoves[Math.floor(Math.random() * centerMoves.length)];
-    }
-    
-    return validMoves[Math.floor(Math.random() * validMoves.length)];
-    
   } else {
-    // AI-3: Future implementation - for now, use AI-2 logic
+    // AI-2: Keep existing simple logic for now (will enhance later for Level 2)
     const centerMoves = validMoves.filter(move => 
       move.row >= 2 && move.row <= 5 && move.col >= 2 && move.col <= 5
     );
@@ -425,7 +413,7 @@ const App: React.FC = () => {
   });
 
   // UI state
-  const [gameMode, setGameMode] = useState<'human' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('human');
+  const [gameMode, setGameMode] = useState<'human' | 'ai-1' | 'ai-2' | 'online'>('human');
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -985,7 +973,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isGameStarted && 
         gameState.gameStatus === 'active' && 
-        (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && 
+        (gameMode === 'ai-1' || gameMode === 'ai-2') && 
         gameState.currentPlayer === 'black') {
       
       // Variable thinking time based on AI level (makes AI feel more human)
@@ -993,20 +981,17 @@ const App: React.FC = () => {
       if (gameMode === 'ai-1') {
         minThinkTime = 2000; // 2 seconds minimum
         maxThinkTime = 4000; // 4 seconds maximum
-      } else if (gameMode === 'ai-2') {
+      } else {
+        // ai-2
         minThinkTime = 2000; // 2 seconds minimum  
         maxThinkTime = 5000; // 5 seconds maximum
-      } else {
-        // Future ai-3 would be 3000-6000ms
-        minThinkTime = 3000;
-        maxThinkTime = 6000;
       }
       
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
       console.log(`${gameMode.toUpperCase()} thinking for ${thinkTime}ms...`);
       
       const timeout = setTimeout(() => {
-        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3');
+        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2');
         if (aiMove) {
           console.log(`${gameMode.toUpperCase()} selected move:`, aiMove);
           // Use the same makeLocalMove function that human players use
@@ -1028,7 +1013,7 @@ const App: React.FC = () => {
       socket?.emit('makeMove', { gameId, row, col });
     } else {
       // Local game (human vs human or vs AI)
-      if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') {
+      if (gameMode === 'ai-1' || gameMode === 'ai-2') {
         // In AI mode, only allow human (white) moves
         if (gameState.currentPlayer !== 'white') return;
       }
@@ -1074,10 +1059,7 @@ const App: React.FC = () => {
         lastMove: null,
         players: { 
           white: 'White', 
-          black: gameMode === 'human' ? 'Black' : 
-                 gameMode === 'ai-1' ? 'CORE LEVEL 1 (~1000 ELO)' :
-                 gameMode === 'ai-2' ? 'CORE LEVEL 2 (~1400 ELO)' :
-                 gameMode === 'ai-3' ? 'CORE LEVEL 3 (~1700 ELO)' : 'CORE AI'
+          black: gameMode === 'human' ? 'Black' : `CORE ${gameMode.toUpperCase()}`
         }
       });
       setIsGameStarted(true);
