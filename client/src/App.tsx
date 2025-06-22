@@ -1953,7 +1953,7 @@ const App: React.FC = () => {
               </div>
               <div id="tutorial-demo">
                 {tutorialSteps[tutorialStep]?.demo && (
-                  <TutorialDemo demoType={tutorialSteps[tutorialStep].demo} />
+                  <TutorialDemo demoType={tutorialSteps[tutorialStep].demo!} />
                 )}
               </div>
               <div className="tutorial-navigation">
