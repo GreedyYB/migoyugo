@@ -1642,13 +1642,13 @@ const App: React.FC = () => {
   }, [isGameStarted, gameState.currentPlayer, gameState.gameStatus, timerEnabled]);
 
   // Authentication handlers
-  const handleLogin = async (email: string, password: string) => {
+  const handleLogin = async (username: string, password: string) => {
     try {
       setAuthError('');
       const response = await fetch(`${getApiUrl()}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ username, password })
       });
       
       const data = await response.json();
@@ -2999,17 +2999,21 @@ const App: React.FC = () => {
               e.preventDefault();
               const formData = new FormData(e.target as HTMLFormElement);
               handleLogin(
-                formData.get('email') as string,
+                formData.get('username') as string,
                 formData.get('password') as string
               );
             }}>
               <div style={{ marginBottom: '15px' }}>
-                <label htmlFor="login-email" style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
+                <label htmlFor="login-username" style={{ display: 'block', marginBottom: '5px' }}>Username:</label>
                 <input
-                  type="email"
-                  id="login-email"
-                  name="email"
+                  type="text"
+                  id="login-username"
+                  name="username"
                   required
+                  minLength={6}
+                  maxLength={20}
+                  pattern="[a-zA-Z][a-zA-Z0-9]{5,19}"
+                  title="Username must be 6-20 characters, start with a letter, and contain only letters and numbers"
                   style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px' }}
                 />
               </div>
