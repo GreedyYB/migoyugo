@@ -37,7 +37,11 @@ initializeDatabase().catch(console.error);
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || true
+    ? [
+        process.env.FRONTEND_URL,
+        'https://flux-game-online-2uttwkr0g-bruce-kidds-projects.vercel.app',
+        'https://flux-game-online.vercel.app'
+      ].filter(Boolean)
     : "http://localhost:3000",
   credentials: true
 }));
