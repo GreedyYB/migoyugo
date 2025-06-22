@@ -413,7 +413,7 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3
     const topMoves = validMoves.slice(0, Math.min(3, validMoves.length));
     return topMoves[Math.floor(Math.random() * topMoves.length)];
     
-  } else {
+  } else if (difficulty === 'ai-2') {
     // Level 2 (~1400 Elo): Strong strategic play with consistent threat blocking
     validMoves.sort((a, b) => b.score - a.score);
     
