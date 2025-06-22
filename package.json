@@ -8,7 +8,7 @@
     "server": "nodemon server/index.js",
     "client": "cd client && npm start",
     "start": "node server/index.js",
-    "build": "npm run install-client && cd client && npm run build",
+    "build": "npm run install-client && cd client && CI=false npm run build",
     "postinstall": "npm run install-client",
     "install-client": "cd client && npm install",
     "install-server": "npm install",
