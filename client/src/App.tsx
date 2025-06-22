@@ -270,7 +270,7 @@ const getPasswordStrengthMessage = (password: string): string => {
 
 // Simple AI logic
 // AI Helper Functions
-const evaluateMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black', difficulty: 'ai-1' | 'ai-2'): number => {
+const evaluateMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black', difficulty: 'ai-1' | 'ai-2' | 'ai-3'): number => {
   let score = 0;
   const opponentColor = playerColor === 'white' ? 'black' : 'white';
   
@@ -342,7 +342,56 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
   return score;
 };
 
-const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2'): {row: number, col: number} | null => {
+// Advanced AI evaluation for Level 3 - Minimax with lookahead
+const minimaxEvaluate = (board: (Cell | null)[][], depth: number, isMaximizing: boolean, aiColor: 'white' | 'black'): number => {
+  if (depth === 0) {
+    // Deep evaluation at leaf nodes
+    let totalScore = 0;
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        if (isValidMove(board, row, col, aiColor)) {
+          totalScore += evaluateMove(board, row, col, aiColor, 'ai-3');
+        }
+      }
+    }
+    return totalScore;
+  }
+
+  const currentColor = isMaximizing ? aiColor : (aiColor === 'white' ? 'black' : 'white');
+  const validMoves: {row: number, col: number}[] = [];
+  
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (isValidMove(board, row, col, currentColor)) {
+        validMoves.push({row, col});
+      }
+    }
+  }
+
+  if (validMoves.length === 0) return isMaximizing ? -10000 : 10000;
+
+  if (isMaximizing) {
+    let maxEval = -Infinity;
+    for (const move of validMoves) {
+      const newBoard = board.map(r => [...r]);
+      newBoard[move.row][move.col] = { color: currentColor, isNode: false };
+      const evalScore = minimaxEvaluate(newBoard, depth - 1, false, aiColor);
+      maxEval = Math.max(maxEval, evalScore);
+    }
+    return maxEval;
+  } else {
+    let minEval = Infinity;
+    for (const move of validMoves) {
+      const newBoard = board.map(r => [...r]);
+      newBoard[move.row][move.col] = { color: currentColor, isNode: false };
+      const evalScore = minimaxEvaluate(newBoard, depth - 1, true, aiColor);
+      minEval = Math.min(minEval, evalScore);
+    }
+    return minEval;
+  }
+};
+
+const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3'): {row: number, col: number} | null => {
   const validMoves: {row: number, col: number, score: number}[] = [];
   
   // Evaluate all valid moves
@@ -378,6 +427,43 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2'): {row:
     // For non-critical moves, pick from top 5 moves for stronger but varied play
     const topMoves = validMoves.slice(0, Math.min(5, validMoves.length));
     return topMoves[Math.floor(Math.random() * topMoves.length)];
+    
+  } else {
+    // Level 3 (~1600-1800 Elo): Advanced minimax with lookahead - NO RANDOMNESS
+    const movesWithLookahead: {row: number, col: number, score: number}[] = [];
+    
+    // Evaluate each move with 2-ply lookahead
+    for (const move of validMoves) {
+      const newBoard = board.map(r => [...r]);
+      newBoard[move.row][move.col] = { color: 'black', isNode: false };
+      
+      // Use minimax to evaluate this position 2 moves ahead
+      const lookaheadScore = minimaxEvaluate(newBoard, 2, false, 'black');
+      
+      // Combine immediate tactical score with lookahead
+      const immediateScore = evaluateMove(board, move.row, move.col, 'black', 'ai-3');
+      const totalScore = immediateScore + (lookaheadScore * 0.3); // Weight lookahead at 30%
+      
+      movesWithLookahead.push({...move, score: totalScore});
+    }
+    
+    // Sort and always take the absolute best move (no randomness)
+    movesWithLookahead.sort((a, b) => b.score - a.score);
+    
+    // Check for absolute critical threats first (9000+ = nexus threats)
+    const criticalMoves = movesWithLookahead.filter(move => move.score >= 9000);
+    if (criticalMoves.length > 0) {
+      return criticalMoves[0]; // Always block the most critical threat
+    }
+    
+    // Check for high-priority moves (1000+ = win opportunities or threat blocks)  
+    const highPriorityMoves = movesWithLookahead.filter(move => move.score >= 1000);
+    if (highPriorityMoves.length > 0) {
+      return highPriorityMoves[0]; // Take the best winning/blocking move
+    }
+    
+    // For positional play, always take the highest-scoring move (perfect play)
+    return movesWithLookahead[0];
   }
 };
 
@@ -421,7 +507,7 @@ const App: React.FC = () => {
   });
 
   // UI state
-  const [gameMode, setGameMode] = useState<'human' | 'ai-1' | 'ai-2' | 'online'>('human');
+  const [gameMode, setGameMode] = useState<'human' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('human');
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -981,7 +1067,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isGameStarted && 
         gameState.gameStatus === 'active' && 
-        (gameMode === 'ai-1' || gameMode === 'ai-2') && 
+        (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && 
         gameState.currentPlayer === 'black') {
       
       // Variable thinking time based on AI level (makes AI feel more human)
@@ -989,17 +1075,20 @@ const App: React.FC = () => {
       if (gameMode === 'ai-1') {
         minThinkTime = 2000; // 2 seconds minimum
         maxThinkTime = 4000; // 4 seconds maximum
-      } else {
-        // ai-2
+      } else if (gameMode === 'ai-2') {
         minThinkTime = 2000; // 2 seconds minimum  
         maxThinkTime = 5000; // 5 seconds maximum
+      } else {
+        // ai-3: Longer thinking time to simulate deep calculation
+        minThinkTime = 3000; // 3 seconds minimum
+        maxThinkTime = 6000; // 6 seconds maximum
       }
       
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
       console.log(`${gameMode.toUpperCase()} thinking for ${thinkTime}ms...`);
       
       const timeout = setTimeout(() => {
-        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2');
+        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3');
         if (aiMove) {
           console.log(`${gameMode.toUpperCase()} selected move:`, aiMove);
           // Use the same makeLocalMove function that human players use
@@ -1021,7 +1110,7 @@ const App: React.FC = () => {
       socket?.emit('makeMove', { gameId, row, col });
     } else {
       // Local game (human vs human or vs AI)
-      if (gameMode === 'ai-1' || gameMode === 'ai-2') {
+      if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') {
         // In AI mode, only allow human (white) moves
         if (gameState.currentPlayer !== 'white') return;
       }
