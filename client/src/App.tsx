@@ -484,6 +484,7 @@ const App: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [isSearchingMatch, setIsSearchingMatch] = useState(false);
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
@@ -1821,7 +1822,13 @@ const App: React.FC = () => {
           {/* Utility buttons */}
           <div className="utility-buttons-container" style={{ width: '256px', display: 'flex', alignItems: 'center', height: '40px', marginTop: '5px', marginLeft: '-4px' }}>
             <div className="utility-buttons" style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-              <button className="btn" style={{ height: '40px', flex: 1, margin: '0 5px' }}>Tutorial</button>
+              <button 
+                className="btn" 
+                onClick={() => setShowTutorial(true)}
+                style={{ height: '40px', flex: 1, margin: '0 5px' }}
+              >
+                Tutorial
+              </button>
               <button 
                 className="btn" 
                 onClick={() => setShowRules(true)}
@@ -1840,6 +1847,38 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Tutorial popup */}
+      {showTutorial && (
+        <>
+          <div className="overlay tutorial-overlay" style={{ display: 'block' }} onClick={() => setShowTutorial(false)} />
+          <div className="tutorial-popup" id="tutorial-popup" style={{ display: 'block' }}>
+            <div id="tutorial-content">
+              <h2 id="tutorial-title">Flux Tutorial</h2>
+              <div id="tutorial-message">
+                <p>Welcome to Flux! This tutorial will teach you how to play this strategic board game.</p>
+                <p>Tutorial content will be loaded here...</p>
+              </div>
+              <div id="tutorial-demo">
+                {/* Tutorial demo area - content can be added here */}
+                <p>Interactive tutorial demonstrations will appear here.</p>
+              </div>
+              <div className="tutorial-navigation">
+                <button className="btn" onClick={() => setShowTutorial(false)}>
+                  Close Tutorial
+                </button>
+              </div>
+            </div>
+            <button 
+              id="mobile-tutorial-close-x"
+              onClick={() => setShowTutorial(false)}
+              style={{ display: 'block' }}
+            >
+              ×
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Rules popup */}
       {showRules && (
