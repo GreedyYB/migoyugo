@@ -2629,23 +2629,21 @@ const App: React.FC = () => {
                 )}
               </div>
               <div className="tutorial-navigation">
-                <button 
-                  className="btn" 
-                  onClick={prevTutorialStep}
-                  style={{ 
-                    visibility: tutorialStep > 0 ? 'visible' : 'hidden',
-                    marginRight: '10px' 
-                  }}
-                >
-                  Previous
-                </button>
-                <button 
-                  className="btn" 
-                  onClick={nextTutorialStep}
-                  style={{ marginRight: '10px' }}
-                >
-                  {tutorialStep === tutorialSteps.length - 1 ? 'Finish' : 'Next'}
-                </button>
+                {tutorialStep > 0 && (
+                  <button className="btn" onClick={prevTutorialStep}>
+                    Previous
+                  </button>
+                )}
+                {tutorialStep < tutorialSteps.length - 1 && (
+                  <button className="btn" onClick={nextTutorialStep}>
+                    Next
+                  </button>
+                )}
+                {tutorialStep === tutorialSteps.length - 1 && (
+                  <button className="btn" onClick={nextTutorialStep}>
+                    Finish
+                  </button>
+                )}
                 <button className="btn" onClick={closeTutorial}>
                   Close
                 </button>
