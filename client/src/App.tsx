@@ -1204,7 +1204,7 @@ const App: React.FC = () => {
 
   // Timer state
   const [timers, setTimers] = useState({ white: 600, black: 600 });
-  const [activeTimer, setActiveTimer] = useState<NodeJS.Timeout | null>(null);
+  const [activeTimer, setActiveTimer] = useState<'white' | 'black' | null>(null);
 
   // Game mode state
   const [gameMode, setGameMode] = useState<'local' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('local');
@@ -1240,7 +1240,12 @@ const App: React.FC = () => {
   const [rematchState, setRematchState] = useState<{
     requested: boolean;
     fromPlayer: string | null;
+    requestedBy?: string;
+    waitingForResponse?: boolean;
   }>({ requested: false, fromPlayer: null });
+  const [toast, setToast] = useState<string>('');
+  const [showResignConfirmation, setShowResignConfirmation] = useState(false);
+  const [originalGameState, setOriginalGameState] = useState<GameState | null>(null);
 
   // Tutorial animation ref
   const animationRef = useRef<NodeJS.Timeout | null>(null);
@@ -1526,6 +1531,7 @@ const App: React.FC = () => {
         console.log('Rematch requested by:', data.requesterName, 'Full data:', data);
         setRematchState({
           requested: true,
+          fromPlayer: data.requesterName,
           requestedBy: data.requesterName,
           waitingForResponse: false
         });
@@ -1551,6 +1557,7 @@ const App: React.FC = () => {
         // Reset rematch state
         setRematchState({
           requested: false,
+          fromPlayer: null,
           requestedBy: '',
           waitingForResponse: false
         });
@@ -1573,6 +1580,7 @@ const App: React.FC = () => {
         console.log('Rematch declined by opponent');
         setRematchState({
           requested: false,
+          fromPlayer: null,
           requestedBy: '',
           waitingForResponse: false
         });
@@ -1729,7 +1737,7 @@ const App: React.FC = () => {
       isGuest: false
     });
     if (gameMode === 'online') {
-      setGameMode('human');
+      setGameMode('local');
       resetGame();
     }
     showToast('Logged out successfully');
@@ -1934,7 +1942,7 @@ const App: React.FC = () => {
         lastMove: null,
         players: { 
           white: 'White', 
-          black: gameMode === 'human' ? 'Black' : `CORE ${gameMode.toUpperCase()}`
+          black: gameMode === 'local' ? 'Black' : `CORE ${gameMode.toUpperCase()}`
         }
       });
       setIsGameStarted(true);
@@ -2011,6 +2019,7 @@ const App: React.FC = () => {
       // Reset rematch state and close modal on decline
       setRematchState({
         requested: false,
+        fromPlayer: null,
         requestedBy: '',
         waitingForResponse: false
       });
@@ -2068,6 +2077,7 @@ const App: React.FC = () => {
     setGameId('');
     setRematchState({
       requested: false,
+      fromPlayer: null,
       requestedBy: '',
       waitingForResponse: false
     });
