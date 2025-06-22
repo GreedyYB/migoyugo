@@ -1458,6 +1458,10 @@ const App: React.FC = () => {
         className={`cell ${isLastMove ? 'last-move' : ''}`}
         onClick={() => handleCellClick(row, col)}
       >
+        {/* Cell coordinate labels */}
+        <div className="cell-row-label">{8 - row}</div>
+        <div className="cell-col-label">{String.fromCharCode(97 + col)}</div>
+        
         {cell && (
           <>
             {/* Always render the ion (colored piece) */}
