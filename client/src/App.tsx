@@ -345,16 +345,26 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
 // Advanced AI evaluation for Level 3 - Minimax with lookahead
 const minimaxEvaluate = (board: (Cell | null)[][], depth: number, isMaximizing: boolean, aiColor: 'white' | 'black'): number => {
   if (depth === 0) {
-    // Deep evaluation at leaf nodes
-    let totalScore = 0;
+    // Efficient board evaluation at leaf nodes - count material and position
+    let aiScore = 0;
+    let opponentScore = 0;
+    const opponentColor = aiColor === 'white' ? 'black' : 'white';
+    
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
-        if (isValidMove(board, row, col, aiColor)) {
-          totalScore += evaluateMove(board, row, col, aiColor, 'ai-3');
+        const cell = board[row][col];
+        if (cell) {
+          const baseValue = cell.isNode ? 100 : 10; // Nodes worth more than regular pieces
+          if (cell.color === aiColor) {
+            aiScore += baseValue;
+          } else {
+            opponentScore += baseValue;
+          }
         }
       }
     }
-    return totalScore;
+    
+    return aiScore - opponentScore;
   }
 
   const currentColor = isMaximizing ? aiColor : (aiColor === 'white' ? 'black' : 'white');
@@ -430,10 +440,26 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3
     
   } else {
     // Level 3 (~1600-1800 Elo): Advanced minimax with lookahead - NO RANDOMNESS
+    validMoves.sort((a, b) => b.score - a.score);
+    
+    // Check for absolute critical threats first (9000+ = nexus threats)
+    const criticalMoves = validMoves.filter(move => move.score >= 9000);
+    if (criticalMoves.length > 0) {
+      return criticalMoves[0]; // Always block the most critical threat
+    }
+    
+    // Check for high-priority moves (1000+ = win opportunities or threat blocks)  
+    const highPriorityMoves = validMoves.filter(move => move.score >= 1000);
+    if (highPriorityMoves.length > 0) {
+      return highPriorityMoves[0]; // Take the best winning/blocking move
+    }
+    
+    // For positional play, use minimax on top 8 moves only (performance optimization)
+    const topMoves = validMoves.slice(0, Math.min(8, validMoves.length));
     const movesWithLookahead: {row: number, col: number, score: number}[] = [];
     
-    // Evaluate each move with 2-ply lookahead
-    for (const move of validMoves) {
+    // Evaluate top moves with 2-ply lookahead
+    for (const move of topMoves) {
       const newBoard = board.map(r => [...r]);
       newBoard[move.row][move.col] = { color: 'black', isNode: false };
       
@@ -441,28 +467,13 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3
       const lookaheadScore = minimaxEvaluate(newBoard, 2, false, 'black');
       
       // Combine immediate tactical score with lookahead
-      const immediateScore = evaluateMove(board, move.row, move.col, 'black', 'ai-3');
-      const totalScore = immediateScore + (lookaheadScore * 0.3); // Weight lookahead at 30%
+      const totalScore = move.score + (lookaheadScore * 0.3); // Weight lookahead at 30%
       
       movesWithLookahead.push({...move, score: totalScore});
     }
     
     // Sort and always take the absolute best move (no randomness)
     movesWithLookahead.sort((a, b) => b.score - a.score);
-    
-    // Check for absolute critical threats first (9000+ = nexus threats)
-    const criticalMoves = movesWithLookahead.filter(move => move.score >= 9000);
-    if (criticalMoves.length > 0) {
-      return criticalMoves[0]; // Always block the most critical threat
-    }
-    
-    // Check for high-priority moves (1000+ = win opportunities or threat blocks)  
-    const highPriorityMoves = movesWithLookahead.filter(move => move.score >= 1000);
-    if (highPriorityMoves.length > 0) {
-      return highPriorityMoves[0]; // Take the best winning/blocking move
-    }
-    
-    // For positional play, always take the highest-scoring move (perfect play)
     return movesWithLookahead[0];
   }
 };
