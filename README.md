@@ -1,6 +1,28 @@
-# Flux - Strategic Board Game (React Version)
+# FLUX Game
 
-A React/Node.js implementation of the strategic board game Flux, featuring online multiplayer capabilities through Socket.IO.
+A strategic board game built with React and Node.js.
+
+## Recent Updates
+- ✅ Tutorial animations fully working and looping
+- ✅ Auto-push to GitHub configured
+
+## Features
+- 8x8 strategic board gameplay
+- Tutorial system with animations
+- Online multiplayer support
+- Deployed on Railway and Vercel
+
+## Development
+```bash
+# Frontend only (for testing animations)
+cd client && npm start
+
+# Full stack
+npm start
+```
+
+## Auto-Push Test
+This line was added to test automatic GitHub pushing.
 
 ## Game Overview
 
