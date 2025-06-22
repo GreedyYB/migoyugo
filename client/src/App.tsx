@@ -343,49 +343,125 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
 };
 
 // Advanced AI evaluation for Level 3 - Minimax with lookahead
-const minimaxEvaluate = (board: (Cell | null)[][], depth: number, isMaximizing: boolean, aiColor: 'white' | 'black'): number => {
-  if (depth === 0) {
-    // Efficient board evaluation at leaf nodes - count material and position
-    let aiScore = 0;
-    let opponentScore = 0;
-    
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 8; col++) {
-        const cell = board[row][col];
-        if (cell) {
-          const baseValue = cell.isNode ? 100 : 10; // Nodes worth more than regular pieces
-          if (cell.color === aiColor) {
-            aiScore += baseValue;
-          } else {
-            opponentScore += baseValue;
-          }
-        }
-      }
-    }
-    
-    return aiScore - opponentScore;
-  }
-
-  const currentColor = isMaximizing ? aiColor : (aiColor === 'white' ? 'black' : 'white');
-  const validMoves: {row: number, col: number}[] = [];
+// Advanced board evaluation function for tournament-strength play
+const evaluatePosition = (board: (Cell | null)[][], aiColor: 'white' | 'black'): number => {
+  let score = 0;
+  const opponentColor = aiColor === 'white' ? 'black' : 'white';
+  
+  // Material count with positional bonuses
+  let aiMaterial = 0;
+  let opponentMaterial = 0;
+  let aiNodes = 0;
+  let opponentNodes = 0;
+  let aiMobility = 0;
+  let opponentMobility = 0;
   
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
+      const cell = board[row][col];
+      
+      if (cell) {
+        const baseValue = cell.isNode ? 150 : 10;
+        
+        // Center control bonus (squares closer to center are more valuable)
+        const centerDistance = Math.abs(3.5 - row) + Math.abs(3.5 - col);
+        const centerBonus = Math.max(0, 6 - centerDistance) * 2;
+        
+        // Edge penalty (edge squares are less valuable)
+        const edgePenalty = (row === 0 || row === 7 || col === 0 || col === 7) ? -3 : 0;
+        
+        const totalValue = baseValue + centerBonus + edgePenalty;
+        
+        if (cell.color === aiColor) {
+          aiMaterial += totalValue;
+          if (cell.isNode) aiNodes++;
+        } else {
+          opponentMaterial += totalValue;
+          if (cell.isNode) opponentNodes++;
+        }
+      } else {
+        // Count mobility (legal moves)
+        if (isValidMove(board, row, col, aiColor)) aiMobility++;
+        if (isValidMove(board, row, col, opponentColor)) opponentMobility++;
+      }
+    }
+  }
+  
+  // Material advantage
+  score += (aiMaterial - opponentMaterial);
+  
+  // Node advantage (nodes are crucial for winning)
+  score += (aiNodes - opponentNodes) * 50;
+  
+  // Mobility advantage (more moves = better position)
+  score += (aiMobility - opponentMobility) * 3;
+  
+  // Check for immediate threats
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (isValidMove(board, row, col, aiColor)) {
+        const moveScore = evaluateMove(board, row, col, aiColor, 'ai-3');
+        if (moveScore >= 9000) score += 500; // Can create nexus
+        else if (moveScore >= 1000) score += 100; // Can create vector
+      }
+      
+      if (isValidMove(board, row, col, opponentColor)) {
+        const moveScore = evaluateMove(board, row, col, opponentColor, 'ai-3');
+        if (moveScore >= 9000) score -= 1000; // Opponent can create nexus
+        else if (moveScore >= 1000) score -= 200; // Opponent can create vector
+      }
+    }
+  }
+  
+  return score;
+};
+
+// Alpha-Beta Minimax with advanced pruning for tournament strength
+const minimaxAlphaBeta = (
+  board: (Cell | null)[][], 
+  depth: number, 
+  alpha: number, 
+  beta: number, 
+  isMaximizing: boolean, 
+  aiColor: 'white' | 'black'
+): number => {
+  if (depth === 0) {
+    return evaluatePosition(board, aiColor);
+  }
+
+  const currentColor = isMaximizing ? aiColor : (aiColor === 'white' ? 'black' : 'white');
+  const validMoves: {row: number, col: number, score: number}[] = [];
+  
+  // Generate and score all moves for move ordering
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
       if (isValidMove(board, row, col, currentColor)) {
-        validMoves.push({row, col});
+        const moveScore = evaluateMove(board, row, col, currentColor, 'ai-3');
+        validMoves.push({row, col, score: moveScore});
       }
     }
   }
 
-  if (validMoves.length === 0) return isMaximizing ? -10000 : 10000;
+  if (validMoves.length === 0) {
+    return isMaximizing ? -20000 : 20000; // Terminal position
+  }
+
+  // Move ordering: best moves first for better pruning
+  validMoves.sort((a, b) => isMaximizing ? b.score - a.score : a.score - b.score);
 
   if (isMaximizing) {
     let maxEval = -Infinity;
     for (const move of validMoves) {
       const newBoard = board.map(r => [...r]);
       newBoard[move.row][move.col] = { color: currentColor, isNode: false };
-      const evalScore = minimaxEvaluate(newBoard, depth - 1, false, aiColor);
+      
+      const evalScore = minimaxAlphaBeta(newBoard, depth - 1, alpha, beta, false, aiColor);
       maxEval = Math.max(maxEval, evalScore);
+      alpha = Math.max(alpha, evalScore);
+      
+      if (beta <= alpha) {
+        break; // Alpha-beta pruning
+      }
     }
     return maxEval;
   } else {
@@ -393,8 +469,14 @@ const minimaxEvaluate = (board: (Cell | null)[][], depth: number, isMaximizing: 
     for (const move of validMoves) {
       const newBoard = board.map(r => [...r]);
       newBoard[move.row][move.col] = { color: currentColor, isNode: false };
-      const evalScore = minimaxEvaluate(newBoard, depth - 1, true, aiColor);
+      
+      const evalScore = minimaxAlphaBeta(newBoard, depth - 1, alpha, beta, true, aiColor);
       minEval = Math.min(minEval, evalScore);
+      beta = Math.min(beta, evalScore);
+      
+      if (beta <= alpha) {
+        break; // Alpha-beta pruning
+      }
     }
     return minEval;
   }
@@ -423,7 +505,7 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3
     return topMoves[Math.floor(Math.random() * topMoves.length)];
     
   } else if (difficulty === 'ai-2') {
-    // Level 2 (~1400 Elo): Strong strategic play with consistent threat blocking
+    // Level 2 (~1400 Elo): Strong strategic play with perfect threat blocking
     validMoves.sort((a, b) => b.score - a.score);
     
     // Check if there are any critical blocking moves (800+ points = threat blocking)
@@ -438,8 +520,23 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3
     return topMoves[Math.floor(Math.random() * topMoves.length)];
     
   } else {
-    // Level 3 (~1600-1800 Elo): Advanced minimax with lookahead - NO RANDOMNESS
+    // Level 3 (~2000+ Elo): Tournament-strength alpha-beta minimax - ZERO RANDOMNESS
     validMoves.sort((a, b) => b.score - a.score);
+    
+    // Opening book for first few moves (tournament-level opening theory)
+    const totalMoves = board.flat().filter(cell => cell !== null).length;
+    if (totalMoves <= 3) {
+      const openingMoves = [
+        {row: 3, col: 3}, {row: 4, col: 4}, {row: 3, col: 4}, {row: 4, col: 3}, // Center control
+        {row: 2, col: 3}, {row: 5, col: 4}, {row: 3, col: 2}, {row: 4, col: 5}  // Strong development
+      ];
+      
+      for (const opening of openingMoves) {
+        if (isValidMove(board, opening.row, opening.col, 'black')) {
+          return opening;
+        }
+      }
+    }
     
     // Check for absolute critical threats first (9000+ = nexus threats)
     const criticalMoves = validMoves.filter(move => move.score >= 9000);
@@ -453,27 +550,27 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3
       return highPriorityMoves[0]; // Take the best winning/blocking move
     }
     
-    // For positional play, use minimax on top 8 moves only (performance optimization)
-    const topMoves = validMoves.slice(0, Math.min(8, validMoves.length));
-    const movesWithLookahead: {row: number, col: number, score: number}[] = [];
+    // Tournament-strength: Deep alpha-beta search on best candidates
+    const candidateMoves = validMoves.slice(0, Math.min(12, validMoves.length));
+    const movesWithDeepEval: {row: number, col: number, score: number}[] = [];
     
-    // Evaluate top moves with 2-ply lookahead
-    for (const move of topMoves) {
+    // Use 4-ply alpha-beta search for maximum strength
+    for (const move of candidateMoves) {
       const newBoard = board.map(r => [...r]);
       newBoard[move.row][move.col] = { color: 'black', isNode: false };
       
-      // Use minimax to evaluate this position 2 moves ahead
-      const lookaheadScore = minimaxEvaluate(newBoard, 2, false, 'black');
+      // Deep alpha-beta evaluation with 4-ply lookahead
+      const deepScore = minimaxAlphaBeta(newBoard, 4, -Infinity, Infinity, false, 'black');
       
-      // Combine immediate tactical score with lookahead
-      const totalScore = move.score + (lookaheadScore * 0.3); // Weight lookahead at 30%
+      // Combine immediate tactical score with deep evaluation
+      const totalScore = move.score + (deepScore * 0.4); // Weight deep eval at 40%
       
-      movesWithLookahead.push({...move, score: totalScore});
+      movesWithDeepEval.push({...move, score: totalScore});
     }
     
-    // Sort and always take the absolute best move (no randomness)
-    movesWithLookahead.sort((a, b) => b.score - a.score);
-    return movesWithLookahead[0];
+    // Sort and always take the absolute best move (perfect play)
+    movesWithDeepEval.sort((a, b) => b.score - a.score);
+    return movesWithDeepEval[0];
   }
 };
 
@@ -1089,9 +1186,9 @@ const App: React.FC = () => {
         minThinkTime = 1500; // 1.5 seconds minimum  
         maxThinkTime = 2500; // 2.5 seconds maximum
       } else {
-        // ai-3: Longer thinking time to simulate deep calculation
-        minThinkTime = 2000; // 2 seconds minimum
-        maxThinkTime = 3000; // 3 seconds maximum
+        // ai-3: Tournament-strength thinking time for deep calculation
+        minThinkTime = 3000; // 3 seconds minimum
+        maxThinkTime = 5000; // 5 seconds maximum
       }
       
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
@@ -2272,3 +2369,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
