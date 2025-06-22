@@ -458,6 +458,39 @@ const getApiUrl = () => {
     : '';
 };
 
+// Tutorial Demo Component
+const TutorialDemo: React.FC<{ demoType: string }> = ({ demoType }) => {
+  const demoRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      // Clean up any existing content
+      node.innerHTML = '';
+      
+      // Simple demo placeholders for now
+      switch (demoType) {
+        case 'board':
+          node.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>8×8 Board Demo</strong></p><p>Players alternate placing ions on empty cells</p></div>';
+          break;
+        case 'vector':
+          node.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Vector Demo</strong></p><p>4 ions in a line (horizontal, vertical, or diagonal) form a Vector</p></div>';
+          break;
+        case 'node':
+          node.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Node Demo</strong></p><p>Last ion becomes a Node (red mark), others are removed</p></div>';
+          break;
+        case 'long-line':
+          node.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Long Line Demo</strong></p><p>Cannot create lines longer than 4 ions</p></div>';
+          break;
+        case 'nexus':
+          node.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Nexus Demo</strong></p><p>4 Nodes in a line wins the game!</p></div>';
+          break;
+        default:
+          node.innerHTML = '<p>Demo coming soon...</p>';
+      }
+    }
+  }, [demoType]);
+
+  return <div ref={demoRef} style={{ minHeight: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} />;
+};
+
 const App: React.FC = () => {
   // Authentication state
   const [authState, setAuthState] = useState<AuthState>({
@@ -484,6 +517,8 @@ const App: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [isSearchingMatch, setIsSearchingMatch] = useState(false);
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
@@ -1278,6 +1313,65 @@ const App: React.FC = () => {
     return colLetter + rowNumber;
   };
 
+  // Tutorial steps configuration
+  const tutorialSteps = [
+    {
+      title: "Basic Gameplay",
+      message: "Flux is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing ions on empty cells.",
+      demo: "board"
+    },
+    {
+      title: "Building Vectors",
+      message: "Your first tactical step is to create <b>Vectors</b>:<br>Vectors are lines of exactly 4 ions of your color,<br>horizontal, vertical, or diagonal.",
+      demo: "vector"
+    },
+    {
+      title: "Nodes",
+      message: "When a Vector is formed, the last ion placed becomes a <b>Node</b> (with a red mark) and remains on the board while all other (non-<b>Node</b>) ions in the Vector are removed.",
+      demo: "node"
+    },
+    {
+      title: "No Long Lines",
+      message: "You cannot place an ion that would create a line longer than 4 ions of your color.",
+      demo: "long-line"
+    },
+    {
+      title: "The Winning Goal",
+      message: "Win by forming a <b>Nexus</b>:<br>A <b>Nexus</b> is a line of 4 Nodes of one color!",
+      demo: "nexus"
+    },
+    {
+      title: "Alternative Win",
+      message: "<b>No legal moves:</b><br>If at any time either player is unable to play a legal move, the game ends and the player with the most Nodes wins.<br><br><b>Timer expiry:</b><br>If players have chosen to play using a timer, the game will end immediately if one player runs out of time, and the opponent will be awarded the win.<br><br><b>Resignation:</b><br>A player may choose to resign a game at any point and this will award the win to their opponent.",
+      demo: null
+    },
+    {
+      title: "Ready to Play!",
+      message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Vectors or block your opponent?<br>Will you go for a Nexus or fill the board and see who ends up with the most Nodes?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing Flux!",
+      demo: null
+    }
+  ];
+
+  // Tutorial navigation functions
+  const nextTutorialStep = () => {
+    if (tutorialStep < tutorialSteps.length - 1) {
+      setTutorialStep(tutorialStep + 1);
+    } else {
+      closeTutorial();
+    }
+  };
+
+  const prevTutorialStep = () => {
+    if (tutorialStep > 0) {
+      setTutorialStep(tutorialStep - 1);
+    }
+  };
+
+  const closeTutorial = () => {
+    setShowTutorial(false);
+    setTutorialStep(0);
+  };
+
   // Review mode functions
   const enterReviewMode = () => {
     if (moveHistory.length === 0) return;
@@ -1821,7 +1915,13 @@ const App: React.FC = () => {
           {/* Utility buttons */}
           <div className="utility-buttons-container" style={{ width: '256px', display: 'flex', alignItems: 'center', height: '40px', marginTop: '5px', marginLeft: '-4px' }}>
             <div className="utility-buttons" style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-              <button className="btn" style={{ height: '40px', flex: 1, margin: '0 5px' }}>Tutorial</button>
+              <button 
+                className="btn" 
+                onClick={() => setShowTutorial(true)}
+                style={{ height: '40px', flex: 1, margin: '0 5px' }}
+              >
+                Tutorial
+              </button>
               <button 
                 className="btn" 
                 onClick={() => setShowRules(true)}
@@ -1840,6 +1940,55 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Tutorial popup */}
+      {showTutorial && (
+        <>
+          <div className="overlay tutorial-overlay" style={{ display: 'block' }} onClick={closeTutorial} />
+          <div className="tutorial-popup" id="tutorial-popup" style={{ display: 'block' }}>
+            <div id="tutorial-content">
+              <h2 id="tutorial-title">{tutorialSteps[tutorialStep]?.title}</h2>
+              <div id="tutorial-message">
+                <div dangerouslySetInnerHTML={{ __html: tutorialSteps[tutorialStep]?.message || '' }} />
+              </div>
+              <div id="tutorial-demo">
+                {tutorialSteps[tutorialStep]?.demo && (
+                  <TutorialDemo demoType={tutorialSteps[tutorialStep].demo} />
+                )}
+              </div>
+              <div className="tutorial-navigation">
+                <button 
+                  className="btn" 
+                  onClick={prevTutorialStep}
+                  style={{ 
+                    visibility: tutorialStep > 0 ? 'visible' : 'hidden',
+                    marginRight: '10px' 
+                  }}
+                >
+                  Previous
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={nextTutorialStep}
+                  style={{ marginRight: '10px' }}
+                >
+                  {tutorialStep === tutorialSteps.length - 1 ? 'Finish' : 'Next'}
+                </button>
+                <button className="btn" onClick={closeTutorial}>
+                  Close
+                </button>
+              </div>
+            </div>
+            <button 
+              id="mobile-tutorial-close-x"
+              onClick={closeTutorial}
+              style={{ display: 'block' }}
+            >
+              ×
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Rules popup */}
       {showRules && (
