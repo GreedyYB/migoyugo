@@ -46,6 +46,11 @@ app.use(express.json());
 // Serve static files from React build
 app.use(express.static(path.join(__dirname, '../client/build')));
 
+// Serve manifest.json explicitly (for Vercel compatibility)
+app.get('/manifest.json', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/build/manifest.json'));
+});
+
 // Authentication routes
 app.post('/api/auth/signup', async (req, res) => {
   try {
