@@ -501,6 +501,46 @@ const addTutorialStyles = () => {
         100% { transform: translateX(-50%) scale(1); opacity: 1; }
       }
       .pulsing-arrow { animation: pulse 1s infinite; }
+      @keyframes tutorial-ion-appear {
+        from {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes tutorial-ion-fade {
+        from {
+          opacity: 1;
+          transform: scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+      }
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+      }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+      @keyframes node-pulse {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); }
+        50% { transform: translate(-50%, -50%) scale(1.2); }
+      }
+      .tutorial-ion {
+        animation: tutorial-ion-appear 0.8s ease-out;
+      }
+      .tutorial-ion-fade {
+        animation: tutorial-ion-fade 0.8s ease-out;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -575,22 +615,493 @@ const setupBoardDemo = (container: HTMLElement, animationRef: React.MutableRefOb
 
 const setupVectorDemo = (container: HTMLElement, animationRef: React.MutableRefObject<NodeJS.Timeout | null>) => {
   addTutorialStyles();
-  container.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Vector Demo</strong></p><p>4 ions in a line form a Vector - coming soon!</p></div>';
+  
+  // Create mini board
+  const board = document.createElement('div');
+  board.className = 'tutorial-board';
+  board.style.cssText = `
+    display: grid;
+    grid-template-columns: repeat(8, 40px);
+    grid-template-rows: repeat(8, 40px);
+    gap: 1px;
+    background: #34495e;
+    padding: 8px;
+    border-radius: 8px;
+    margin: 20px auto;
+  `;
+  
+  // Create cells
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'tutorial-cell';
+      cell.style.cssText = `
+        width: 40px;
+        height: 40px;
+        background: #d1e6f9;
+        border: 1px solid #bdc3c7;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      `;
+      cell.dataset.row = row.toString();
+      cell.dataset.col = col.toString();
+      board.appendChild(cell);
+    }
+  }
+  
+  container.appendChild(board);
+  
+  // Animation sequence: Build a vector horizontally
+  const moves = [
+    { row: 3, col: 2, color: 'white', delay: 1000 },
+    { row: 3, col: 3, color: 'white', delay: 2000 },
+    { row: 3, col: 4, color: 'white', delay: 3000 },
+    { row: 3, col: 5, color: 'white', delay: 4000, isVector: true }
+  ];
+  
+  const placeMove = (moveIndex: number) => {
+    if (moveIndex >= moves.length) return;
+    
+    const move = moves[moveIndex];
+    const cell = board.children[move.row * 8 + move.col] as HTMLElement;
+    const ion = createTutorialIon(move.color);
+    
+    if (move.isVector) {
+      // Highlight the vector formation
+      setTimeout(() => {
+        for (let i = 2; i <= 5; i++) {
+          const vectorCell = board.children[3 * 8 + i] as HTMLElement;
+          vectorCell.style.background = '#ffeb3b';
+          vectorCell.style.boxShadow = '0 0 10px #ffeb3b';
+        }
+        
+        // Add "VECTOR!" text
+        const vectorText = document.createElement('div');
+        vectorText.style.cssText = `
+          text-align: center;
+          font-size: 18px;
+          font-weight: bold;
+          color: #e74c3c;
+          margin-top: 15px;
+          animation: pulse 1s infinite;
+        `;
+        vectorText.textContent = 'VECTOR FORMED!';
+        container.appendChild(vectorText);
+      }, 500);
+    }
+    
+    cell.appendChild(ion);
+    
+    animationRef.current = setTimeout(() => placeMove(moveIndex + 1), move.delay);
+  };
+  
+  // Start animation after brief delay
+  animationRef.current = setTimeout(() => placeMove(0), 500);
 };
 
 const setupNodeDemo = (container: HTMLElement, animationRef: React.MutableRefObject<NodeJS.Timeout | null>) => {
   addTutorialStyles();
-  container.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Node Demo</strong></p><p>Vector formation creates Nodes - coming soon!</p></div>';
+  
+  // Create mini board
+  const board = document.createElement('div');
+  board.className = 'tutorial-board';
+  board.style.cssText = `
+    display: grid;
+    grid-template-columns: repeat(8, 40px);
+    grid-template-rows: repeat(8, 40px);
+    gap: 1px;
+    background: #34495e;
+    padding: 8px;
+    border-radius: 8px;
+    margin: 20px auto;
+  `;
+  
+  // Create cells
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'tutorial-cell';
+      cell.style.cssText = `
+        width: 40px;
+        height: 40px;
+        background: #d1e6f9;
+        border: 1px solid #bdc3c7;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      `;
+      cell.dataset.row = row.toString();
+      cell.dataset.col = col.toString();
+      board.appendChild(cell);
+    }
+  }
+  
+  container.appendChild(board);
+  
+  // Animation sequence: Show vector formation and node creation
+  const sequence = [
+    // Place first 3 ions
+    { phase: 'place', row: 4, col: 3, color: 'black', delay: 1000 },
+    { phase: 'place', row: 4, col: 4, color: 'black', delay: 2000 },
+    { phase: 'place', row: 4, col: 5, color: 'black', delay: 3000 },
+    // Place 4th ion (completes vector)
+    { phase: 'vector', row: 4, col: 6, color: 'black', delay: 4000 },
+    // Remove non-node ions
+    { phase: 'remove', delay: 5500 },
+    // Show final node
+    { phase: 'node', delay: 6500 }
+  ];
+  
+  let currentPhase = 0;
+  
+  const runSequence = () => {
+    if (currentPhase >= sequence.length) return;
+    
+    const step = sequence[currentPhase];
+    
+    if (step.phase === 'place') {
+      const cell = board.children[step.row! * 8 + step.col!] as HTMLElement;
+      const ion = createTutorialIon(step.color!);
+      cell.appendChild(ion);
+    }
+    else if (step.phase === 'vector') {
+      // Place final ion
+      const cell = board.children[step.row! * 8 + step.col!] as HTMLElement;
+      const ion = createTutorialIon(step.color!);
+      cell.appendChild(ion);
+      
+      // Highlight vector
+      setTimeout(() => {
+        for (let i = 3; i <= 6; i++) {
+          const vectorCell = board.children[4 * 8 + i] as HTMLElement;
+          vectorCell.style.background = '#ffeb3b';
+          vectorCell.style.boxShadow = '0 0 10px #ffeb3b';
+        }
+      }, 300);
+    }
+    else if (step.phase === 'remove') {
+      // Remove ions from positions 3, 4, 5 (but not 6 which will become node)
+      for (let i = 3; i <= 5; i++) {
+        const cell = board.children[4 * 8 + i] as HTMLElement;
+        const ion = cell.querySelector('.tutorial-ion');
+        if (ion) {
+          ion.classList.add('tutorial-ion-fade');
+          setTimeout(() => {
+            if (ion.parentNode) {
+              ion.parentNode.removeChild(ion);
+            }
+          }, 800);
+        }
+        cell.style.background = '#d1e6f9';
+        cell.style.boxShadow = 'none';
+      }
+    }
+    else if (step.phase === 'node') {
+      // Convert remaining ion to node
+      const cell = board.children[4 * 8 + 6] as HTMLElement;
+      const ion = cell.querySelector('.tutorial-ion') as HTMLElement;
+      if (ion) {
+        // Add node marker
+        const nodeMarker = document.createElement('div');
+        nodeMarker.style.cssText = `
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          background: #e74c3c;
+          border-radius: 50%;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          animation: node-pulse 1s infinite;
+        `;
+        ion.style.position = 'relative';
+        ion.appendChild(nodeMarker);
+        
+        // Add "NODE!" text
+        const nodeText = document.createElement('div');
+        nodeText.style.cssText = `
+          text-align: center;
+          font-size: 18px;
+          font-weight: bold;
+          color: #e74c3c;
+          margin-top: 15px;
+          animation: pulse 1s infinite;
+        `;
+        nodeText.textContent = 'NODE CREATED!';
+        container.appendChild(nodeText);
+      }
+      
+      cell.style.background = '#d1e6f9';
+      cell.style.boxShadow = 'none';
+    }
+    
+    currentPhase++;
+    animationRef.current = setTimeout(runSequence, step.delay);
+  };
+  
+  // Start animation
+  animationRef.current = setTimeout(runSequence, 500);
 };
 
 const setupLongLineDemo = (container: HTMLElement, animationRef: React.MutableRefObject<NodeJS.Timeout | null>) => {
   addTutorialStyles();
-  container.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Long Line Demo</strong></p><p>Cannot exceed 4 ions - coming soon!</p></div>';
+  
+  // Create mini board
+  const board = document.createElement('div');
+  board.className = 'tutorial-board';
+  board.style.cssText = `
+    display: grid;
+    grid-template-columns: repeat(8, 40px);
+    grid-template-rows: repeat(8, 40px);
+    gap: 1px;
+    background: #34495e;
+    padding: 8px;
+    border-radius: 8px;
+    margin: 20px auto;
+  `;
+  
+  // Create cells
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'tutorial-cell';
+      cell.style.cssText = `
+        width: 40px;
+        height: 40px;
+        background: #d1e6f9;
+        border: 1px solid #bdc3c7;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      `;
+      cell.dataset.row = row.toString();
+      cell.dataset.col = col.toString();
+      board.appendChild(cell);
+    }
+  }
+  
+  container.appendChild(board);
+  
+  // Animation sequence: Show illegal move attempt
+  const sequence = [
+    // Place 4 ions in a row
+    { phase: 'place', row: 3, col: 2, color: 'white', delay: 1000 },
+    { phase: 'place', row: 3, col: 3, color: 'white', delay: 2000 },
+    { phase: 'place', row: 3, col: 4, color: 'white', delay: 3000 },
+    { phase: 'place', row: 3, col: 5, color: 'white', delay: 4000 },
+    // Try to place 5th ion (illegal)
+    { phase: 'illegal', row: 3, col: 6, color: 'white', delay: 5000 },
+    // Show alternative legal move
+    { phase: 'legal', row: 2, col: 3, color: 'white', delay: 7000 }
+  ];
+  
+  let currentPhase = 0;
+  
+  const runSequence = () => {
+    if (currentPhase >= sequence.length) return;
+    
+    const step = sequence[currentPhase];
+    
+    if (step.phase === 'place') {
+      const cell = board.children[step.row! * 8 + step.col!] as HTMLElement;
+      const ion = createTutorialIon(step.color!);
+      cell.appendChild(ion);
+    }
+    else if (step.phase === 'illegal') {
+      // Show illegal move attempt
+      const cell = board.children[step.row! * 8 + step.col!] as HTMLElement;
+      cell.style.background = '#ff6b6b';
+      cell.style.animation = 'shake 0.5s';
+      
+      // Add X mark
+      const xMark = document.createElement('div');
+      xMark.style.cssText = `
+        font-size: 30px;
+        color: #c0392b;
+        font-weight: bold;
+        animation: pulse 1s infinite;
+      `;
+      xMark.textContent = '✕';
+      cell.appendChild(xMark);
+      
+      // Add error text
+      const errorText = document.createElement('div');
+      errorText.style.cssText = `
+        text-align: center;
+        font-size: 16px;
+        font-weight: bold;
+        color: #c0392b;
+        margin-top: 15px;
+      `;
+      errorText.textContent = 'ILLEGAL MOVE - Too many in a line!';
+      container.appendChild(errorText);
+      
+      setTimeout(() => {
+        cell.style.background = '#d1e6f9';
+        cell.style.animation = '';
+        if (xMark.parentNode) xMark.parentNode.removeChild(xMark);
+      }, 1500);
+    }
+    else if (step.phase === 'legal') {
+      // Show legal alternative
+      const cell = board.children[step.row! * 8 + step.col!] as HTMLElement;
+      cell.style.background = '#90ee90';
+      
+      setTimeout(() => {
+        const ion = createTutorialIon(step.color!);
+        cell.appendChild(ion);
+        cell.style.background = '#d1e6f9';
+        
+        // Add success text
+        const successText = document.createElement('div');
+        successText.style.cssText = `
+          text-align: center;
+          font-size: 16px;
+          font-weight: bold;
+          color: #27ae60;
+          margin-top: 10px;
+        `;
+        successText.textContent = 'Legal move here!';
+        container.appendChild(successText);
+      }, 500);
+    }
+    
+    currentPhase++;
+    animationRef.current = setTimeout(runSequence, step.delay);
+  };
+  
+  // Start animation
+  animationRef.current = setTimeout(runSequence, 500);
 };
 
 const setupNexusDemo = (container: HTMLElement, animationRef: React.MutableRefObject<NodeJS.Timeout | null>) => {
   addTutorialStyles();
-  container.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Nexus Demo</strong></p><p>4 Nodes in a line wins - coming soon!</p></div>';
+  
+  // Create mini board
+  const board = document.createElement('div');
+  board.className = 'tutorial-board';
+  board.style.cssText = `
+    display: grid;
+    grid-template-columns: repeat(8, 40px);
+    grid-template-rows: repeat(8, 40px);
+    gap: 1px;
+    background: #34495e;
+    padding: 8px;
+    border-radius: 8px;
+    margin: 20px auto;
+  `;
+  
+  // Create cells
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'tutorial-cell';
+      cell.style.cssText = `
+        width: 40px;
+        height: 40px;
+        background: #d1e6f9;
+        border: 1px solid #bdc3c7;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      `;
+      cell.dataset.row = row.toString();
+      cell.dataset.col = col.toString();
+      board.appendChild(cell);
+    }
+  }
+  
+  container.appendChild(board);
+  
+  // Animation sequence: Show nexus formation
+  const nodePositions = [
+    { row: 3, col: 3 },
+    { row: 3, col: 4 },
+    { row: 3, col: 5 },
+    { row: 3, col: 6 }
+  ];
+  
+  const sequence = [
+    // Place first 3 nodes
+    { phase: 'node', row: 3, col: 3, color: 'black', delay: 1000 },
+    { phase: 'node', row: 3, col: 4, color: 'black', delay: 2000 },
+    { phase: 'node', row: 3, col: 5, color: 'black', delay: 3000 },
+    // Place final node (creates nexus)
+    { phase: 'nexus', row: 3, col: 6, color: 'black', delay: 4000 },
+    // Celebration
+    { phase: 'win', delay: 5500 }
+  ];
+  
+  let currentPhase = 0;
+  
+  const createNode = (color: string) => {
+    const ion = createTutorialIon(color);
+    ion.style.position = 'relative';
+    
+    const nodeMarker = document.createElement('div');
+    nodeMarker.style.cssText = `
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #e74c3c;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    `;
+    ion.appendChild(nodeMarker);
+    
+    return ion;
+  };
+  
+  const runSequence = () => {
+    if (currentPhase >= sequence.length) return;
+    
+    const step = sequence[currentPhase];
+    
+    if (step.phase === 'node') {
+      const cell = board.children[step.row! * 8 + step.col!] as HTMLElement;
+      const node = createNode(step.color!);
+      cell.appendChild(node);
+    }
+    else if (step.phase === 'nexus') {
+      // Place final node
+      const cell = board.children[step.row! * 8 + step.col!] as HTMLElement;
+      const node = createNode(step.color!);
+      cell.appendChild(node);
+      
+      // Highlight nexus
+      setTimeout(() => {
+        nodePositions.forEach(pos => {
+          const nexusCell = board.children[pos.row * 8 + pos.col] as HTMLElement;
+          nexusCell.style.background = '#ffd700';
+          nexusCell.style.boxShadow = '0 0 15px #ffd700';
+          nexusCell.style.animation = 'pulse 1s infinite';
+        });
+      }, 300);
+    }
+    else if (step.phase === 'win') {
+      // Add victory text
+      const winText = document.createElement('div');
+      winText.style.cssText = `
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: #f39c12;
+        margin-top: 15px;
+        animation: bounce 1s infinite;
+      `;
+      winText.textContent = '🎉 NEXUS! BLACK WINS! 🎉';
+      container.appendChild(winText);
+    }
+    
+    currentPhase++;
+    animationRef.current = setTimeout(runSequence, step.delay);
+  };
+  
+  // Start animation
+  animationRef.current = setTimeout(runSequence, 500);
 };
 
 // Tutorial Demo Component
