@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import io, { Socket } from 'socket.io-client';
+import io from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import './flux-styles.css';
 
 // Types
@@ -975,7 +976,7 @@ const setupNexusDemo = (container: HTMLElement, animationRef: React.MutableRefOb
     { pos: [1, 2] },  // Column 8
     { pos: [1, 4] }   // Column 10
   ];
-  const finalNode = { pos: [1, 3] };  // Column 9
+  // Final node position: [1, 3] (Column 9)
   
   const createPulsingArrow = () => {
     const arrow = document.createElement('div');
@@ -1199,7 +1200,7 @@ const App: React.FC = () => {
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [currentReviewMove, setCurrentReviewMove] = useState(0);
   const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
-  const [boardHistory, setBoardHistory] = useState<(Cell | null)[][][]>([]);
+  // const [boardHistory, setBoardHistory] = useState<(Cell | null)[][][]>([]);
   const [holdScrollInterval, setHoldScrollInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Timer state
@@ -1208,7 +1209,7 @@ const App: React.FC = () => {
 
   // Game mode state
   const [gameMode, setGameMode] = useState<'local' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('local');
-  const [waitingForAI, setWaitingForAI] = useState(false);
+  // const [waitingForAI, setWaitingForAI] = useState(false);
 
   // Notification state
   const [notification, setNotification] = useState<{
@@ -1247,18 +1248,8 @@ const App: React.FC = () => {
   const [showResignConfirmation, setShowResignConfirmation] = useState(false);
   const [originalGameState, setOriginalGameState] = useState<GameState | null>(null);
 
-  // Tutorial animation ref
-  const animationRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Load settings from localStorage on component mount
-  useEffect(() => {
-    loadSavedSettings();
-  }, []);
-
-  // Apply theme when currentTheme changes
-  useEffect(() => {
-    applyTheme(currentTheme);
-  }, [currentTheme, customColors]);
+  // Tutorial animation ref (used in TutorialDemo component)
+  // const animationRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load saved settings from localStorage
   const loadSavedSettings = () => {
@@ -1281,24 +1272,34 @@ const App: React.FC = () => {
     }
   };
 
+  // Apply custom colors to CSS variables
+  const applyCustomColors = useCallback((colors: typeof customColors) => {
+    const root = document.documentElement;
+    root.style.setProperty('--white-ion', colors.whiteIon);
+    root.style.setProperty('--black-ion', colors.blackIon);
+    root.style.setProperty('--node-color', colors.nodeColor);
+    root.style.setProperty('--board-color', colors.boardColor);
+  }, []);
+
   // Apply theme to document
-  const applyTheme = (theme: string) => {
+  const applyTheme = useCallback((theme: string) => {
     document.documentElement.setAttribute('data-theme', theme);
     
     // If it's a custom theme, apply custom colors
     if (theme === 'custom') {
       applyCustomColors(customColors);
     }
-  };
+  }, [customColors, applyCustomColors]);
 
-  // Apply custom colors to CSS variables
-  const applyCustomColors = (colors: typeof customColors) => {
-    const root = document.documentElement;
-    root.style.setProperty('--white-ion', colors.whiteIon);
-    root.style.setProperty('--black-ion', colors.blackIon);
-    root.style.setProperty('--node-color', colors.nodeColor);
-    root.style.setProperty('--board-color', colors.boardColor);
-  };
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    loadSavedSettings();
+  }, []);
+
+  // Apply theme when currentTheme changes
+  useEffect(() => {
+    applyTheme(currentTheme);
+  }, [currentTheme, applyTheme]);
 
   // Handle theme change
   const handleThemeChange = (theme: string) => {
@@ -1337,6 +1338,11 @@ const App: React.FC = () => {
     // Reset document theme
     document.documentElement.setAttribute('data-theme', 'classic');
   };
+
+  const showToast = useCallback((message: string, duration: number = 4000) => {
+    setToast(message);
+    setTimeout(() => setToast(''), duration);
+  }, []);
 
   // Check authentication status on component mount
   useEffect(() => {
@@ -1597,7 +1603,7 @@ const App: React.FC = () => {
         newSocket.close();
       };
     }
-  }, [gameMode, authState.isGuest, authState.user]);
+  }, [gameMode, authState.isGuest, authState.user, authState, showToast]);
 
   // Timer logic
   useEffect(() => {
@@ -1629,10 +1635,7 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [timerEnabled, isGameStarted, gameState.gameStatus, activeTimer]);
 
-  const showToast = useCallback((message: string, duration: number = 4000) => {
-    setToast(message);
-    setTimeout(() => setToast(''), duration);
-  }, []);
+
 
   // Start timer when game starts or player changes
   useEffect(() => {
