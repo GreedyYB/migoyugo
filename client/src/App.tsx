@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
 import './flux-styles.css';
 
@@ -458,37 +458,196 @@ const getApiUrl = () => {
     : '';
 };
 
+// Tutorial animation helper functions
+const createTutorialIon = (color: string): HTMLElement => {
+  const ion = document.createElement('div');
+  ion.className = `tutorial-demo-ion ${color}`;
+  ion.style.cssText = `
+    position: absolute;
+    width: 80%;
+    height: 80%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    ${color === 'white' 
+      ? 'background: #ecf0f1; border: 2px solid #2c3e50; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);'
+      : 'background: #2c3e50; border: 2px solid #1a252f; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);'
+    }
+  `;
+  return ion;
+};
+
+const addTutorialStyles = () => {
+  if (!document.querySelector('#tutorial-animations')) {
+    const style = document.createElement('style');
+    style.id = 'tutorial-animations';
+    style.textContent = `
+      @keyframes ionAppear {
+        0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+        50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
+        100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      }
+      .ion-appear { animation: ionAppear 0.5s ease-out forwards; }
+      @keyframes ionFade {
+        0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+      }
+      .ion-fade { animation: ionFade 0.5s ease-out forwards !important; }
+      @keyframes pulse {
+        0% { transform: translateX(-50%) scale(1); opacity: 1; }
+        50% { transform: translateX(-50%) scale(1.2); opacity: 0.7; }
+        100% { transform: translateX(-50%) scale(1); opacity: 1; }
+      }
+      .pulsing-arrow { animation: pulse 1s infinite; }
+    `;
+    document.head.appendChild(style);
+  }
+};
+
+const setupBoardDemo = (container: HTMLElement, animationRef: React.MutableRefObject<NodeJS.Timeout | null>) => {
+  addTutorialStyles();
+  const board = document.createElement('div');
+  board.className = 'tutorial-demo-board';
+  board.style.cssText = `
+    display: grid;
+    grid-template-columns: repeat(8, 30px);
+    grid-template-rows: repeat(8, 30px);
+    gap: 1px;
+    background: #bdc3c7;
+    padding: 5px;
+    border-radius: 5px;
+    border: 2px solid #2c3e50;
+  `;
+
+  for (let i = 0; i < 64; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'tutorial-demo-cell';
+    cell.style.cssText = `
+      background: #d1e6f9;
+      border-radius: 2px;
+      position: relative;
+      transition: background-color 0.2s;
+    `;
+    board.appendChild(cell);
+  }
+
+  container.appendChild(board);
+
+  const moves = [
+    { color: 'white', cell: 8 * (8 - 5) + (3) },  // D5
+    { color: 'black', cell: 8 * (8 - 3) + (5) },  // F3
+    { color: 'white', cell: 8 * (8 - 4) + (3) },  // D4
+    { color: 'black', cell: 8 * (8 - 4) + (5) },  // F4
+  ];
+
+  let currentMove = 0;
+  
+  const placeMove = () => {
+    if (currentMove < moves.length) {
+      const move = moves[currentMove];
+      const ion = createTutorialIon(move.color);
+      ion.classList.add('ion-appear');
+      board.children[move.cell].appendChild(ion);
+      currentMove++;
+      animationRef.current = setTimeout(placeMove, 1000);
+    } else {
+      animationRef.current = setTimeout(() => {
+        Array.from(board.children).forEach(cell => {
+          const ion = cell.querySelector('.tutorial-demo-ion');
+          if (ion) ion.classList.add('ion-fade');
+        });
+        animationRef.current = setTimeout(() => {
+          Array.from(board.children).forEach(cell => {
+            const ion = cell.querySelector('.tutorial-demo-ion');
+            if (ion) ion.remove();
+          });
+          currentMove = 0;
+          placeMove();
+        }, 500);
+      }, 2000);
+    }
+  };
+
+  animationRef.current = setTimeout(placeMove, 1000);
+};
+
+const setupVectorDemo = (container: HTMLElement, animationRef: React.MutableRefObject<NodeJS.Timeout | null>) => {
+  addTutorialStyles();
+  container.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Vector Demo</strong></p><p>4 ions in a line form a Vector - coming soon!</p></div>';
+};
+
+const setupNodeDemo = (container: HTMLElement, animationRef: React.MutableRefObject<NodeJS.Timeout | null>) => {
+  addTutorialStyles();
+  container.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Node Demo</strong></p><p>Vector formation creates Nodes - coming soon!</p></div>';
+};
+
+const setupLongLineDemo = (container: HTMLElement, animationRef: React.MutableRefObject<NodeJS.Timeout | null>) => {
+  addTutorialStyles();
+  container.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Long Line Demo</strong></p><p>Cannot exceed 4 ions - coming soon!</p></div>';
+};
+
+const setupNexusDemo = (container: HTMLElement, animationRef: React.MutableRefObject<NodeJS.Timeout | null>) => {
+  addTutorialStyles();
+  container.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Nexus Demo</strong></p><p>4 Nodes in a line wins - coming soon!</p></div>';
+};
+
 // Tutorial Demo Component
 const TutorialDemo: React.FC<{ demoType: string }> = ({ demoType }) => {
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
+  
   const demoRef = useCallback((node: HTMLDivElement | null) => {
     if (node) {
-      // Clean up any existing content
+      // Clean up any existing content and animations
       node.innerHTML = '';
+      if (animationRef.current) {
+        clearInterval(animationRef.current);
+        animationRef.current = null;
+      }
       
-      // Simple demo placeholders for now
+      // Set up the animated demos
       switch (demoType) {
         case 'board':
-          node.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>8×8 Board Demo</strong></p><p>Players alternate placing ions on empty cells</p></div>';
+          setupBoardDemo(node, animationRef);
           break;
         case 'vector':
-          node.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Vector Demo</strong></p><p>4 ions in a line (horizontal, vertical, or diagonal) form a Vector</p></div>';
+          setupVectorDemo(node, animationRef);
           break;
         case 'node':
-          node.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Node Demo</strong></p><p>Last ion becomes a Node (red mark), others are removed</p></div>';
+          setupNodeDemo(node, animationRef);
           break;
         case 'long-line':
-          node.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Long Line Demo</strong></p><p>Cannot create lines longer than 4 ions</p></div>';
+          setupLongLineDemo(node, animationRef);
           break;
         case 'nexus':
-          node.innerHTML = '<div style="text-align: center; padding: 20px;"><p><strong>Nexus Demo</strong></p><p>4 Nodes in a line wins the game!</p></div>';
+          setupNexusDemo(node, animationRef);
           break;
         default:
           node.innerHTML = '<p>Demo coming soon...</p>';
       }
     }
+    
+    // Cleanup function
+    return () => {
+      if (animationRef.current) {
+        clearInterval(animationRef.current);
+        animationRef.current = null;
+      }
+    };
   }, [demoType]);
 
-  return <div ref={demoRef} style={{ minHeight: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} />;
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        clearInterval(animationRef.current);
+        animationRef.current = null;
+      }
+    };
+  }, []);
+
+  return <div ref={demoRef} style={{ minHeight: '300px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} />;
 };
 
 const App: React.FC = () => {
