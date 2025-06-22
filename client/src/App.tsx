@@ -1164,78 +1164,176 @@ const TutorialDemo: React.FC<{ demoType: string }> = ({ demoType }) => {
 };
 
 const App: React.FC = () => {
+  // Game state
+  const [gameState, setGameState] = useState<GameState>({
+    board: Array(8).fill(null).map(() => Array(8).fill(null)),
+    currentPlayer: 'white',
+    scores: { white: 0, black: 0 },
+    gameStatus: 'waiting',
+    lastMove: null,
+    players: { white: 'Player 1', black: 'Player 2' }
+  });
+
+  // UI state
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [showRules, setShowRules] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+  const [showMatchmaking, setShowMatchmaking] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isSearchingMatch, setIsSearchingMatch] = useState(false);
+
+  // Settings state
+  const [currentTheme, setCurrentTheme] = useState('classic');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [customColors, setCustomColors] = useState({
+    whiteIon: '#ecf0f1',
+    blackIon: '#2c3e50',
+    nodeColor: '#e74c3c',
+    boardColor: '#d1e6f9'
+  });
+
+  // Review mode state
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [currentReviewMove, setCurrentReviewMove] = useState(0);
+  const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
+  const [boardHistory, setBoardHistory] = useState<(Cell | null)[][][]>([]);
+  const [holdScrollInterval, setHoldScrollInterval] = useState<NodeJS.Timeout | null>(null);
+
+  // Timer state
+  const [timers, setTimers] = useState({ white: 600, black: 600 });
+  const [activeTimer, setActiveTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Game mode state
+  const [gameMode, setGameMode] = useState<'local' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('local');
+  const [waitingForAI, setWaitingForAI] = useState(false);
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    primaryButton?: string;
+    secondaryButton?: string;
+    onPrimary?: () => void;
+    onSecondary?: () => void;
+  }>({ show: false, title: '', message: '' });
+
   // Authentication state
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     user: null,
     isGuest: false
   });
-  const [showLogin, setShowLogin] = useState(false);
-  const [showSignup, setShowSignup] = useState(false);
-  const [authError, setAuthError] = useState('');
 
-  // Game state
-  const [gameState, setGameState] = useState<GameState>({
-    board: INITIAL_BOARD,
-    currentPlayer: 'white',
-    scores: { white: 0, black: 0 },
-    gameStatus: 'waiting',
-    lastMove: null,
-    players: { white: 'White', black: 'Black' }
-  });
-
-  // UI state
-  const [gameMode, setGameMode] = useState<'human' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('human');
-  const [isGameStarted, setIsGameStarted] = useState(false);
-  const [showRules, setShowRules] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState(0);
-  const [showMatchmaking, setShowMatchmaking] = useState(false);
-  const [isSearchingMatch, setIsSearchingMatch] = useState(false);
+  // Online game state
+  const [socket, setSocket] = useState<any>(null);
+  const [gameId, setGameId] = useState<string | null>(null);
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
-  const [opponentName, setOpponentName] = useState('');
-  const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
-  const [toast, setToast] = useState<string>('');
-  const [notification, setNotification] = useState<{
-    title: string;
-    message: string;
-    show: boolean;
-  }>({ title: '', message: '', show: false });
-
-  // Review mode state
-  const [isReviewMode, setIsReviewMode] = useState(false);
-  const [reviewMoveIndex, setReviewMoveIndex] = useState(0);
-  const [originalGameState, setOriginalGameState] = useState<GameState | null>(null);
-  const [holdTimeout, setHoldTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [holdInterval, setHoldInterval] = useState<NodeJS.Timeout | null>(null);
-
-  // Timer state
+  const [opponentName, setOpponentName] = useState<string>('');
   const [timerEnabled, setTimerEnabled] = useState(true);
   const [minutesPerPlayer, setMinutesPerPlayer] = useState(10);
   const [incrementSeconds, setIncrementSeconds] = useState(0);
-  const [timers, setTimers] = useState({ white: 600, black: 600 }); // in seconds
-  const [activeTimer, setActiveTimer] = useState<'white' | 'black' | null>(null);
-
-  // Socket connection
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [gameId, setGameId] = useState<string>('');
-
-  // Rematch state
+  const [isGameStarted, setIsGameStarted] = useState(false);
   const [rematchState, setRematchState] = useState<{
     requested: boolean;
-    requestedBy: string;
-    waitingForResponse: boolean;
-  }>({
-    requested: false,
-    requestedBy: '',
-    waitingForResponse: false
-  });
+    fromPlayer: string | null;
+  }>({ requested: false, fromPlayer: null });
 
-  // Resign confirmation modal state
-  const [showResignConfirmation, setShowResignConfirmation] = useState(false);
+  // Tutorial animation ref
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check for existing authentication on app load
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    loadSavedSettings();
+  }, []);
+
+  // Apply theme when currentTheme changes
+  useEffect(() => {
+    applyTheme(currentTheme);
+  }, [currentTheme, customColors]);
+
+  // Load saved settings from localStorage
+  const loadSavedSettings = () => {
+    try {
+      const savedTheme = localStorage.getItem('fluxTheme') || 'classic';
+      const savedSoundEnabled = localStorage.getItem('fluxSoundEnabled');
+      const savedCustomColors = localStorage.getItem('fluxCustomColors');
+
+      setCurrentTheme(savedTheme);
+      
+      if (savedSoundEnabled !== null) {
+        setSoundEnabled(JSON.parse(savedSoundEnabled));
+      }
+
+      if (savedCustomColors) {
+        setCustomColors(JSON.parse(savedCustomColors));
+      }
+    } catch (error) {
+      console.error('Error loading saved settings:', error);
+    }
+  };
+
+  // Apply theme to document
+  const applyTheme = (theme: string) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    
+    // If it's a custom theme, apply custom colors
+    if (theme === 'custom') {
+      applyCustomColors(customColors);
+    }
+  };
+
+  // Apply custom colors to CSS variables
+  const applyCustomColors = (colors: typeof customColors) => {
+    const root = document.documentElement;
+    root.style.setProperty('--white-ion', colors.whiteIon);
+    root.style.setProperty('--black-ion', colors.blackIon);
+    root.style.setProperty('--node-color', colors.nodeColor);
+    root.style.setProperty('--board-color', colors.boardColor);
+  };
+
+  // Handle theme change
+  const handleThemeChange = (theme: string) => {
+    setCurrentTheme(theme);
+    localStorage.setItem('fluxTheme', theme);
+  };
+
+  // Handle sound toggle
+  const handleSoundToggle = (enabled: boolean) => {
+    setSoundEnabled(enabled);
+    localStorage.setItem('fluxSoundEnabled', JSON.stringify(enabled));
+  };
+
+  // Handle custom color change
+  const handleCustomColorChange = (colorType: keyof typeof customColors, color: string) => {
+    const newColors = { ...customColors, [colorType]: color };
+    setCustomColors(newColors);
+    localStorage.setItem('fluxCustomColors', JSON.stringify(newColors));
+  };
+
+  // Reset settings to defaults
+  const resetSettings = () => {
+    setCurrentTheme('classic');
+    setSoundEnabled(true);
+    setCustomColors({
+      whiteIon: '#ecf0f1',
+      blackIon: '#2c3e50',
+      nodeColor: '#e74c3c',
+      boardColor: '#d1e6f9'
+    });
+    
+    localStorage.removeItem('fluxTheme');
+    localStorage.removeItem('fluxSoundEnabled');
+    localStorage.removeItem('fluxCustomColors');
+    
+    // Reset document theme
+    document.documentElement.setAttribute('data-theme', 'classic');
+  };
+
+  // Check authentication status on component mount
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('authToken');
@@ -2050,7 +2148,7 @@ const App: React.FC = () => {
     
     setOriginalGameState({ ...gameState });
     setIsReviewMode(true);
-    setReviewMoveIndex(0);
+    setCurrentReviewMove(0);
     
     // Reset to initial board state
     const initialBoard = Array(8).fill(null).map(() => Array(8).fill(null));
@@ -2069,13 +2167,13 @@ const App: React.FC = () => {
       setOriginalGameState(null);
     }
     setIsReviewMode(false);
-    setReviewMoveIndex(0);
+    setCurrentReviewMove(0);
   };
 
   const goToMove = useCallback((moveIndex: number) => {
     if (moveIndex < 0 || moveIndex > moveHistory.length) return;
     
-    setReviewMoveIndex(moveIndex);
+    setCurrentReviewMove(moveIndex);
     
     // Reconstruct board state up to this move
     const board = Array(8).fill(null).map(() => Array(8).fill(null));
@@ -2118,7 +2216,7 @@ const App: React.FC = () => {
       scores,
       lastMove
     }));
-  }, [moveHistory, setReviewMoveIndex, setGameState]);
+  }, [moveHistory, setCurrentReviewMove, setGameState]);
 
   const firstMove = () => {
     goToMove(0);
@@ -2129,29 +2227,25 @@ const App: React.FC = () => {
   };
 
   const previousMove = useCallback(() => {
-    if (reviewMoveIndex > 0) {
-      goToMove(reviewMoveIndex - 1);
+    if (currentReviewMove > 0) {
+      goToMove(currentReviewMove - 1);
     }
-  }, [reviewMoveIndex, goToMove]);
+  }, [currentReviewMove, goToMove]);
 
   const nextMove = useCallback(() => {
-    if (reviewMoveIndex < moveHistory.length) {
-      goToMove(reviewMoveIndex + 1);
+    if (currentReviewMove < moveHistory.length) {
+      goToMove(currentReviewMove + 1);
     }
-  }, [reviewMoveIndex, moveHistory.length, goToMove]);
+  }, [currentReviewMove, moveHistory.length, goToMove]);
 
   // Hold-to-scroll functionality
   const startHoldScroll = (direction: 'prev' | 'next', event?: React.MouseEvent | React.TouchEvent) => {
     event?.preventDefault();
     
     // Clear any existing timeouts/intervals
-    if (holdTimeout) {
-      clearTimeout(holdTimeout);
-      setHoldTimeout(null);
-    }
-    if (holdInterval) {
-      clearInterval(holdInterval);
-      setHoldInterval(null);
+    if (holdScrollInterval) {
+      clearTimeout(holdScrollInterval);
+      setHoldScrollInterval(null);
     }
     
     const scrollFunction = direction === 'prev' ? previousMove : nextMove;
@@ -2166,53 +2260,53 @@ const App: React.FC = () => {
         scrollFunction();
       }, 500);
       
-      setHoldInterval(interval);
-      setHoldTimeout(null); // Clear timeout reference since it's done
+      setHoldScrollInterval(interval);
+      setHoldScrollInterval(null); // Clear timeout reference since it's done
     }, 500);
     
-    setHoldTimeout(timeout);
+    setHoldScrollInterval(timeout);
   };
 
   const stopHoldScroll = (event?: React.MouseEvent | React.TouchEvent) => {
     event?.preventDefault();
     
     // Clear timeout if still waiting
-    if (holdTimeout) {
-      clearTimeout(holdTimeout);
-      setHoldTimeout(null);
+    if (holdScrollInterval) {
+      clearTimeout(holdScrollInterval);
+      setHoldScrollInterval(null);
     }
     
     // Clear interval if scrolling
-    if (holdInterval) {
-      clearInterval(holdInterval);
-      setHoldInterval(null);
+    if (holdScrollInterval) {
+      clearInterval(holdScrollInterval);
+      setHoldScrollInterval(null);
     }
   };
 
   // Cleanup hold timeout and interval when component unmounts or review mode exits
   useEffect(() => {
     return () => {
-      if (holdTimeout) {
-        clearTimeout(holdTimeout);
+      if (holdScrollInterval) {
+        clearTimeout(holdScrollInterval);
       }
-      if (holdInterval) {
-        clearInterval(holdInterval);
+      if (holdScrollInterval) {
+        clearInterval(holdScrollInterval);
       }
     };
-  }, [holdTimeout, holdInterval]);
+  }, [holdScrollInterval]);
 
   useEffect(() => {
     if (!isReviewMode) {
-      if (holdTimeout) {
-        clearTimeout(holdTimeout);
-        setHoldTimeout(null);
+      if (holdScrollInterval) {
+        clearTimeout(holdScrollInterval);
+        setHoldScrollInterval(null);
       }
-      if (holdInterval) {
-        clearInterval(holdInterval);
-        setHoldInterval(null);
+      if (holdScrollInterval) {
+        clearInterval(holdScrollInterval);
+        setHoldScrollInterval(null);
       }
     }
-  }, [isReviewMode, holdTimeout, holdInterval]);
+  }, [isReviewMode, holdScrollInterval]);
 
   const renderCell = (row: number, col: number) => {
     const cell = gameState.board[row][col];
@@ -2267,7 +2361,7 @@ const App: React.FC = () => {
             <div key={pairIndex} className="log-entry">
               <span className="move-number">{moveNumber}.</span>
               <span 
-                className={`white-move ${isReviewMode && whiteMove && reviewMoveIndex - 1 === pairIndex * 2 ? 'highlighted-move' : ''}`}
+                className={`white-move ${isReviewMode && whiteMove && currentReviewMove - 1 === pairIndex * 2 ? 'highlighted-move' : ''}`}
                 onClick={() => isReviewMode && whiteMove ? goToMove(pairIndex * 2 + 1) : undefined}
                 style={{ cursor: isReviewMode && whiteMove ? 'pointer' : 'default' }}
               >
@@ -2279,7 +2373,7 @@ const App: React.FC = () => {
                 ) : ''}
               </span>
               <span 
-                className={`black-move ${isReviewMode && blackMove && reviewMoveIndex - 1 === pairIndex * 2 + 1 ? 'highlighted-move' : ''}`}
+                className={`black-move ${isReviewMode && blackMove && currentReviewMove - 1 === pairIndex * 2 + 1 ? 'highlighted-move' : ''}`}
                 onClick={() => isReviewMode && blackMove ? goToMove(pairIndex * 2 + 2) : undefined}
                 style={{ cursor: isReviewMode && blackMove ? 'pointer' : 'default' }}
               >
@@ -2302,7 +2396,7 @@ const App: React.FC = () => {
                 className="btn" 
                 id="first-move-btn"
                 onClick={firstMove}
-                disabled={reviewMoveIndex <= 0}
+                disabled={currentReviewMove <= 0}
                 title="First Move"
               >
                 <span className="arrow-icon">⏮</span>
@@ -2315,13 +2409,13 @@ const App: React.FC = () => {
                 onMouseLeave={(e) => stopHoldScroll(e)}
                 onTouchStart={(e) => startHoldScroll('prev', e)}
                 onTouchEnd={(e) => stopHoldScroll(e)}
-                disabled={reviewMoveIndex <= 0}
+                disabled={currentReviewMove <= 0}
                 title="Previous Move (Hold to scroll)"
               >
                 <span className="arrow-icon">◀</span>
               </button>
               <span className="move-counter">
-                Move {reviewMoveIndex} of {moveHistory.length}
+                Move {currentReviewMove} of {moveHistory.length}
               </span>
               <button 
                 className="btn" 
@@ -2331,7 +2425,7 @@ const App: React.FC = () => {
                 onMouseLeave={(e) => stopHoldScroll(e)}
                 onTouchStart={(e) => startHoldScroll('next', e)}
                 onTouchEnd={(e) => stopHoldScroll(e)}
-                disabled={reviewMoveIndex >= moveHistory.length}
+                disabled={currentReviewMove >= moveHistory.length}
                 title="Next Move (Hold to scroll)"
               >
                 <span className="arrow-icon">▶</span>
@@ -2340,7 +2434,7 @@ const App: React.FC = () => {
                 className="btn" 
                 id="last-move-btn"
                 onClick={lastMove}
-                disabled={reviewMoveIndex >= moveHistory.length}
+                disabled={currentReviewMove >= moveHistory.length}
                 title="Last Move"
               >
                 <span className="arrow-icon">⏭</span>
@@ -2705,19 +2799,95 @@ const App: React.FC = () => {
       {showSettings && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowSettings(false)} />
-          <div className="notification settings-dialog" style={{ display: 'block' }}>
+          <div className="notification settings-dialog" style={{ display: 'block', maxWidth: '500px' }}>
             <h2>Settings</h2>
+            
+            {/* Theme Section */}
             <div className="settings-section">
               <h3>Theme</h3>
-              <select className="control-select">
-                <option value="classic">Classic</option>
-                <option value="dark">Dark Mode</option>
-                <option value="high-contrast">High Contrast</option>
-                <option value="nature">Nature</option>
-                <option value="ocean">Ocean</option>
-              </select>
+              <div className="option-row">
+                <label>Theme:</label>
+                <select 
+                  className="control-select" 
+                  value={currentTheme} 
+                  onChange={(e) => handleThemeChange(e.target.value)}
+                >
+                  <option value="classic">Classic</option>
+                  <option value="dark">Dark Mode</option>
+                  <option value="high-contrast">High Contrast</option>
+                  <option value="nature">Nature</option>
+                  <option value="ocean">Ocean</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              
+              {/* Custom Colors (only show when custom theme selected) */}
+              {currentTheme === 'custom' && (
+                <div id="custom-colors" style={{ marginTop: '15px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
+                  <h4 style={{ marginBottom: '10px', fontSize: '1rem' }}>Custom Colors</h4>
+                  
+                  <div className="color-option">
+                    <label>White Ion Color:</label>
+                    <input
+                      type="color"
+                      value={customColors.whiteIon}
+                      onChange={(e) => handleCustomColorChange('whiteIon', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="color-option">
+                    <label>Black Ion Color:</label>
+                    <input
+                      type="color"
+                      value={customColors.blackIon}
+                      onChange={(e) => handleCustomColorChange('blackIon', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="color-option">
+                    <label>Node Color:</label>
+                    <input
+                      type="color"
+                      value={customColors.nodeColor}
+                      onChange={(e) => handleCustomColorChange('nodeColor', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="color-option">
+                    <label>Board Color:</label>
+                    <input
+                      type="color"
+                      value={customColors.boardColor}
+                      onChange={(e) => handleCustomColorChange('boardColor', e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Sound Section */}
+            <div className="settings-section">
+              <h3>Sound</h3>
+              <div className="option-row">
+                <label>Sound Effects:</label>
+                <div className="toggle-container">
+                  <span className={`toggle-label ${!soundEnabled ? 'active' : ''}`}>Off</span>
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={soundEnabled}
+                      onChange={(e) => handleSoundToggle(e.target.checked)}
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                  <span className={`toggle-label ${soundEnabled ? 'active' : ''}`}>On</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
             <div className="notification-buttons">
+              <button className="btn" onClick={resetSettings}>Reset to Defaults</button>
               <button className="btn" onClick={() => setShowSettings(false)}>Close</button>
             </div>
           </div>
