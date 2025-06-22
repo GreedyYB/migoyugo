@@ -2806,7 +2806,7 @@ const App: React.FC = () => {
       )}
 
       {/* Mobile Pregame Modal */}
-      {!isGameStarted && (
+      {!isGameStarted && !showLogin && !showSignup && !showMatchmaking && (
         <>
           <div className="overlay" style={{ display: 'block' }} />
           <div id="pregame-modal" className="notification">
@@ -2993,7 +2993,7 @@ const App: React.FC = () => {
       {showLogin && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowLogin(false)} />
-          <div className="notification" style={{ display: 'block', maxWidth: '400px' }}>
+          <div className="notification" style={{ display: 'block', maxWidth: '400px', zIndex: 2100 }}>
             <h2>Log In</h2>
             <form onSubmit={(e) => {
               e.preventDefault();
@@ -3051,7 +3051,7 @@ const App: React.FC = () => {
       {showSignup && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowSignup(false)} />
-          <div className="notification" style={{ display: 'block', maxWidth: '400px' }}>
+          <div className="notification" style={{ display: 'block', maxWidth: '400px', zIndex: 2100 }}>
             <h2>Sign Up</h2>
             <form onSubmit={(e) => {
               e.preventDefault();
