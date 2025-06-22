@@ -1762,6 +1762,7 @@ const App: React.FC = () => {
                     <option value="human">Local Play</option>
                     <option value="ai-1">CORE AI-1</option>
                     <option value="ai-2">CORE AI-2</option>
+                    <option value="ai-3">CORE AI-3</option>
                     <option value="online">Online Multiplayer</option>
                   </select>
                 </div>
