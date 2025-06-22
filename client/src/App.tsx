@@ -461,7 +461,7 @@ const getApiUrl = () => {
 // Tutorial animation helper functions
 const createTutorialIon = (color: string): HTMLElement => {
   const ion = document.createElement('div');
-  ion.className = `tutorial-ion ${color}`;
+  ion.className = `tutorial-demo-ion ${color}`;
   ion.style.cssText = `
     width: 24px;
     height: 24px;
