@@ -348,7 +348,6 @@ const minimaxEvaluate = (board: (Cell | null)[][], depth: number, isMaximizing: 
     // Efficient board evaluation at leaf nodes - count material and position
     let aiScore = 0;
     let opponentScore = 0;
-    const opponentColor = aiColor === 'white' ? 'black' : 'white';
     
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
@@ -1084,15 +1083,15 @@ const App: React.FC = () => {
       // Variable thinking time based on AI level (makes AI feel more human)
       let minThinkTime, maxThinkTime;
       if (gameMode === 'ai-1') {
-        minThinkTime = 2000; // 2 seconds minimum
-        maxThinkTime = 4000; // 4 seconds maximum
+        minThinkTime = 1000; // 1 second minimum
+        maxThinkTime = 2000; // 2 seconds maximum
       } else if (gameMode === 'ai-2') {
-        minThinkTime = 2000; // 2 seconds minimum  
-        maxThinkTime = 5000; // 5 seconds maximum
+        minThinkTime = 1500; // 1.5 seconds minimum  
+        maxThinkTime = 2500; // 2.5 seconds maximum
       } else {
         // ai-3: Longer thinking time to simulate deep calculation
-        minThinkTime = 3000; // 3 seconds minimum
-        maxThinkTime = 6000; // 6 seconds maximum
+        minThinkTime = 2000; // 2 seconds minimum
+        maxThinkTime = 3000; // 3 seconds maximum
       }
       
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
