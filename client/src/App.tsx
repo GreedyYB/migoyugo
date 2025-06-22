@@ -396,22 +396,33 @@ const evaluatePosition = (board: (Cell | null)[][], aiColor: 'white' | 'black'):
   // Mobility advantage (more moves = better position)
   score += (aiMobility - opponentMobility) * 3;
   
-  // Check for immediate threats
+  // Simplified threat detection for performance
+  let aiThreats = 0;
+  let opponentThreats = 0;
+  
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      if (isValidMove(board, row, col, aiColor)) {
-        const moveScore = evaluateMove(board, row, col, aiColor, 'ai-3');
-        if (moveScore >= 9000) score += 500; // Can create nexus
-        else if (moveScore >= 1000) score += 100; // Can create vector
-      }
-      
-      if (isValidMove(board, row, col, opponentColor)) {
-        const moveScore = evaluateMove(board, row, col, opponentColor, 'ai-3');
-        if (moveScore >= 9000) score -= 1000; // Opponent can create nexus
-        else if (moveScore >= 1000) score -= 200; // Opponent can create vector
+      if (board[row][col] === null) {
+        if (isValidMove(board, row, col, aiColor)) {
+          // Quick threat check without full evaluation
+          const vectors = checkForVectors(board, row, col, aiColor);
+          const nexus = checkForNexus(board, row, col, aiColor);
+          if (nexus) aiThreats += 500;
+          else if (vectors.length > 0) aiThreats += 100;
+        }
+        
+        if (isValidMove(board, row, col, opponentColor)) {
+          // Quick threat check for opponent
+          const vectors = checkForVectors(board, row, col, opponentColor);
+          const nexus = checkForNexus(board, row, col, opponentColor);
+          if (nexus) opponentThreats += 1000;
+          else if (vectors.length > 0) opponentThreats += 200;
+        }
       }
     }
   }
+  
+  score += aiThreats - opponentThreats;
   
   return score;
 };
@@ -425,7 +436,7 @@ const minimaxAlphaBeta = (
   isMaximizing: boolean, 
   aiColor: 'white' | 'black'
 ): number => {
-  if (depth === 0) {
+  if (depth === 0 || depth > 4) { // Safety limit to prevent infinite recursion
     return evaluatePosition(board, aiColor);
   }
 
@@ -550,20 +561,24 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3
       return highPriorityMoves[0]; // Take the best winning/blocking move
     }
     
-    // Tournament-strength: Deep alpha-beta search on best candidates
-    const candidateMoves = validMoves.slice(0, Math.min(12, validMoves.length));
+    // Tournament-strength: Optimized alpha-beta search on best candidates
+    const candidateMoves = validMoves.slice(0, Math.min(8, validMoves.length));
     const movesWithDeepEval: {row: number, col: number, score: number}[] = [];
     
-    // Use 4-ply alpha-beta search for maximum strength
+    // Adaptive depth based on game stage for performance
+    const totalPieces = board.flat().filter(cell => cell !== null).length;
+    const searchDepth = totalPieces <= 10 ? 3 : 2; // Deeper search early game, shallower late game
+    
+    // Use adaptive-depth alpha-beta search for optimal balance
     for (const move of candidateMoves) {
       const newBoard = board.map(r => [...r]);
       newBoard[move.row][move.col] = { color: 'black', isNode: false };
       
-      // Deep alpha-beta evaluation with 4-ply lookahead
-      const deepScore = minimaxAlphaBeta(newBoard, 4, -Infinity, Infinity, false, 'black');
+      // Alpha-beta evaluation with adaptive depth
+      const deepScore = minimaxAlphaBeta(newBoard, searchDepth, -Infinity, Infinity, false, 'black');
       
       // Combine immediate tactical score with deep evaluation
-      const totalScore = move.score + (deepScore * 0.4); // Weight deep eval at 40%
+      const totalScore = move.score + (deepScore * 0.3); // Weight deep eval at 30%
       
       movesWithDeepEval.push({...move, score: totalScore});
     }
@@ -1186,9 +1201,9 @@ const App: React.FC = () => {
         minThinkTime = 1500; // 1.5 seconds minimum  
         maxThinkTime = 2500; // 2.5 seconds maximum
       } else {
-        // ai-3: Tournament-strength thinking time for deep calculation
-        minThinkTime = 3000; // 3 seconds minimum
-        maxThinkTime = 5000; // 5 seconds maximum
+        // ai-3: Optimized thinking time for strong but responsive play
+        minThinkTime = 2000; // 2 seconds minimum
+        maxThinkTime = 3500; // 3.5 seconds maximum
       }
       
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
