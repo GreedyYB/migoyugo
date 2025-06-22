@@ -2606,7 +2606,7 @@ const App: React.FC = () => {
                     value={gameMode}
                     onChange={(e) => setGameMode(e.target.value as any)}
                   >
-                    <option value="human">Local Play</option>
+                    <option value="local">Local Play</option>
                     <option value="ai-1">CORE AI-1</option>
                     <option value="ai-2">CORE AI-2</option>
                     <option value="ai-3">CORE AI-3</option>
@@ -2801,6 +2801,91 @@ const App: React.FC = () => {
             </ul>
             
             <button className="btn" onClick={() => setShowRules(false)}>Close Rules</button>
+          </div>
+        </>
+      )}
+
+      {/* Mobile Pregame Modal */}
+      {!isGameStarted && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} />
+          <div id="pregame-modal" className="notification">
+            <h2>Game Setup</h2>
+            <div id="pregame-controls-mobile">
+              <div className="option-row">
+                <label htmlFor="mobile-game-mode-select">Opponent:</label>
+                <select 
+                  id="mobile-game-mode-select" 
+                  className="control-select"
+                  value={gameMode}
+                  onChange={(e) => setGameMode(e.target.value as any)}
+                >
+                  <option value="local">Local Play</option>
+                  <option value="ai-1">CORE AI-1</option>
+                  <option value="ai-2">CORE AI-2</option>
+                  <option value="ai-3">CORE AI-3</option>
+                  <option value="online">Online Multiplayer</option>
+                </select>
+              </div>
+
+              <div className="option-row">
+                <label htmlFor="mobile-timer-toggle">Game Timer:</label>
+                <div className="toggle-container">
+                  <span className="toggle-label">Off</span>
+                  <label className="toggle small">
+                    <input 
+                      type="checkbox" 
+                      id="mobile-timer-toggle" 
+                      checked={timerEnabled}
+                      onChange={(e) => setTimerEnabled(e.target.checked)}
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                  <span className={`toggle-label ${timerEnabled ? 'active' : ''}`}>On</span>
+                </div>
+              </div>
+
+              {timerEnabled && (
+                <div className="timer-settings">
+                  <div className="timer-row">
+                    <div className="option-cell">
+                      <label>Minutes:</label>
+                      <select 
+                        className="control-select"
+                        value={minutesPerPlayer}
+                        onChange={(e) => setMinutesPerPlayer(Number(e.target.value))}
+                      >
+                        <option value={1}>1</option>
+                        <option value={3}>3</option>
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={15}>15</option>
+                        <option value={30}>30</option>
+                      </select>
+                    </div>
+                    <div className="option-cell">
+                      <label>Increment:</label>
+                      <select 
+                        className="control-select"
+                        value={incrementSeconds}
+                        onChange={(e) => setIncrementSeconds(Number(e.target.value))}
+                      >
+                        <option value={0}>0s</option>
+                        <option value={3}>3s</option>
+                        <option value={5}>5s</option>
+                        <option value={10}>10s</option>
+                        <option value={15}>15s</option>
+                        <option value={30}>30s</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <button id="pregame-start-btn" className="btn" onClick={startGame}>
+                Start Game
+              </button>
+            </div>
           </div>
         </>
       )}

@@ -2457,6 +2457,9 @@ html, body {
     #mobile-tutorial-close-x {
         display: none !important;
     }
+    #pregame-modal {
+        display: none !important;
+    }
 }
 
 #pregame-controls {
