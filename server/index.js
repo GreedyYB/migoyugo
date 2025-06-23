@@ -37,11 +37,7 @@ initializeDatabase().catch(console.error);
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? [
-        process.env.FRONTEND_URL,
-        'https://flux-game-online-2uttwkr0g-bruce-kidds-projects.vercel.app',
-        'https://flux-game-online.vercel.app'
-      ].filter(Boolean)
+    ? process.env.FRONTEND_URL || true
     : "http://localhost:3000",
   credentials: true
 }));
@@ -49,11 +45,6 @@ app.use(express.json());
 
 // Serve static files from React build
 app.use(express.static(path.join(__dirname, '../client/build')));
-
-// Serve manifest.json explicitly (for Vercel compatibility)
-app.get('/manifest.json', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build/manifest.json'));
-});
 
 // Authentication routes
 app.post('/api/auth/signup', async (req, res) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import io from 'socket.io-client';
+import io, { Socket } from 'socket.io-client';
 import './flux-styles.css';
 
 // Types
@@ -975,7 +975,7 @@ const setupNexusDemo = (container: HTMLElement, animationRef: React.MutableRefOb
     { pos: [1, 2] },  // Column 8
     { pos: [1, 4] }   // Column 10
   ];
-  // Final node position: [1, 3] (Column 9)
+  const finalNode = { pos: [1, 3] };  // Column 9
   
   const createPulsingArrow = () => {
     const arrow = document.createElement('div');
@@ -1184,6 +1184,7 @@ const App: React.FC = () => {
   const [tutorialStep, setTutorialStep] = useState(0);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSearchingMatch, setIsSearchingMatch] = useState(false);
+  const [showMobilePregame, setShowMobilePregame] = useState(true);
 
   // Settings state
   const [currentTheme, setCurrentTheme] = useState('classic');
@@ -1199,7 +1200,7 @@ const App: React.FC = () => {
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [currentReviewMove, setCurrentReviewMove] = useState(0);
   const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
-  // const [boardHistory, setBoardHistory] = useState<(Cell | null)[][][]>([]);
+  const [boardHistory, setBoardHistory] = useState<(Cell | null)[][][]>([]);
   const [holdScrollInterval, setHoldScrollInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Timer state
@@ -1208,7 +1209,7 @@ const App: React.FC = () => {
 
   // Game mode state
   const [gameMode, setGameMode] = useState<'local' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('local');
-  // const [waitingForAI, setWaitingForAI] = useState(false);
+  const [waitingForAI, setWaitingForAI] = useState(false);
 
   // Notification state
   const [notification, setNotification] = useState<{
@@ -1247,8 +1248,18 @@ const App: React.FC = () => {
   const [showResignConfirmation, setShowResignConfirmation] = useState(false);
   const [originalGameState, setOriginalGameState] = useState<GameState | null>(null);
 
-  // Tutorial animation ref (used in TutorialDemo component)
-  // const animationRef = useRef<NodeJS.Timeout | null>(null);
+  // Tutorial animation ref
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    loadSavedSettings();
+  }, []);
+
+  // Apply theme when currentTheme changes
+  useEffect(() => {
+    applyTheme(currentTheme);
+  }, [currentTheme, customColors]);
 
   // Load saved settings from localStorage
   const loadSavedSettings = () => {
@@ -1271,34 +1282,24 @@ const App: React.FC = () => {
     }
   };
 
-  // Apply custom colors to CSS variables
-  const applyCustomColors = useCallback((colors: typeof customColors) => {
-    const root = document.documentElement;
-    root.style.setProperty('--white-ion', colors.whiteIon);
-    root.style.setProperty('--black-ion', colors.blackIon);
-    root.style.setProperty('--node-color', colors.nodeColor);
-    root.style.setProperty('--board-color', colors.boardColor);
-  }, []);
-
   // Apply theme to document
-  const applyTheme = useCallback((theme: string) => {
+  const applyTheme = (theme: string) => {
     document.documentElement.setAttribute('data-theme', theme);
     
     // If it's a custom theme, apply custom colors
     if (theme === 'custom') {
       applyCustomColors(customColors);
     }
-  }, [customColors, applyCustomColors]);
+  };
 
-  // Load settings from localStorage on component mount
-  useEffect(() => {
-    loadSavedSettings();
-  }, []);
-
-  // Apply theme when currentTheme changes
-  useEffect(() => {
-    applyTheme(currentTheme);
-  }, [currentTheme, applyTheme]);
+  // Apply custom colors to CSS variables
+  const applyCustomColors = (colors: typeof customColors) => {
+    const root = document.documentElement;
+    root.style.setProperty('--white-ion', colors.whiteIon);
+    root.style.setProperty('--black-ion', colors.blackIon);
+    root.style.setProperty('--node-color', colors.nodeColor);
+    root.style.setProperty('--board-color', colors.boardColor);
+  };
 
   // Handle theme change
   const handleThemeChange = (theme: string) => {
@@ -1337,11 +1338,6 @@ const App: React.FC = () => {
     // Reset document theme
     document.documentElement.setAttribute('data-theme', 'classic');
   };
-
-  const showToast = useCallback((message: string, duration: number = 4000) => {
-    setToast(message);
-    setTimeout(() => setToast(''), duration);
-  }, []);
 
   // Check authentication status on component mount
   useEffect(() => {
@@ -1602,7 +1598,7 @@ const App: React.FC = () => {
         newSocket.close();
       };
     }
-  }, [gameMode, authState.isGuest, authState.user, authState, showToast]);
+  }, [gameMode, authState.isGuest, authState.user]);
 
   // Timer logic
   useEffect(() => {
@@ -1634,7 +1630,10 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [timerEnabled, isGameStarted, gameState.gameStatus, activeTimer]);
 
-
+  const showToast = useCallback((message: string, duration: number = 4000) => {
+    setToast(message);
+    setTimeout(() => setToast(''), duration);
+  }, []);
 
   // Start timer when game starts or player changes
   useEffect(() => {
@@ -1665,6 +1664,8 @@ const App: React.FC = () => {
           isGuest: false
         });
         setShowLogin(false);
+        // Show matchmaking modal for online play
+        setShowMatchmaking(true);
         showToast(`Welcome back, ${data.user.username}!`);
       } else {
         setAuthError(data.error || 'Login failed');
@@ -1711,6 +1712,8 @@ const App: React.FC = () => {
         });
         
         setShowSignup(false);
+        // Show matchmaking modal for online play
+        setShowMatchmaking(true);
         showToast(`Welcome, ${data.user.username}! Account created successfully.`);
       } else {
         setAuthError(data.error || 'Signup failed');
@@ -1726,6 +1729,7 @@ const App: React.FC = () => {
       user: null,
       isGuest: true
     });
+    setShowMobilePregame(false);
     setShowMatchmaking(true);
   };
 
@@ -1924,7 +1928,8 @@ const App: React.FC = () => {
       if (!authState.isAuthenticated && !authState.isGuest) {
         console.log('🔐 User not authenticated - showing login modal');
         console.log('Setting showLogin to true...');
-        // Show login modal directly for a more streamlined experience
+        // Hide mobile pregame modal and show login modal
+        setShowMobilePregame(false);
         setShowLogin(true);
         console.log('Login modal should now be visible');
         return;
@@ -1948,6 +1953,7 @@ const App: React.FC = () => {
         }
       });
       setIsGameStarted(true);
+      setShowMobilePregame(false);
       setMoveHistory([]);
       
       if (timerEnabled) {
@@ -1987,6 +1993,7 @@ const App: React.FC = () => {
     }
     setShowMatchmaking(false);
     setIsSearchingMatch(false);
+    setShowMobilePregame(true);
   };
 
   const requestRematch = () => {
@@ -2072,6 +2079,7 @@ const App: React.FC = () => {
       players: { white: 'White', black: 'Black' }
     });
     setIsGameStarted(false);
+    setShowMobilePregame(true);
     setMoveHistory([]);
     setActiveTimer(null);
     setPlayerColor(null);
@@ -2808,7 +2816,7 @@ const App: React.FC = () => {
       )}
 
       {/* Mobile Pregame Modal */}
-      {!isGameStarted && !showLogin && !showSignup && !showMatchmaking && (
+      {!isGameStarted && showMobilePregame && (
         <>
           <div className="overlay" style={{ display: 'block' }} />
           <div id="pregame-modal" className="notification">
@@ -2909,14 +2917,14 @@ const App: React.FC = () => {
                   value={currentTheme} 
                   onChange={(e) => handleThemeChange(e.target.value)}
                 >
-                  <option value="classic">Classic</option>
-                  <option value="dark">Dark Mode</option>
-                  <option value="high-contrast">High Contrast</option>
-                  <option value="nature">Nature</option>
-                  <option value="ocean">Ocean</option>
+                <option value="classic">Classic</option>
+                <option value="dark">Dark Mode</option>
+                <option value="high-contrast">High Contrast</option>
+                <option value="nature">Nature</option>
+                <option value="ocean">Ocean</option>
                   <option value="custom">Custom</option>
-                </select>
-              </div>
+              </select>
+            </div>
               
               {/* Custom Colors (only show when custom theme selected) */}
               {currentTheme === 'custom' && (
@@ -2995,7 +3003,7 @@ const App: React.FC = () => {
       {showLogin && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowLogin(false)} />
-          <div className="notification" style={{ display: 'block', maxWidth: '400px', zIndex: 2100 }}>
+          <div className="notification" style={{ display: 'block', maxWidth: '400px' }}>
             <h2>Log In</h2>
             <form onSubmit={(e) => {
               e.preventDefault();
@@ -3042,7 +3050,7 @@ const App: React.FC = () => {
                 <button type="button" className="btn" onClick={() => { setShowLogin(false); handlePlayAsGuest(); }}>
                   Play as Guest
                 </button>
-                <button type="button" className="btn" onClick={() => setShowLogin(false)}>Cancel</button>
+                <button type="button" className="btn" onClick={() => { setShowLogin(false); setShowMobilePregame(true); }}>Cancel</button>
               </div>
             </form>
           </div>
@@ -3053,7 +3061,7 @@ const App: React.FC = () => {
       {showSignup && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowSignup(false)} />
-          <div className="notification" style={{ display: 'block', maxWidth: '400px', zIndex: 2100 }}>
+          <div className="notification" style={{ display: 'block', maxWidth: '400px' }}>
             <h2>Sign Up</h2>
             <form onSubmit={(e) => {
               e.preventDefault();
@@ -3115,7 +3123,7 @@ const App: React.FC = () => {
                 <button type="button" className="btn" onClick={() => { setShowSignup(false); handlePlayAsGuest(); }}>
                   Play as Guest
                 </button>
-                <button type="button" className="btn" onClick={() => setShowSignup(false)}>Cancel</button>
+                <button type="button" className="btn" onClick={() => { setShowSignup(false); setShowMobilePregame(true); }}>Cancel</button>
               </div>
             </form>
           </div>
