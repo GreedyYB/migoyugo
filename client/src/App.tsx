@@ -1184,7 +1184,6 @@ const App: React.FC = () => {
   const [tutorialStep, setTutorialStep] = useState(0);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSearchingMatch, setIsSearchingMatch] = useState(false);
-  const [showMobilePregame, setShowMobilePregame] = useState(true);
 
   // Settings state
   const [currentTheme, setCurrentTheme] = useState('classic');
@@ -1237,7 +1236,7 @@ const App: React.FC = () => {
   const [timerEnabled, setTimerEnabled] = useState(true);
   const [minutesPerPlayer, setMinutesPerPlayer] = useState(10);
   const [incrementSeconds, setIncrementSeconds] = useState(0);
-  const [isGameStarted, setIsGameStarted] = useState(false);
+  const [isGameStarted, setIsGameStarted] = useState(true);
   const [rematchState, setRematchState] = useState<{
     requested: boolean;
     fromPlayer: string | null;
@@ -1643,13 +1642,13 @@ const App: React.FC = () => {
   }, [isGameStarted, gameState.currentPlayer, gameState.gameStatus, timerEnabled]);
 
   // Authentication handlers
-  const handleLogin = async (username: string, password: string) => {
+  const handleLogin = async (email: string, password: string) => {
     try {
       setAuthError('');
       const response = await fetch(`${getApiUrl()}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ email, password })
       });
       
       const data = await response.json();
@@ -1664,8 +1663,6 @@ const App: React.FC = () => {
           isGuest: false
         });
         setShowLogin(false);
-        // Show matchmaking modal for online play
-        setShowMatchmaking(true);
         showToast(`Welcome back, ${data.user.username}!`);
       } else {
         setAuthError(data.error || 'Login failed');
@@ -1712,8 +1709,6 @@ const App: React.FC = () => {
         });
         
         setShowSignup(false);
-        // Show matchmaking modal for online play
-        setShowMatchmaking(true);
         showToast(`Welcome, ${data.user.username}! Account created successfully.`);
       } else {
         setAuthError(data.error || 'Signup failed');
@@ -1729,7 +1724,6 @@ const App: React.FC = () => {
       user: null,
       isGuest: true
     });
-    setShowMobilePregame(false);
     setShowMatchmaking(true);
   };
 
@@ -1928,8 +1922,7 @@ const App: React.FC = () => {
       if (!authState.isAuthenticated && !authState.isGuest) {
         console.log('🔐 User not authenticated - showing login modal');
         console.log('Setting showLogin to true...');
-        // Hide mobile pregame modal and show login modal
-        setShowMobilePregame(false);
+        // Show login modal directly for a more streamlined experience
         setShowLogin(true);
         console.log('Login modal should now be visible');
         return;
@@ -1953,7 +1946,6 @@ const App: React.FC = () => {
         }
       });
       setIsGameStarted(true);
-      setShowMobilePregame(false);
       setMoveHistory([]);
       
       if (timerEnabled) {
@@ -1993,7 +1985,6 @@ const App: React.FC = () => {
     }
     setShowMatchmaking(false);
     setIsSearchingMatch(false);
-    setShowMobilePregame(true);
   };
 
   const requestRematch = () => {
@@ -2079,7 +2070,6 @@ const App: React.FC = () => {
       players: { white: 'White', black: 'Black' }
     });
     setIsGameStarted(false);
-    setShowMobilePregame(true);
     setMoveHistory([]);
     setActiveTimer(null);
     setPlayerColor(null);
@@ -2815,90 +2805,7 @@ const App: React.FC = () => {
         </>
       )}
 
-      {/* Mobile Pregame Modal */}
-      {!isGameStarted && showMobilePregame && (
-        <>
-          <div className="overlay" style={{ display: 'block' }} />
-          <div id="pregame-modal" className="notification">
-            <h2>Game Setup</h2>
-            <div id="pregame-controls-mobile">
-              <div className="option-row">
-                <label htmlFor="mobile-game-mode-select">Opponent:</label>
-                <select 
-                  id="mobile-game-mode-select" 
-                  className="control-select"
-                  value={gameMode}
-                  onChange={(e) => setGameMode(e.target.value as any)}
-                >
-                  <option value="local">Local Play</option>
-                  <option value="ai-1">CORE AI-1</option>
-                  <option value="ai-2">CORE AI-2</option>
-                  <option value="ai-3">CORE AI-3</option>
-                  <option value="online">Online Multiplayer</option>
-                </select>
-              </div>
 
-              <div className="option-row">
-                <label htmlFor="mobile-timer-toggle">Game Timer:</label>
-                <div className="toggle-container">
-                  <span className="toggle-label">Off</span>
-                  <label className="toggle small">
-                    <input 
-                      type="checkbox" 
-                      id="mobile-timer-toggle" 
-                      checked={timerEnabled}
-                      onChange={(e) => setTimerEnabled(e.target.checked)}
-                    />
-                    <span className="slider round"></span>
-                  </label>
-                  <span className={`toggle-label ${timerEnabled ? 'active' : ''}`}>On</span>
-                </div>
-              </div>
-
-              {timerEnabled && (
-                <div className="timer-settings">
-                  <div className="timer-row">
-                    <div className="option-cell">
-                      <label>Minutes:</label>
-                      <select 
-                        className="control-select"
-                        value={minutesPerPlayer}
-                        onChange={(e) => setMinutesPerPlayer(Number(e.target.value))}
-                      >
-                        <option value={1}>1</option>
-                        <option value={3}>3</option>
-                        <option value={5}>5</option>
-                        <option value={10}>10</option>
-                        <option value={15}>15</option>
-                        <option value={30}>30</option>
-                      </select>
-                    </div>
-                    <div className="option-cell">
-                      <label>Increment:</label>
-                      <select 
-                        className="control-select"
-                        value={incrementSeconds}
-                        onChange={(e) => setIncrementSeconds(Number(e.target.value))}
-                      >
-                        <option value={0}>0s</option>
-                        <option value={3}>3s</option>
-                        <option value={5}>5s</option>
-                        <option value={10}>10s</option>
-                        <option value={15}>15s</option>
-                        <option value={30}>30s</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <button id="pregame-start-btn" className="btn" onClick={startGame}>
-                Start Game
-              </button>
-            </div>
-          </div>
-        </>
-      )}
 
       {/* Settings popup */}
       {showSettings && (
@@ -3009,21 +2916,17 @@ const App: React.FC = () => {
               e.preventDefault();
               const formData = new FormData(e.target as HTMLFormElement);
               handleLogin(
-                formData.get('username') as string,
+                formData.get('email') as string,
                 formData.get('password') as string
               );
             }}>
               <div style={{ marginBottom: '15px' }}>
-                <label htmlFor="login-username" style={{ display: 'block', marginBottom: '5px' }}>Username:</label>
+                <label htmlFor="login-email" style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
                 <input
-                  type="text"
-                  id="login-username"
-                  name="username"
+                  type="email"
+                  id="login-email"
+                  name="email"
                   required
-                  minLength={6}
-                  maxLength={20}
-                  pattern="[a-zA-Z][a-zA-Z0-9]{5,19}"
-                  title="Username must be 6-20 characters, start with a letter, and contain only letters and numbers"
                   style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #ccc', borderRadius: '4px' }}
                 />
               </div>
@@ -3050,7 +2953,7 @@ const App: React.FC = () => {
                 <button type="button" className="btn" onClick={() => { setShowLogin(false); handlePlayAsGuest(); }}>
                   Play as Guest
                 </button>
-                <button type="button" className="btn" onClick={() => { setShowLogin(false); setShowMobilePregame(true); }}>Cancel</button>
+                <button type="button" className="btn" onClick={() => setShowLogin(false)}>Cancel</button>
               </div>
             </form>
           </div>
@@ -3123,7 +3026,7 @@ const App: React.FC = () => {
                 <button type="button" className="btn" onClick={() => { setShowSignup(false); handlePlayAsGuest(); }}>
                   Play as Guest
                 </button>
-                <button type="button" className="btn" onClick={() => { setShowSignup(false); setShowMobilePregame(true); }}>Cancel</button>
+                <button type="button" className="btn" onClick={() => setShowSignup(false)}>Cancel</button>
               </div>
             </form>
           </div>
