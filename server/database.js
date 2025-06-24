@@ -209,6 +209,108 @@ function updateUserStats(userId, result) {
   });
 }
 
+// Admin functions
+function getAllUsers() {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT id, email, username, wins, losses, draws, current_streak, streak_type, 
+              created_at, email_verified FROM users ORDER BY created_at DESC`,
+      [],
+      (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          // Calculate additional stats for each user
+          const usersWithStats = rows.map(user => {
+            const gamesPlayed = user.wins + user.losses + user.draws;
+            const winRate = gamesPlayed > 0 ? ((user.wins / gamesPlayed) * 100).toFixed(1) : '0.0';
+            
+            return {
+              ...user,
+              gamesPlayed,
+              winRate: parseFloat(winRate)
+            };
+          });
+          resolve(usersWithStats);
+        }
+      }
+    );
+  });
+}
+
+function getSystemStats() {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT 
+        COUNT(*) as totalUsers,
+        SUM(wins + losses + draws) as totalGames,
+        AVG(wins + losses + draws) as avgGamesPerUser,
+        SUM(wins) as totalWins,
+        SUM(losses) as totalLosses,
+        SUM(draws) as totalDraws
+      FROM users`,
+      [],
+      (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({
+            totalUsers: row.totalUsers || 0,
+            totalGames: row.totalGames || 0,
+            avgGamesPerUser: row.avgGamesPerUser ? parseFloat(row.avgGamesPerUser.toFixed(1)) : 0,
+            totalWins: row.totalWins || 0,
+            totalLosses: row.totalLosses || 0,
+            totalDraws: row.totalDraws || 0
+          });
+        }
+      }
+    );
+  });
+}
+
+function getRecentUsers(limit = 10) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT id, username, email, created_at FROM users 
+       ORDER BY created_at DESC LIMIT ?`,
+      [limit],
+      (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      }
+    );
+  });
+}
+
+function getTopPlayers(limit = 10) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT id, username, wins, losses, draws,
+              (wins + losses + draws) as gamesPlayed,
+              CASE 
+                WHEN (wins + losses + draws) > 0 
+                THEN ROUND((CAST(wins AS FLOAT) / (wins + losses + draws)) * 100, 1)
+                ELSE 0 
+              END as winRate
+       FROM users 
+       WHERE (wins + losses + draws) >= 5
+       ORDER BY winRate DESC, wins DESC 
+       LIMIT ?`,
+      [limit],
+      (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      }
+    );
+  });
+}
+
 module.exports = {
   initializeDatabase,
   createUser,
@@ -217,5 +319,9 @@ module.exports = {
   getUserById,
   verifyPassword,
   updateUserStats,
-  getUserStats
+  getUserStats,
+  getAllUsers,
+  getSystemStats,
+  getRecentUsers,
+  getTopPlayers
 }; 

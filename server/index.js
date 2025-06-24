@@ -6,7 +6,7 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
 // Import authentication modules
-const { initializeDatabase, createUser, getUserByEmail, getUserByUsername, verifyPassword, getUserStats } = require('./database');
+const { initializeDatabase, createUser, getUserByEmail, getUserByUsername, verifyPassword, getUserStats, getAllUsers, getSystemStats, getRecentUsers, getTopPlayers } = require('./database');
 const { generateToken, authenticateToken, optionalAuth } = require('./auth');
 
 const app = express();
@@ -178,6 +178,515 @@ app.get('/api/auth/stats', authenticateToken, async (req, res) => {
     console.error('Stats error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// Admin routes - Simple password protection
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'flux-admin-2024';
+
+function adminAuth(req, res, next) {
+  const { password } = req.query;
+  if (password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Invalid admin password' });
+  }
+  next();
+}
+
+// Admin dashboard - Get all users
+app.get('/api/admin/users', adminAuth, async (req, res) => {
+  try {
+    const users = await getAllUsers();
+    res.json({ users });
+  } catch (error) {
+    console.error('Admin users error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin dashboard - Get system statistics  
+app.get('/api/admin/stats', adminAuth, async (req, res) => {
+  try {
+    const stats = await getSystemStats();
+    res.json({ stats });
+  } catch (error) {
+    console.error('Admin stats error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin dashboard - Get recent users
+app.get('/api/admin/recent-users', adminAuth, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const users = await getRecentUsers(limit);
+    res.json({ users });
+  } catch (error) {
+    console.error('Admin recent users error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin dashboard - Get top players
+app.get('/api/admin/top-players', adminAuth, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const players = await getTopPlayers(limit);
+    res.json({ players });
+  } catch (error) {
+    console.error('Admin top players error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin dashboard - Serve admin panel HTML
+app.get('/admin', (req, res) => {
+  const adminHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flux Game Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .login-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-section input {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin: 10px;
+            width: 250px;
+        }
+        
+        .login-section button {
+            padding: 12px 30px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        
+        .login-section button:hover {
+            background: #2980b9;
+        }
+        
+        .dashboard {
+            display: none;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            border-left: 5px solid #3498db;
+        }
+        
+        .stat-card h3 {
+            color: #2c3e50;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+        
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .win-rate {
+            font-weight: bold;
+        }
+        
+        .win-rate.high { color: #27ae60; }
+        .win-rate.medium { color: #f39c12; }
+        .win-rate.low { color: #e74c3c; }
+        
+        .streak {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .streak.win { background: #d4edda; color: #155724; }
+        .streak.loss { background: #f8d7da; color: #721c24; }
+        .streak.none { background: #e2e3e5; color: #6c757d; }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .refresh-btn:hover {
+            background: #218838;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Flux Game Admin Dashboard</h1>
+            <p>Monitor your game's users, statistics, and performance</p>
+        </div>
+        
+        <div class="login-section" id="loginSection">
+            <h2>Admin Access Required</h2>
+            <p>Enter admin password to access dashboard</p>
+            <br>
+            <input type="password" id="adminPassword" placeholder="Admin Password" />
+            <button onclick="login()">Access Dashboard</button>
+            <div id="loginError"></div>
+        </div>
+        
+        <div class="dashboard" id="dashboard">
+            <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh Data</button>
+            
+            <div class="stats-grid" id="statsGrid">
+                <div class="loading">Loading system statistics...</div>
+            </div>
+            
+            <div class="section">
+                <h2>📊 All Users</h2>
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Games</th>
+                                <th>W/L/D</th>
+                                <th>Win Rate</th>
+                                <th>Streak</th>
+                                <th>Joined</th>
+                                <th>Verified</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="9" class="loading">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>🏆 Top Players (5+ Games)</h2>
+                <div class="table-container">
+                    <table id="topPlayersTable">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Username</th>
+                                <th>Games</th>
+                                <th>Wins</th>
+                                <th>Win Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="loading">Loading top players...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adminPassword = '';
+        
+        function login() {
+            adminPassword = document.getElementById('adminPassword').value;
+            if (!adminPassword) {
+                showError('loginError', 'Please enter admin password');
+                return;
+            }
+            
+            // Test admin access
+            fetch('/api/admin/stats?password=' + encodeURIComponent(adminPassword))
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById('loginSection').style.display = 'none';
+                        document.getElementById('dashboard').style.display = 'block';
+                        loadDashboard();
+                    } else {
+                        showError('loginError', 'Invalid admin password');
+                    }
+                })
+                .catch(error => {
+                    showError('loginError', 'Connection error: ' + error.message);
+                });
+        }
+        
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML = '<div class="error">' + message + '</div>';
+        }
+        
+        function loadDashboard() {
+            loadSystemStats();
+            loadUsers();
+            loadTopPlayers();
+        }
+        
+        function loadSystemStats() {
+            fetch('/api/admin/stats?password=' + encodeURIComponent(adminPassword))
+                .then(response => response.json())
+                .then(data => {
+                    const stats = data.stats;
+                    document.getElementById('statsGrid').innerHTML = \`
+                        <div class="stat-card">
+                            <h3>Total Users</h3>
+                            <div class="number">\${stats.totalUsers}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Games</h3>
+                            <div class="number">\${stats.totalGames}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Avg Games/User</h3>
+                            <div class="number">\${stats.avgGamesPerUser}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Wins</h3>
+                            <div class="number">\${stats.totalWins}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Losses</h3>
+                            <div class="number">\${stats.totalLosses}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Draws</h3>
+                            <div class="number">\${stats.totalDraws}</div>
+                        </div>
+                    \`;
+                })
+                .catch(error => {
+                    document.getElementById('statsGrid').innerHTML = '<div class="error">Error loading stats: ' + error.message + '</div>';
+                });
+        }
+        
+        function loadUsers() {
+            fetch('/api/admin/users?password=' + encodeURIComponent(adminPassword))
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector('#usersTable tbody');
+                    if (data.users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #666;">No users found</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.users.map(user => {
+                        const winRateClass = user.winRate >= 70 ? 'high' : user.winRate >= 40 ? 'medium' : 'low';
+                        const streakClass = user.streak_type === 'win' ? 'win' : user.streak_type === 'loss' ? 'loss' : 'none';
+                        const streakText = user.current_streak > 0 ? \`\${user.current_streak} \${user.streak_type}\` : 'none';
+                        
+                        return \`
+                            <tr>
+                                <td>\${user.id}</td>
+                                <td><strong>\${user.username}</strong></td>
+                                <td>\${user.email}</td>
+                                <td>\${user.gamesPlayed}</td>
+                                <td>\${user.wins}/\${user.losses}/\${user.draws}</td>
+                                <td><span class="win-rate \${winRateClass}">\${user.winRate}%</span></td>
+                                <td><span class="streak \${streakClass}">\${streakText}</span></td>
+                                <td>\${new Date(user.created_at).toLocaleDateString()}</td>
+                                <td>\${user.email_verified ? '✅' : '❌'}</td>
+                            </tr>
+                        \`;
+                    }).join('');
+                })
+                .catch(error => {
+                    document.querySelector('#usersTable tbody').innerHTML = '<tr><td colspan="9" class="error">Error loading users: ' + error.message + '</td></tr>';
+                });
+        }
+        
+        function loadTopPlayers() {
+            fetch('/api/admin/top-players?password=' + encodeURIComponent(adminPassword))
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector('#topPlayersTable tbody');
+                    if (data.players.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">No players with 5+ games found</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.players.map((player, index) => {
+                        const winRateClass = player.winRate >= 70 ? 'high' : player.winRate >= 40 ? 'medium' : 'low';
+                        const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                        
+                        return \`
+                            <tr>
+                                <td>\${rankEmoji} #\${index + 1}</td>
+                                <td><strong>\${player.username}</strong></td>
+                                <td>\${player.gamesPlayed}</td>
+                                <td>\${player.wins}</td>
+                                <td><span class="win-rate \${winRateClass}">\${player.winRate}%</span></td>
+                            </tr>
+                        \`;
+                    }).join('');
+                })
+                .catch(error => {
+                    document.querySelector('#topPlayersTable tbody').innerHTML = '<tr><td colspan="5" class="error">Error loading top players: ' + error.message + '</td></tr>';
+                });
+        }
+        
+        // Allow Enter key to login
+        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>
+  `;
+  res.send(adminHTML);
 });
 
 // Catch all handler: send back React's index.html file for any non-API routes
