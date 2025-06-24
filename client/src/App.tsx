@@ -1178,12 +1178,15 @@ const App: React.FC = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSearchingMatch, setIsSearchingMatch] = useState(false);
+  const [userStats, setUserStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // Settings state
   const [currentTheme, setCurrentTheme] = useState('classic');
@@ -1742,6 +1745,40 @@ const App: React.FC = () => {
       resetGame();
     }
     showToast('Logged out successfully');
+  };
+
+  // Handle stats button click
+  const handleViewStats = async () => {
+    if (!authState.isAuthenticated) {
+      setToast("Stats require a player account - sign up to track your wins!");
+      setTimeout(() => setToast(''), 3000);
+      return;
+    }
+
+    setStatsLoading(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${getApiUrl()}/api/auth/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserStats(data.stats);
+        setShowStats(true);
+      } else {
+        setToast("Failed to load statistics");
+        setTimeout(() => setToast(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      setToast("Failed to load statistics");
+      setTimeout(() => setToast(''), 3000);
+    } finally {
+      setStatsLoading(false);
+    }
   };
 
   const formatTime = (seconds: number): string => {
@@ -2911,6 +2948,9 @@ const App: React.FC = () => {
 
             {/* Buttons */}
             <div className="notification-buttons">
+              <button className="btn" onClick={handleViewStats} disabled={statsLoading}>
+                {statsLoading ? 'Loading...' : 'View Statistics'}
+              </button>
               <button className="btn" onClick={resetSettings}>Reset to Defaults</button>
               <button className="btn" onClick={() => setShowSettings(false)}>Close</button>
             </div>
@@ -3349,6 +3389,131 @@ const App: React.FC = () => {
               >
                 ⚔️ Continue Playing
               </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Stats Modal */}
+      {showStats && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowStats(false)} />
+          <div className="notification" style={{ display: 'block', maxWidth: '450px' }}>
+            <h2>📊 Player Statistics</h2>
+            {userStats && (
+              <div style={{ padding: '20px 0' }}>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr', 
+                  gap: '20px',
+                  marginBottom: '20px' 
+                }}>
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '15px', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '8px',
+                    border: '2px solid #e9ecef'
+                  }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2c3e50' }}>
+                      {userStats.gamesPlayed}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#6c757d' }}>Games Played</div>
+                  </div>
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '15px', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '8px',
+                    border: '2px solid #e9ecef'
+                  }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#28a745' }}>
+                      {userStats.winRate}%
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#6c757d' }}>Win Rate</div>
+                  </div>
+                </div>
+
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr 1fr', 
+                  gap: '15px',
+                  marginBottom: '20px' 
+                }}>
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '12px', 
+                    backgroundColor: '#e8f5e8', 
+                    borderRadius: '6px',
+                    border: '1px solid #c3e6cb'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#155724' }}>
+                      {userStats.wins}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#155724' }}>Wins</div>
+                  </div>
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '12px', 
+                    backgroundColor: '#f8d7da', 
+                    borderRadius: '6px',
+                    border: '1px solid #f1b0b7'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#721c24' }}>
+                      {userStats.losses}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#721c24' }}>Losses</div>
+                  </div>
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '12px', 
+                    backgroundColor: '#fff3cd', 
+                    borderRadius: '6px',
+                    border: '1px solid #ffeaa7'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#856404' }}>
+                      {userStats.draws}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#856404' }}>Draws</div>
+                  </div>
+                </div>
+
+                {userStats.currentStreak > 0 && (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '15px', 
+                    backgroundColor: userStats.streakType === 'win' ? '#e8f5e8' : '#f8d7da', 
+                    borderRadius: '8px',
+                    border: `2px solid ${userStats.streakType === 'win' ? '#c3e6cb' : '#f1b0b7'}`,
+                    marginBottom: '20px'
+                  }}>
+                    <div style={{ 
+                      fontSize: '18px', 
+                      fontWeight: 'bold', 
+                      color: userStats.streakType === 'win' ? '#155724' : '#721c24'
+                    }}>
+                      🔥 Current Streak: {userStats.currentStreak} {userStats.streakType === 'win' ? 'Wins' : 'Losses'}
+                    </div>
+                  </div>
+                )}
+
+                {authState.user && (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '10px', 
+                    color: '#6c757d', 
+                    fontSize: '14px',
+                    borderTop: '1px solid #e9ecef',
+                    marginTop: '15px',
+                    paddingTop: '15px'
+                  }}>
+                    Stats for {authState.user.username}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="notification-buttons">
+              <button className="btn" onClick={() => setShowStats(false)}>Close</button>
             </div>
           </div>
         </>

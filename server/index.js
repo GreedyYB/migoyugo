@@ -6,7 +6,7 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
 // Import authentication modules
-const { initializeDatabase, createUser, getUserByEmail, getUserByUsername, verifyPassword } = require('./database');
+const { initializeDatabase, createUser, getUserByEmail, getUserByUsername, verifyPassword, getUserStats } = require('./database');
 const { generateToken, authenticateToken, optionalAuth } = require('./auth');
 
 const app = express();
@@ -164,6 +164,20 @@ app.get('/api/auth/profile', authenticateToken, (req, res) => {
       created_at: req.user.created_at
     }
   });
+});
+
+// Get user statistics
+app.get('/api/auth/stats', authenticateToken, async (req, res) => {
+  try {
+    const stats = await getUserStats(req.user.id);
+    if (!stats) {
+      return res.status(404).json({ error: 'User stats not found' });
+    }
+    res.json({ stats });
+  } catch (error) {
+    console.error('Stats error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Catch all handler: send back React's index.html file for any non-API routes

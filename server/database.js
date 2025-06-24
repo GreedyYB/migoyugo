@@ -21,7 +21,9 @@ function initializeDatabase() {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           wins INTEGER DEFAULT 0,
           losses INTEGER DEFAULT 0,
-          draws INTEGER DEFAULT 0
+          draws INTEGER DEFAULT 0,
+          current_streak INTEGER DEFAULT 0,
+          streak_type TEXT DEFAULT 'none'
         )
       `, (err) => {
         if (err) {
@@ -123,6 +125,35 @@ function verifyPassword(password, hash) {
   return bcrypt.compare(password, hash);
 }
 
+function getUserStats(userId) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT wins, losses, draws, current_streak, streak_type FROM users WHERE id = ?',
+      [userId],
+      (err, row) => {
+        if (err) {
+          reject(err);
+        } else if (!row) {
+          resolve(null);
+        } else {
+          const gamesPlayed = row.wins + row.losses + row.draws;
+          const winRate = gamesPlayed > 0 ? ((row.wins / gamesPlayed) * 100).toFixed(1) : '0.0';
+          
+          resolve({
+            gamesPlayed,
+            wins: row.wins,
+            losses: row.losses,
+            draws: row.draws,
+            winRate: parseFloat(winRate),
+            currentStreak: row.current_streak,
+            streakType: row.streak_type
+          });
+        }
+      }
+    );
+  });
+}
+
 function updateUserStats(userId, result) {
   return new Promise((resolve, reject) => {
     let column;
@@ -131,15 +162,48 @@ function updateUserStats(userId, result) {
     else if (result === 'draw') column = 'draws';
     else return reject(new Error('Invalid result'));
 
-    db.run(
-      `UPDATE users SET ${column} = ${column} + 1 WHERE id = ?`,
+    // Get current stats first to calculate streak
+    db.get(
+      'SELECT current_streak, streak_type FROM users WHERE id = ?',
       [userId],
-      function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
+      (err, row) => {
+        if (err) return reject(err);
+        
+        let newStreak = 0;
+        let newStreakType = 'none';
+        
+        if (row) {
+          if (result === 'win') {
+            if (row.streak_type === 'win') {
+              newStreak = row.current_streak + 1;
+            } else {
+              newStreak = 1;
+            }
+            newStreakType = 'win';
+          } else if (result === 'loss') {
+            if (row.streak_type === 'loss') {
+              newStreak = row.current_streak + 1;
+            } else {
+              newStreak = 1;
+            }
+            newStreakType = 'loss';
+          } else { // draw
+            newStreak = 0;
+            newStreakType = 'none';
+          }
         }
+
+        db.run(
+          `UPDATE users SET ${column} = ${column} + 1, current_streak = ?, streak_type = ? WHERE id = ?`,
+          [newStreak, newStreakType, userId],
+          function(err) {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          }
+        );
       }
     );
   });
@@ -152,5 +216,6 @@ module.exports = {
   getUserByUsername,
   getUserById,
   verifyPassword,
-  updateUserStats
+  updateUserStats,
+  getUserStats
 }; 
