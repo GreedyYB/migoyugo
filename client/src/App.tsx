@@ -1246,6 +1246,7 @@ const App: React.FC = () => {
   const [toast, setToast] = useState<string>('');
   const [showResignConfirmation, setShowResignConfirmation] = useState(false);
   const [originalGameState, setOriginalGameState] = useState<GameState | null>(null);
+  const [showMobileControls, setShowMobileControls] = useState(false);
 
   // Tutorial animation ref
   const animationRef = useRef<NodeJS.Timeout | null>(null);
@@ -2594,6 +2595,19 @@ const App: React.FC = () => {
             </button>
           </div>
 
+          {/* Mobile controls button - only show on mobile when game is not started */}
+          {!isGameStarted && (
+            <div className="mobile-controls-button" style={{ width: '256px', marginBottom: '10px' }}>
+              <button 
+                className="btn mobile-only" 
+                onClick={() => setShowMobileControls(true)}
+                style={{ width: '100%', height: '40px' }}
+              >
+                Game Settings
+              </button>
+            </div>
+          )}
+
           {/* Game controls area */}
           <div className="game-controls-area" style={{ height: 'calc(var(--board-size) + 4px)', width: '256px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
             {!isGameStarted && (
@@ -3187,6 +3201,160 @@ const App: React.FC = () => {
                 </div>
               </>
             )}
+          </div>
+        </>
+      )}
+
+      {/* Mobile Controls Modal */}
+      {showMobileControls && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowMobileControls(false)} />
+          <div className="notification" style={{ display: 'block', maxWidth: '400px' }}>
+            <h2>Game Settings</h2>
+            
+            {/* Opponent selection */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Choose Opponent:</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button 
+                  className={`btn ${gameMode === 'local' ? 'active' : ''}`}
+                  onClick={() => setGameMode('local')}
+                  style={{ 
+                    width: '100%', 
+                    textAlign: 'left',
+                    backgroundColor: gameMode === 'local' ? 'var(--accent-color)' : '#f8f9fa',
+                    color: gameMode === 'local' ? 'white' : 'var(--primary-color)'
+                  }}
+                >
+                  🎮 Local Play (Human vs Human)
+                </button>
+                <button 
+                  className={`btn ${gameMode === 'ai-1' ? 'active' : ''}`}
+                  onClick={() => setGameMode('ai-1')}
+                  style={{ 
+                    width: '100%', 
+                    textAlign: 'left',
+                    backgroundColor: gameMode === 'ai-1' ? 'var(--accent-color)' : '#f8f9fa',
+                    color: gameMode === 'ai-1' ? 'white' : 'var(--primary-color)'
+                  }}
+                >
+                  🤖 CORE AI-1 (Easy)
+                </button>
+                <button 
+                  className={`btn ${gameMode === 'ai-2' ? 'active' : ''}`}
+                  onClick={() => setGameMode('ai-2')}
+                  style={{ 
+                    width: '100%', 
+                    textAlign: 'left',
+                    backgroundColor: gameMode === 'ai-2' ? 'var(--accent-color)' : '#f8f9fa',
+                    color: gameMode === 'ai-2' ? 'white' : 'var(--primary-color)'
+                  }}
+                >
+                  🤖 CORE AI-2 (Medium)
+                </button>
+                <button 
+                  className={`btn ${gameMode === 'ai-3' ? 'active' : ''}`}
+                  onClick={() => setGameMode('ai-3')}
+                  style={{ 
+                    width: '100%', 
+                    textAlign: 'left',
+                    backgroundColor: gameMode === 'ai-3' ? 'var(--accent-color)' : '#f8f9fa',
+                    color: gameMode === 'ai-3' ? 'white' : 'var(--primary-color)'
+                  }}
+                >
+                  🤖 CORE AI-3 (Hard)
+                </button>
+                <button 
+                  className={`btn ${gameMode === 'online' ? 'active' : ''}`}
+                  onClick={() => setGameMode('online')}
+                  style={{ 
+                    width: '100%', 
+                    textAlign: 'left',
+                    backgroundColor: gameMode === 'online' ? 'var(--accent-color)' : '#f8f9fa',
+                    color: gameMode === 'online' ? 'white' : 'var(--primary-color)'
+                  }}
+                >
+                  🌐 Online Multiplayer
+                </button>
+              </div>
+            </div>
+
+            {/* Timer settings */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <label style={{ fontWeight: 'bold' }}>Game Timer:</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '14px', color: timerEnabled ? '#666' : 'var(--accent-color)' }}>Off</span>
+                  <label className="toggle">
+                    <input 
+                      type="checkbox" 
+                      checked={timerEnabled}
+                      onChange={(e) => setTimerEnabled(e.target.checked)}
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                  <span style={{ fontSize: '14px', color: timerEnabled ? 'var(--accent-color)' : '#666' }}>On</span>
+                </div>
+              </div>
+
+              {timerEnabled && (
+                <div style={{ marginTop: '15px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Minutes per Player:</label>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {[60, 30, 15, 10, 5, 3].map(minutes => (
+                        <button
+                          key={minutes}
+                          className={`btn ${minutesPerPlayer === minutes ? 'active' : ''}`}
+                          onClick={() => setMinutesPerPlayer(minutes)}
+                          style={{
+                            flex: '1',
+                            minWidth: '50px',
+                            fontSize: '14px',
+                            padding: '8px 12px',
+                            backgroundColor: minutesPerPlayer === minutes ? 'var(--accent-color)' : '#fff',
+                            color: minutesPerPlayer === minutes ? 'white' : 'var(--primary-color)',
+                            border: minutesPerPlayer === minutes ? 'none' : '1px solid #ccc'
+                          }}
+                        >
+                          {minutes}min
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Increment per Move:</label>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {[10, 5, 2, 0].map(increment => (
+                        <button
+                          key={increment}
+                          className={`btn ${incrementSeconds === increment ? 'active' : ''}`}
+                          onClick={() => setIncrementSeconds(increment)}
+                          style={{
+                            flex: '1',
+                            minWidth: '60px',
+                            fontSize: '14px',
+                            padding: '8px 12px',
+                            backgroundColor: incrementSeconds === increment ? 'var(--accent-color)' : '#fff',
+                            color: incrementSeconds === increment ? 'white' : 'var(--primary-color)',
+                            border: incrementSeconds === increment ? 'none' : '1px solid #ccc'
+                          }}
+                        >
+                          {increment}sec
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="notification-buttons">
+              <button className="btn" onClick={() => setShowMobileControls(false)}>
+                Apply Settings
+              </button>
+            </div>
           </div>
         </>
       )}

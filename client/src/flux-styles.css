@@ -2473,3 +2473,26 @@ html, body {
     opacity: 0;
     pointer-events: none;
 }
+
+/* Mobile controls styling */
+.mobile-only {
+    display: none;
+}
+
+.mobile-controls-button {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .mobile-only {
+        display: block !important;
+    }
+    
+    .mobile-controls-button {
+        display: block !important;
+    }
+    
+    .game-controls-area {
+        display: none !important;
+    }
+}
