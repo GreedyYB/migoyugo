@@ -1187,6 +1187,8 @@ const App: React.FC = () => {
   const [isSearchingMatch, setIsSearchingMatch] = useState(false);
   const [userStats, setUserStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [showPWABanner, setShowPWABanner] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   // Settings state
   const [currentTheme, setCurrentTheme] = useState('classic');
@@ -1340,6 +1342,58 @@ const App: React.FC = () => {
     
     // Reset document theme
     document.documentElement.setAttribute('data-theme', 'classic');
+  };
+
+  // PWA installation detection
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      setDeferredPrompt(e);
+      // Show our custom banner after a short delay
+      setTimeout(() => {
+        // Only show if not already installed and not dismissed recently
+        const dismissed = localStorage.getItem('pwa-banner-dismissed');
+        const dismissedTime = dismissed ? parseInt(dismissed) : 0;
+        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+        
+        if (!dismissedTime || dismissedTime < oneDayAgo) {
+          setShowPWABanner(true);
+        }
+      }, 3000); // Show after 3 seconds to let user see the game first
+    };
+
+    const handleAppInstalled = () => {
+      setShowPWABanner(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  // PWA banner actions
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) return;
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      setShowPWABanner(false);
+    }
+    setDeferredPrompt(null);
+  };
+
+  const dismissPWABanner = () => {
+    setShowPWABanner(false);
+    localStorage.setItem('pwa-banner-dismissed', Date.now().toString());
   };
 
   // Check authentication status on component mount
@@ -3517,6 +3571,64 @@ const App: React.FC = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* PWA Installation Banner */}
+      {showPWABanner && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#2c3e50',
+          color: 'white',
+          padding: '15px 20px',
+          borderRadius: '10px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 1000,
+          maxWidth: '90vw',
+          width: '400px',
+          textAlign: 'center',
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          <div style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>
+            🎮 Install Flux Game
+          </div>
+          <div style={{ marginBottom: '15px', fontSize: '14px', opacity: 0.9 }}>
+            Add to your home screen for fullscreen play with no browser bars!
+          </div>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button 
+              onClick={handleInstallPWA}
+              style={{
+                backgroundColor: '#3498db',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '5px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              📱 Install App
+            </button>
+            <button 
+              onClick={dismissPWABanner}
+              style={{
+                backgroundColor: 'transparent',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                padding: '8px 16px',
+                borderRadius: '5px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              Maybe Later
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Toast */}
