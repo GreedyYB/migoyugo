@@ -2502,37 +2502,35 @@ const App: React.FC = () => {
       <div className="game-container">
         <div className="game-board-area">
           {/* Top player info */}
-          <div className="player-bar-row" style={{ display: 'flex', alignItems: 'center' }}>
-            <div className="player-info" style={{ marginRight: '10px', width: 'calc(var(--board-size) + 4px)', boxSizing: 'border-box' }}>
-              <div className={`player ${gameState.currentPlayer === 'white' ? 'active' : ''}`} id="player-white">
-                <div className="player-color white"></div>
-                <span>
-                  {(() => {
-                    if (!isGameStarted) {
-                      return 'White';
-                    } else if (gameMode === 'online' && playerColor) {
-                      // Multiplayer game - show actual usernames with color
-                      const whiteName = playerColor === 'white' ? 
-                        (authState.user?.username || 'Guest') : 
-                        opponentName;
-                      return `${whiteName} (white)`;
-                    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2') && authState.isAuthenticated) {
-                      // AI game with authenticated user - show username for white (human player)
-                      return `${authState.user?.username} (white)`;
-                    } else {
-                      // Local human vs human or unauthenticated - use gameState players
-                      return gameState.players.white;
-                    }
-                  })()}
-                </span>
-                <span>Nodes: <span id="white-score">{gameState.scores.white}</span></span>
-              </div>
-              {timerEnabled && (
-                <div className="player-timer" id="white-timer">
-                  {formatTime(timers.white)}
-                </div>
-              )}
+          <div className="player-info" style={{ width: 'calc(var(--board-size) + 4px)', boxSizing: 'border-box' }}>
+            <div className={`player ${gameState.currentPlayer === 'white' ? 'active' : ''}`} id="player-white">
+              <div className="player-color white"></div>
+              <span>
+                {(() => {
+                  if (!isGameStarted) {
+                    return 'White';
+                  } else if (gameMode === 'online' && playerColor) {
+                    // Multiplayer game - show actual usernames with color
+                    const whiteName = playerColor === 'white' ? 
+                      (authState.user?.username || 'Guest') : 
+                      opponentName;
+                    return `${whiteName} (white)`;
+                  } else if ((gameMode === 'ai-1' || gameMode === 'ai-2') && authState.isAuthenticated) {
+                    // AI game with authenticated user - show username for white (human player)
+                    return `${authState.user?.username} (white)`;
+                  } else {
+                    // Local human vs human or unauthenticated - use gameState players
+                    return gameState.players.white;
+                  }
+                })()}
+              </span>
+              <span>Nodes: <span id="white-score">{gameState.scores.white}</span></span>
             </div>
+            {timerEnabled && (
+              <div className="player-timer" id="white-timer">
+                {formatTime(timers.white)}
+              </div>
+            )}
           </div>
 
           {/* Game board */}
