@@ -1344,9 +1344,10 @@ const App: React.FC = () => {
     document.documentElement.setAttribute('data-theme', 'classic');
   };
 
-  // PWA installation detection
+    // PWA installation detection
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
+      console.log('PWA: beforeinstallprompt event fired');
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       // Stash the event so it can be triggered later
@@ -1361,13 +1362,31 @@ const App: React.FC = () => {
         if (!dismissedTime || dismissedTime < oneDayAgo) {
           setShowPWABanner(true);
         }
-      }, 3000); // Show after 3 seconds to let user see the game first
+        }, 5000); // Show after 5 seconds on mobile (longer delay)
     };
 
     const handleAppInstalled = () => {
+      console.log('PWA: App installed');
       setShowPWABanner(false);
       setDeferredPrompt(null);
     };
+
+    // Check if we should show PWA banner for iOS (no beforeinstallprompt)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isStandalone = (window.navigator as any).standalone;
+    
+    if (isIOS && !isStandalone) {
+      setTimeout(() => {
+        const dismissed = localStorage.getItem('pwa-banner-dismissed');
+        const dismissedTime = dismissed ? parseInt(dismissed) : 0;
+        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+        
+        if (!dismissedTime || dismissedTime < oneDayAgo) {
+          console.log('PWA: Showing iOS banner');
+          setShowPWABanner(true);
+        }
+      }, 5000);
+    }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -1380,10 +1399,23 @@ const App: React.FC = () => {
 
   // PWA banner actions
   const handleInstallPWA = async () => {
-    if (!deferredPrompt) return;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    if (isIOS) {
+      // iOS doesn't support programmatic install, show instructions
+      alert('To install: Tap the Share button in Safari, then select "Add to Home Screen"');
+      setShowPWABanner(false);
+      return;
+    }
+    
+    if (!deferredPrompt) {
+      console.log('PWA: No deferred prompt available');
+      return;
+    }
     
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
+    console.log('PWA: User choice:', outcome);
     
     if (outcome === 'accepted') {
       setShowPWABanner(false);
