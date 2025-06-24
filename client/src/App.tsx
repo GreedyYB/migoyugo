@@ -1236,7 +1236,7 @@ const App: React.FC = () => {
   const [timerEnabled, setTimerEnabled] = useState(true);
   const [minutesPerPlayer, setMinutesPerPlayer] = useState(10);
   const [incrementSeconds, setIncrementSeconds] = useState(0);
-  const [isGameStarted, setIsGameStarted] = useState(true);
+  const [isGameStarted, setIsGameStarted] = useState(false);
   const [rematchState, setRematchState] = useState<{
     requested: boolean;
     fromPlayer: string | null;
