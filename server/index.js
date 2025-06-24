@@ -237,7 +237,7 @@ app.get('/api/admin/top-players', adminAuth, async (req, res) => {
   }
 });
 
-// Admin dashboard - Serve admin panel HTML
+// Admin dashboard - Serve admin panel HTML (must be before catch-all)
 app.get('/admin', (req, res) => {
   const adminHTML = `
 <!DOCTYPE html>
