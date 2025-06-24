@@ -1388,19 +1388,8 @@ const App: React.FC = () => {
     });
     
          // Show PWA banner for mobile devices (iOS or Android) that aren't already installed
-    // Temporarily force show banner for debugging on all mobile devices
-    if (isMobile) {
-      console.log('PWA: Mobile device detected, will show banner after 3 seconds');
-      setTimeout(() => {
-        console.log('PWA: Timer finished, showing banner now');
-        setShowPWABanner(true);
-      }, 3000); // Reduced to 3 seconds for faster testing
-    }
-    
-    // Original logic (commented out for debugging)
-    /* 
     if (isMobile && !isStandalone) {
-      console.log('PWA: Mobile device detected, will show banner after 5 seconds');
+      console.log('PWA: Mobile device detected (not standalone), will show banner after 5 seconds');
       setTimeout(() => {
         const dismissed = localStorage.getItem('pwa-banner-dismissed');
         const dismissedTime = dismissed ? parseInt(dismissed) : 0;
@@ -1418,8 +1407,11 @@ const App: React.FC = () => {
           setShowPWABanner(true);
         }
       }, 5000);
+    } else if (isMobile && isStandalone) {
+      console.log('PWA: Running in standalone mode - no banner needed');
+    } else if (!isMobile) {
+      console.log('PWA: Desktop device - will rely on beforeinstallprompt event');
     }
-    */
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
