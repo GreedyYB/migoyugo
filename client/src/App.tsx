@@ -3209,149 +3209,108 @@ const App: React.FC = () => {
       {showMobileControls && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowMobileControls(false)} />
-          <div className="notification" style={{ display: 'block', maxWidth: '400px' }}>
-            <h2>Game Settings</h2>
+          <div className="notification mobile-controls-modal" style={{ display: 'block', maxWidth: '90vw', width: '400px', minWidth: '350px' }}>
+            <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Game Settings</h2>
             
             {/* Opponent selection */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Choose Opponent:</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button 
-                  className={`btn ${gameMode === 'local' ? 'active' : ''}`}
-                  onClick={() => setGameMode('local')}
-                  style={{ 
-                    width: '100%', 
-                    textAlign: 'left',
-                    backgroundColor: gameMode === 'local' ? 'var(--accent-color)' : '#f8f9fa',
-                    color: gameMode === 'local' ? 'white' : 'var(--primary-color)'
-                  }}
-                >
-                  🎮 Local Play (Human vs Human)
-                </button>
-                <button 
-                  className={`btn ${gameMode === 'ai-1' ? 'active' : ''}`}
-                  onClick={() => setGameMode('ai-1')}
-                  style={{ 
-                    width: '100%', 
-                    textAlign: 'left',
-                    backgroundColor: gameMode === 'ai-1' ? 'var(--accent-color)' : '#f8f9fa',
-                    color: gameMode === 'ai-1' ? 'white' : 'var(--primary-color)'
-                  }}
-                >
-                  🤖 CORE AI-1 (Easy)
-                </button>
-                <button 
-                  className={`btn ${gameMode === 'ai-2' ? 'active' : ''}`}
-                  onClick={() => setGameMode('ai-2')}
-                  style={{ 
-                    width: '100%', 
-                    textAlign: 'left',
-                    backgroundColor: gameMode === 'ai-2' ? 'var(--accent-color)' : '#f8f9fa',
-                    color: gameMode === 'ai-2' ? 'white' : 'var(--primary-color)'
-                  }}
-                >
-                  🤖 CORE AI-2 (Medium)
-                </button>
-                <button 
-                  className={`btn ${gameMode === 'ai-3' ? 'active' : ''}`}
-                  onClick={() => setGameMode('ai-3')}
-                  style={{ 
-                    width: '100%', 
-                    textAlign: 'left',
-                    backgroundColor: gameMode === 'ai-3' ? 'var(--accent-color)' : '#f8f9fa',
-                    color: gameMode === 'ai-3' ? 'white' : 'var(--primary-color)'
-                  }}
-                >
-                  🤖 CORE AI-3 (Hard)
-                </button>
-                <button 
-                  className={`btn ${gameMode === 'online' ? 'active' : ''}`}
-                  onClick={() => setGameMode('online')}
-                  style={{ 
-                    width: '100%', 
-                    textAlign: 'left',
-                    backgroundColor: gameMode === 'online' ? 'var(--accent-color)' : '#f8f9fa',
-                    color: gameMode === 'online' ? 'white' : 'var(--primary-color)'
-                  }}
-                >
-                  🌐 Online Multiplayer
-                </button>
+            <div className="option-row" style={{ marginBottom: '20px' }}>
+              <label htmlFor="mobile-game-mode-select" style={{ fontWeight: 'bold', fontSize: '16px' }}>Opponent:</label>
+              <select 
+                id="mobile-game-mode-select" 
+                className="control-select"
+                value={gameMode}
+                onChange={(e) => setGameMode(e.target.value as any)}
+                style={{ 
+                  width: '100%', 
+                  padding: '12px', 
+                  fontSize: '16px',
+                  border: '2px solid #ccc',
+                  borderRadius: '6px',
+                  backgroundColor: '#fff'
+                }}
+              >
+                <option value="local">Local Play</option>
+                <option value="ai-1">CORE AI-1</option>
+                <option value="ai-2">CORE AI-2</option>
+                <option value="ai-3">CORE AI-3</option>
+                <option value="online">Online Multiplayer</option>
+              </select>
+            </div>
+
+            {/* Timer toggle */}
+            <div className="option-row" style={{ marginBottom: '15px' }}>
+              <label htmlFor="mobile-timer-toggle" style={{ fontWeight: 'bold', fontSize: '16px' }}>Game Timer:</label>
+              <div className="toggle-container">
+                <span className={`toggle-label ${!timerEnabled ? 'active' : ''}`}>Off</span>
+                <label className="toggle">
+                  <input 
+                    type="checkbox" 
+                    id="mobile-timer-toggle" 
+                    checked={timerEnabled}
+                    onChange={(e) => setTimerEnabled(e.target.checked)}
+                  />
+                  <span className="slider round"></span>
+                </label>
+                <span className={`toggle-label ${timerEnabled ? 'active' : ''}`}>On</span>
               </div>
             </div>
 
             {/* Timer settings */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <label style={{ fontWeight: 'bold' }}>Game Timer:</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '14px', color: timerEnabled ? '#666' : 'var(--accent-color)' }}>Off</span>
-                  <label className="toggle">
-                    <input 
-                      type="checkbox" 
-                      checked={timerEnabled}
-                      onChange={(e) => setTimerEnabled(e.target.checked)}
-                    />
-                    <span className="slider round"></span>
-                  </label>
-                  <span style={{ fontSize: '14px', color: timerEnabled ? 'var(--accent-color)' : '#666' }}>On</span>
+            {timerEnabled && (
+              <div className="timer-settings" style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                <div className="timer-row" style={{ marginBottom: '15px' }}>
+                  <div className="option-cell" style={{ flex: 1, marginRight: '10px' }}>
+                    <label htmlFor="mobile-minutes-per-player" style={{ fontWeight: 'bold', fontSize: '14px' }}>Minutes:</label>
+                    <select 
+                      id="mobile-minutes-per-player" 
+                      className="control-select"
+                      value={minutesPerPlayer}
+                      onChange={(e) => setMinutesPerPlayer(parseInt(e.target.value))}
+                      style={{ 
+                        width: '100%', 
+                        padding: '10px', 
+                        fontSize: '14px',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        backgroundColor: '#fff'
+                      }}
+                    >
+                      <option value="60">60</option>
+                      <option value="30">30</option>
+                      <option value="15">15</option>
+                      <option value="10">10</option>
+                      <option value="5">5</option>
+                      <option value="3">3</option>
+                    </select>
+                  </div>
+                  <div className="option-cell" style={{ flex: 1, marginLeft: '10px' }}>
+                    <label htmlFor="mobile-increment-seconds" style={{ fontWeight: 'bold', fontSize: '14px' }}>Increment:</label>
+                    <select 
+                      id="mobile-increment-seconds" 
+                      className="control-select"
+                      value={incrementSeconds}
+                      onChange={(e) => setIncrementSeconds(parseInt(e.target.value))}
+                      style={{ 
+                        width: '100%', 
+                        padding: '10px', 
+                        fontSize: '14px',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        backgroundColor: '#fff'
+                      }}
+                    >
+                      <option value="10">10 sec</option>
+                      <option value="5">5 sec</option>
+                      <option value="2">2 sec</option>
+                      <option value="0">0 sec</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-
-              {timerEnabled && (
-                <div style={{ marginTop: '15px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                  <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Minutes per Player:</label>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {[60, 30, 15, 10, 5, 3].map(minutes => (
-                        <button
-                          key={minutes}
-                          className={`btn ${minutesPerPlayer === minutes ? 'active' : ''}`}
-                          onClick={() => setMinutesPerPlayer(minutes)}
-                          style={{
-                            flex: '1',
-                            minWidth: '50px',
-                            fontSize: '14px',
-                            padding: '8px 12px',
-                            backgroundColor: minutesPerPlayer === minutes ? 'var(--accent-color)' : '#fff',
-                            color: minutesPerPlayer === minutes ? 'white' : 'var(--primary-color)',
-                            border: minutesPerPlayer === minutes ? 'none' : '1px solid #ccc'
-                          }}
-                        >
-                          {minutes}min
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Increment per Move:</label>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {[10, 5, 2, 0].map(increment => (
-                        <button
-                          key={increment}
-                          className={`btn ${incrementSeconds === increment ? 'active' : ''}`}
-                          onClick={() => setIncrementSeconds(increment)}
-                          style={{
-                            flex: '1',
-                            minWidth: '60px',
-                            fontSize: '14px',
-                            padding: '8px 12px',
-                            backgroundColor: incrementSeconds === increment ? 'var(--accent-color)' : '#fff',
-                            color: incrementSeconds === increment ? 'white' : 'var(--primary-color)',
-                            border: incrementSeconds === increment ? 'none' : '1px solid #ccc'
-                          }}
-                        >
-                          {increment}sec
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
 
             <div className="notification-buttons">
-              <button className="btn" onClick={() => setShowMobileControls(false)}>
+              <button className="btn" onClick={() => setShowMobileControls(false)} style={{ width: '100%', padding: '12px', fontSize: '16px' }}>
                 Apply Settings
               </button>
             </div>

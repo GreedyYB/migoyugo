@@ -2495,4 +2495,37 @@ html, body {
     .game-controls-area {
         display: none !important;
     }
+    
+    .mobile-controls-modal {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+        z-index: 2000 !important;
+    }
+    
+    .mobile-controls-modal .option-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .mobile-controls-modal .timer-row {
+        display: flex;
+        gap: 15px;
+    }
+    
+    .mobile-controls-modal .control-select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23666' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 12px;
+        padding-right: 40px !important;
+    }
 }
