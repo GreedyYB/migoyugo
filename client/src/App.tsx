@@ -1371,22 +1371,55 @@ const App: React.FC = () => {
       setDeferredPrompt(null);
     };
 
-    // Check if we should show PWA banner for iOS (no beforeinstallprompt)
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isStandalone = (window.navigator as any).standalone;
+    // Enhanced mobile/iOS detection and debugging
+    const userAgent = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = (window.navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches;
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
     
-    if (isIOS && !isStandalone) {
+    console.log('PWA: Device detection', {
+      userAgent,
+      isIOS,
+      isStandalone,
+      isMobile,
+      maxTouchPoints: navigator.maxTouchPoints,
+      platform: navigator.platform
+    });
+    
+         // Show PWA banner for mobile devices (iOS or Android) that aren't already installed
+    // Temporarily force show banner for debugging on all mobile devices
+    if (isMobile) {
+      console.log('PWA: Mobile device detected, will show banner after 3 seconds');
+      setTimeout(() => {
+        console.log('PWA: Timer finished, showing banner now');
+        setShowPWABanner(true);
+      }, 3000); // Reduced to 3 seconds for faster testing
+    }
+    
+    // Original logic (commented out for debugging)
+    /* 
+    if (isMobile && !isStandalone) {
+      console.log('PWA: Mobile device detected, will show banner after 5 seconds');
       setTimeout(() => {
         const dismissed = localStorage.getItem('pwa-banner-dismissed');
         const dismissedTime = dismissed ? parseInt(dismissed) : 0;
         const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
         
+        console.log('PWA: Checking if should show banner', {
+          dismissed,
+          dismissedTime,
+          oneDayAgo,
+          shouldShow: !dismissedTime || dismissedTime < oneDayAgo
+        });
+        
         if (!dismissedTime || dismissedTime < oneDayAgo) {
-          console.log('PWA: Showing iOS banner');
+          console.log('PWA: Showing mobile banner');
           setShowPWABanner(true);
         }
       }, 5000);
     }
+    */
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -1399,7 +1432,11 @@ const App: React.FC = () => {
 
   // PWA banner actions
   const handleInstallPWA = async () => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const userAgent = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    console.log('PWA: Install button clicked', { isIOS, deferredPrompt: !!deferredPrompt });
     
     if (isIOS) {
       // iOS doesn't support programmatic install, show instructions
@@ -1409,18 +1446,26 @@ const App: React.FC = () => {
     }
     
     if (!deferredPrompt) {
-      console.log('PWA: No deferred prompt available');
+      console.log('PWA: No deferred prompt available - showing manual instructions');
+      alert('To install: Use your browser menu to "Install App" or "Add to Home Screen"');
+      setShowPWABanner(false);
       return;
     }
     
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log('PWA: User choice:', outcome);
-    
-    if (outcome === 'accepted') {
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('PWA: User choice:', outcome);
+      
+      if (outcome === 'accepted') {
+        setShowPWABanner(false);
+      }
+      setDeferredPrompt(null);
+    } catch (error) {
+      console.error('PWA: Error during install prompt', error);
+      alert('To install: Use your browser menu to "Install App" or "Add to Home Screen"');
       setShowPWABanner(false);
     }
-    setDeferredPrompt(null);
   };
 
   const dismissPWABanner = () => {
