@@ -2729,7 +2729,7 @@ html, body {
     .player-info.bottom {
         margin: 0 !important;
         border-radius: 0 !important;
-        width: 96vw !important;
+        width: var(--board-size) !important;
     }
 
     .game-board-area {
@@ -2743,6 +2743,30 @@ html, body {
     .board-with-labels {
         border: 2px solid var(--primary-color) !important;
         border-radius: 0 !important;
-        width: 96vw !important;
+        width: var(--board-size) !important;
+    }
+}
+
+/* Force portrait orientation - hide content in landscape on mobile */
+@media (max-width: 600px) and (orientation: landscape) {
+    body::before {
+        content: "Please rotate your device to portrait mode to play Flux";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        text-align: center;
+        z-index: 9999;
+    }
+    
+    .game-container {
+        display: none;
     }
 }
