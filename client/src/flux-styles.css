@@ -2722,3 +2722,16 @@ html, body {
         max-width: 88vw !important;
     }
 }
+
+/* Mobile flush layout - ensure player info bars are flush with board */
+@media (max-width: 600px) {
+    .player-info,
+    .player-info.bottom {
+        margin: 0 !important;
+        border-radius: 0 !important;
+    }
+
+    .game-board-area {
+        gap: 0 !important;
+    }
+}
