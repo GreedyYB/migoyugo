@@ -1465,6 +1465,29 @@ const App: React.FC = () => {
     localStorage.setItem('pwa-banner-dismissed', Date.now().toString());
   };
 
+  // Dynamic viewport height detection for mobile
+  useEffect(() => {
+    const setVH = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    // Set initial value
+    setVH();
+
+    // Update on resize and orientation change
+    window.addEventListener('resize', setVH);
+    window.addEventListener('orientationchange', () => {
+      // Delay to allow for browser UI changes
+      setTimeout(setVH, 100);
+    });
+
+    return () => {
+      window.removeEventListener('resize', setVH);
+      window.removeEventListener('orientationchange', setVH);
+    };
+  }, []);
+
   // Check authentication status on component mount
   useEffect(() => {
     const checkAuth = async () => {
@@ -3699,6 +3722,50 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Mobile Action Bars - Only visible on mobile */}
+      <div id="mobile-action-bar" style={{ display: 'none' }}>
+        <button 
+          className="btn" 
+          onClick={isGameStarted && gameState.gameStatus === 'active' ? resignGame : startGame}
+        >
+          {isGameStarted && gameState.gameStatus === 'active' ? 'Resign' : 'Start'}
+        </button>
+        <button 
+          className="btn" 
+          onClick={() => setShowMobileControls(true)}
+          style={{ display: !isGameStarted ? 'block' : 'none' }}
+        >
+          Game Options
+        </button>
+        <button 
+          className="btn" 
+          onClick={resetGame}
+        >
+          Reset
+        </button>
+      </div>
+
+      <div id="mobile-utility-bar" style={{ display: 'none' }}>
+        <button 
+          className="btn" 
+          onClick={() => setShowRules(true)}
+        >
+          Rules
+        </button>
+        <button 
+          className="btn" 
+          onClick={() => setShowTutorial(true)}
+        >
+          Tutorial
+        </button>
+        <button 
+          className="btn" 
+          onClick={() => setShowSettings(true)}
+        >
+          Settings
+        </button>
+      </div>
 
       {/* Toast */}
       {toast && (

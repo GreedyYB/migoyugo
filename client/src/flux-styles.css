@@ -5,6 +5,17 @@
     --secondary-color: #34495e;
     --accent-color: #3498db;
     --last-move-color: #2ecc71;
+    
+    /* Modern viewport units for better mobile support */
+    --vh: 1vh;
+    --dvh: 1dvh; /* Dynamic viewport height - adjusts for mobile browser UI */
+}
+
+/* Detect support for dynamic viewport units */
+@supports (height: 100dvh) {
+    :root {
+        --vh: 1dvh;
+    }
 }
 
 /* Classic Theme (Default) */
@@ -1016,6 +1027,7 @@ input:checked + .slider:before {
 @media (max-width: 600px) {
     html, body {
         height: 100vh !important;
+        height: calc(var(--vh, 1vh) * 100) !important;
         width: 100vw !important;
         overflow: hidden !important;
         position: relative;
@@ -1023,6 +1035,8 @@ input:checked + .slider:before {
 
     body {
         background: #ecf0f1;
+        /* Ensure minimum space for mobile bars */
+        min-height: calc(var(--vh, 1vh) * 100) !important;
     }
 
     header {
@@ -1127,8 +1141,8 @@ input:checked + .slider:before {
     }
 
     #mobile-action-bar .btn {
-        flex: 1 1 40%;
-        margin: 0 8px;
+        flex: 1 1 30%;
+        margin: 0 6px;
         font-size: 1.1em;
         padding: 0.7em 0;
         background: #e74c3c;
@@ -1153,7 +1167,7 @@ input:checked + .slider:before {
 
     #mobile-utility-bar .btn {
         flex: 1 1 30%;
-        margin: 0 8px;
+        margin: 0 6px;
         font-size: 1.1em;
         padding: 0.7em 0;
         background: #3498db;
@@ -2279,8 +2293,8 @@ html, body {
     }
 
     #mobile-action-bar .btn {
-        flex: 1 1 40%;
-        margin: 0 8px;
+        flex: 1 1 30%;
+        margin: 0 6px;
         font-size: 1.1em;
         padding: 0.7em 0;
         background: #e74c3c;
@@ -2305,7 +2319,7 @@ html, body {
 
     #mobile-utility-bar .btn {
         flex: 1 1 30%;
-        margin: 0 8px;
+        margin: 0 6px;
         font-size: 1.1em;
         padding: 0.7em 0;
         background: #3498db;
@@ -2539,5 +2553,158 @@ html, body {
     to {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Additional mobile breakpoints for better small phone support */
+@media (max-width: 480px) {
+    :root {
+        --cell-size: calc(92vw / 8) !important;
+    }
+    
+    .game-board-area {
+        width: 92vw !important;
+        max-width: 92vw !important;
+    }
+    
+    body {
+        padding-bottom: 130px !important;
+        padding-bottom: calc(130px + env(safe-area-inset-bottom)) !important;
+    }
+    
+    #mobile-action-bar {
+        bottom: 65px !important;
+        padding: 6px 0 4px 0 !important;
+    }
+    
+    #mobile-action-bar .btn {
+        font-size: 1em !important;
+        padding: 0.6em 0 !important;
+    }
+    
+    #mobile-utility-bar .btn {
+        font-size: 1em !important;
+        padding: 0.6em 0 !important;
+    }
+    
+    header h1 {
+        font-size: 1.8em !important;
+    }
+}
+
+/* Ultra-small phones and landscape mode */
+@media (max-width: 400px), (max-height: 600px) and (max-width: 600px) {
+    :root {
+        --cell-size: calc(90vw / 8) !important;
+    }
+    
+    .game-board-area {
+        width: 90vw !important;
+        max-width: 90vw !important;
+    }
+    
+    body {
+        padding-bottom: 140px !important;
+        padding-bottom: calc(140px + env(safe-area-inset-bottom)) !important;
+    }
+    
+    header {
+        padding: 0.3em 0 0.1em 0 !important;
+    }
+    
+    header h1 {
+        font-size: 1.6em !important;
+        margin-bottom: 2px !important;
+    }
+    
+    .player-info, .player-info.bottom {
+        height: 35px !important;
+        min-height: 35px !important;
+        max-height: 35px !important;
+        font-size: 0.9em;
+    }
+    
+    .player-color {
+        width: 20px !important;
+        height: 20px !important;
+    }
+    
+    #mobile-action-bar {
+        bottom: 70px !important;
+        padding: 5px 0 3px 0 !important;
+    }
+    
+    #mobile-action-bar .btn {
+        font-size: 0.95em !important;
+        padding: 0.5em 0 !important;
+        margin: 0 6px !important;
+    }
+    
+    #mobile-utility-bar {
+        padding: 5px 0 3px 0 !important;
+    }
+    
+    #mobile-utility-bar .btn {
+        font-size: 0.95em !important;
+        padding: 0.5em 0 !important;
+        margin: 0 6px !important;
+    }
+}
+
+/* Dynamic viewport height handling for very constrained screens */
+@media (max-height: 500px) and (max-width: 600px) {
+    body {
+        padding-bottom: 110px !important;
+        padding-bottom: calc(110px + env(safe-area-inset-bottom)) !important;
+    }
+    
+    header {
+        padding: 0.2em 0 0.1em 0 !important;
+    }
+    
+    header h1 {
+        font-size: 1.4em !important;
+        margin-bottom: 1px !important;
+    }
+    
+    .player-info, .player-info.bottom {
+        height: 30px !important;
+        min-height: 30px !important;
+        max-height: 30px !important;
+        font-size: 0.8em;
+        padding: 0 8px !important;
+    }
+    
+    .player-color {
+        width: 18px !important;
+        height: 18px !important;
+    }
+    
+    #mobile-action-bar {
+        bottom: 55px !important;
+        padding: 4px 0 2px 0 !important;
+    }
+    
+    #mobile-action-bar .btn {
+        font-size: 0.9em !important;
+        padding: 0.4em 0 !important;
+    }
+    
+    #mobile-utility-bar {
+        padding: 4px 0 2px 0 !important;
+    }
+    
+    #mobile-utility-bar .btn {
+        font-size: 0.9em !important;
+        padding: 0.4em 0 !important;
+    }
+    
+    :root {
+        --cell-size: calc(88vw / 8) !important;
+    }
+    
+    .game-board-area {
+        width: 88vw !important;
+        max-width: 88vw !important;
     }
 }
