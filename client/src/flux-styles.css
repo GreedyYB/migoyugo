@@ -2729,7 +2729,11 @@ html, body {
     .player-info.bottom {
         margin: 0 !important;
         border-radius: 0 !important;
-        width: calc(var(--board-size) + 4px) !important;
+        width: calc(var(--board-size) + 3px) !important;
+    }
+
+    .player-info.bottom {
+        margin-top: -8px !important;
     }
 
     .game-board-area {
