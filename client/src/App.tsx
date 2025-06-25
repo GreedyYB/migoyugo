@@ -2762,7 +2762,7 @@ const App: React.FC = () => {
         {/* Game controls */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           {/* Action buttons */}
-          <div className="player-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '256px', marginBottom: '5px' }}>
+          <div className="player-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '256px', marginBottom: '0' }}>
             <button 
               className="btn action-btn" 
               onClick={isGameStarted && gameState.gameStatus === 'active' ? resignGame : startGame}
@@ -2870,7 +2870,7 @@ const App: React.FC = () => {
 
             {/* Game log */}
             <div id="game-log-container">
-              <div className="review-button-container" style={{ width: '236px', margin: '20px auto 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="review-button-container" style={{ width: '236px', margin: '15px auto 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <h2 style={{ fontSize: '1.2em', margin: '0' }}>Game Log</h2>
                 {moveHistory.length > 0 && !isReviewMode && (
                   <button 
@@ -2887,7 +2887,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Utility buttons */}
-          <div className="utility-buttons-container" style={{ width: '256px', display: 'flex', alignItems: 'center', height: '40px', marginTop: '5px', marginLeft: '-4px' }}>
+          <div className="utility-buttons-container" style={{ width: '256px', display: 'flex', alignItems: 'center', height: '40px', marginTop: '0', marginLeft: '-4px' }}>
             <div className="utility-buttons" style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
               <button 
                 className="btn" 
