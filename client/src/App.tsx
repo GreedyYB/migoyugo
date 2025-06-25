@@ -3724,7 +3724,7 @@ const App: React.FC = () => {
       )}
 
       {/* Mobile Action Bars - Only visible on mobile */}
-      <div id="mobile-action-bar" style={{ display: 'none' }}>
+      <div id="mobile-action-bar">
         <button 
           className="btn" 
           onClick={isGameStarted && gameState.gameStatus === 'active' ? resignGame : startGame}
@@ -3746,7 +3746,7 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      <div id="mobile-utility-bar" style={{ display: 'none' }}>
+      <div id="mobile-utility-bar">
         <button 
           className="btn" 
           onClick={() => setShowRules(true)}

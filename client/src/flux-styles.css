@@ -2503,11 +2503,25 @@ html, body {
     }
     
     .mobile-controls-button {
-        display: block !important;
+        display: none !important; /* Hide the separate Game Settings button */
     }
     
     .game-controls-area {
         display: none !important;
+    }
+    
+    /* Hide desktop buttons on mobile */
+    .player-buttons {
+        display: none !important;
+    }
+    
+    .utility-buttons-container {
+        display: none !important;
+    }
+    
+    /* Show mobile bars on mobile */
+    #mobile-action-bar, #mobile-utility-bar {
+        display: flex !important;
     }
     
     .mobile-controls-modal {
