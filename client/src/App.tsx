@@ -2688,7 +2688,7 @@ const App: React.FC = () => {
       <div className="game-container">
         <div className="game-board-area">
           {/* Top player info */}
-          <div className="player-info" style={{ width: 'calc(var(--board-size) + 4px)', boxSizing: 'border-box', margin: '0', borderRadius: '0' }}>
+          <div className="player-info" style={{ width: 'var(--board-size)', boxSizing: 'border-box', margin: '0', borderRadius: '0' }}>
             <div className={`player ${gameState.currentPlayer === 'white' ? 'active' : ''}`} id="player-white">
               <div className="player-color white"></div>
               <span>
@@ -2727,7 +2727,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Bottom player info */}
-          <div className="player-info bottom" style={{ width: 'calc(var(--board-size) + 4px)', boxSizing: 'border-box', margin: '0', borderRadius: '0' }}>
+          <div className="player-info bottom" style={{ width: 'var(--board-size)', boxSizing: 'border-box', margin: '0', borderRadius: '0' }}>
             <div className={`player ${gameState.currentPlayer === 'black' ? 'active' : ''}`} id="player-black">
               <div className="player-color black"></div>
               <span>
