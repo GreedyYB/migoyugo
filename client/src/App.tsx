@@ -2100,6 +2100,9 @@ const App: React.FC = () => {
     console.log('Environment:', process.env.NODE_ENV);
     console.log('Current URL:', window.location.href);
     
+    // Close mobile controls modal when starting any game
+    setShowMobileControls(false);
+    
     if (gameMode === 'online') {
       console.log('📡 ONLINE MODE SELECTED');
       // Check authentication status for online play
@@ -3108,7 +3111,7 @@ const App: React.FC = () => {
       {showLogin && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowLogin(false)} />
-          <div className="notification" style={{ display: 'block', maxWidth: '400px' }}>
+          <div className="notification" style={{ display: 'block', maxWidth: '500px', width: '90vw' }}>
             <h2>Log In</h2>
             <form onSubmit={(e) => {
               e.preventDefault();
@@ -3162,7 +3165,7 @@ const App: React.FC = () => {
       {showSignup && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowSignup(false)} />
-          <div className="notification" style={{ display: 'block', maxWidth: '400px' }}>
+          <div className="notification" style={{ display: 'block', maxWidth: '500px', width: '90vw' }}>
             <h2>Sign Up</h2>
             <form onSubmit={(e) => {
               e.preventDefault();
@@ -3394,7 +3397,7 @@ const App: React.FC = () => {
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowMobileControls(false)} />
           <div className="notification mobile-controls-modal" style={{ display: 'block', maxWidth: '90vw', width: '400px', minWidth: '350px' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Game Settings</h2>
+            <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Game Options</h2>
             
             {/* Opponent selection */}
             <div className="option-row" style={{ marginBottom: '20px' }}>
