@@ -2733,7 +2733,7 @@ html, body {
     }
 
     .player-info.bottom {
-        margin-top: -18px !important;
+        margin-top: -19px !important;
     }
 
     .game-board-area {
@@ -2745,7 +2745,7 @@ html, body {
     }
 
     .board-with-labels {
-        border: 2px solid var(--primary-color) !important;
+        border: none !important;
         border-radius: 0 !important;
         width: var(--board-size) !important;
     }
