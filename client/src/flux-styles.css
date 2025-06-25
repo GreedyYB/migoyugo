@@ -2729,9 +2729,19 @@ html, body {
     .player-info.bottom {
         margin: 0 !important;
         border-radius: 0 !important;
+        width: 100% !important;
     }
 
     .game-board-area {
         gap: 0 !important;
+    }
+
+    .board {
+        border: none !important;
+    }
+
+    .board-with-labels {
+        border: 2px solid var(--primary-color) !important;
+        border-radius: 0 !important;
     }
 }
