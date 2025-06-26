@@ -2514,18 +2514,10 @@ const App: React.FC = () => {
     
     setOriginalGameState({ ...gameState });
     setIsReviewMode(true);
-    setCurrentReviewMove(0);
     
-    // Reset to initial board state
-    const initialBoard = Array(8).fill(null).map(() => Array(8).fill(null));
-    setGameState(prev => ({
-      ...prev,
-      board: initialBoard,
-      currentPlayer: 'white',
-      scores: { white: 0, black: 0 },
-      lastMove: null,
-      nexusLine: null
-    }));
+    // Start at the last move (final position) instead of move 0
+    const finalMoveIndex = moveHistory.length;
+    goToMove(finalMoveIndex);
   };
 
   const exitReviewMode = () => {
