@@ -2783,18 +2783,29 @@ html, body {
     }
 }
 
-/* Mobile button positioning - relative to game content instead of fixed to screen bottom */
+/* Mobile button positioning - single container with relative positioning */
 @media (max-width: 600px) {
+    #mobile-button-container {
+        position: relative !important;
+        margin-top: 10px !important;
+        width: 100vw;
+        display: flex;
+        flex-direction: column;
+    }
+
     #mobile-action-bar {
         position: relative !important;
         bottom: auto !important;
-        margin-top: 10px !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        border-bottom: none !important;
     }
 
     #mobile-utility-bar {
         position: relative !important;
         bottom: auto !important;
-        margin-top: 10px !important;
+        margin-top: 0 !important;
+        border-top: none !important;
     }
 
     body {
