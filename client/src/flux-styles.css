@@ -817,6 +817,13 @@ h1 {
         max-width: 96vw !important;
         margin: 0 auto !important;
     }
+
+    /* Make stats auth modal wider on mobile to match board width */
+    .notification.stats-auth-modal {
+        width: 96vw !important;
+        max-width: 96vw !important;
+        margin: 0 auto !important;
+    }
 }
 
 .rules-popup {

@@ -1184,6 +1184,7 @@ const App: React.FC = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
+  const [showStatsAuth, setShowStatsAuth] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSearchingMatch, setIsSearchingMatch] = useState(false);
@@ -2007,8 +2008,7 @@ const App: React.FC = () => {
   // Handle stats button click
   const handleViewStats = async () => {
     if (!authState.isAuthenticated) {
-      setToast("Stats require a player account - sign up to track your wins!");
-      setTimeout(() => setToast(''), 3000);
+      setShowStatsAuth(true);
       return;
     }
 
@@ -3444,6 +3444,45 @@ const App: React.FC = () => {
                 <button type="button" className="btn" onClick={() => setShowSignup(false)}>Cancel</button>
               </div>
             </form>
+          </div>
+        </>
+      )}
+
+      {/* Stats authentication modal */}
+      {showStatsAuth && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowStatsAuth(false)} />
+          <div className="notification stats-auth-modal" style={{ display: 'block', maxWidth: '500px', width: '90vw' }}>
+            <h2>Track Your Stats</h2>
+            <p style={{ marginBottom: '20px', lineHeight: '1.5' }}>
+              To view and track your game statistics, you need a player account. 
+              Create an account to keep track of your wins, losses, and game history!
+            </p>
+            <div className="notification-buttons">
+              <button 
+                type="button" 
+                className="btn" 
+                onClick={() => { 
+                  setShowStatsAuth(false); 
+                  setShowLogin(true); 
+                }}
+              >
+                Log In
+              </button>
+              <button 
+                type="button" 
+                className="btn" 
+                onClick={() => { 
+                  setShowStatsAuth(false); 
+                  setShowSignup(true); 
+                }}
+              >
+                Sign Up
+              </button>
+              <button type="button" className="btn" onClick={() => setShowStatsAuth(false)}>
+                Cancel
+              </button>
+            </div>
           </div>
         </>
       )}
