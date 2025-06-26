@@ -1642,34 +1642,43 @@ const App: React.FC = () => {
           } else {
             message = `${moveData.winner} wins by node count!`;
           }
-          setNotification({
-            title: 'Game Over',
-            message,
-            show: true
-          });
+          // Add 1 second delay for players to see the final move
+          setTimeout(() => {
+            setNotification({
+              title: 'Game Over',
+              message,
+              show: true
+            });
+          }, 1000);
           setActiveTimer(null);
         }
       });
 
       newSocket.on('gameEnd', (data) => {
         setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
-        setNotification({
-          title: 'Game Over',
-          message: data.reason === 'resignation' ? 
-            `${data.winner} wins by resignation!` : 
-            `${data.winner} wins!`,
-          show: true
-        });
+        // Add 1 second delay for players to see the final move
+        setTimeout(() => {
+          setNotification({
+            title: 'Game Over',
+            message: data.reason === 'resignation' ? 
+              `${data.winner} wins by resignation!` : 
+              `${data.winner} wins!`,
+            show: true
+          });
+        }, 1000);
         setActiveTimer(null);
       });
 
       newSocket.on('opponentDisconnected', () => {
-        setNotification({
-          title: 'Opponent Disconnected',
-          message: 'Your opponent has disconnected from the game.',
-          show: true
-        });
         setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
+        // Add 1 second delay for players to see the final position
+        setTimeout(() => {
+          setNotification({
+            title: 'Opponent Disconnected',
+            message: 'Your opponent has disconnected from the game.',
+            show: true
+          });
+        }, 1000);
         setActiveTimer(null);
       });
 
@@ -1756,12 +1765,15 @@ const App: React.FC = () => {
       newSocket.on('drawAccepted', () => {
         console.log('Draw offer accepted');
         setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
-        setNotification({
-          title: 'Game Drawn',
-          message: 'The game has ended in a draw by mutual agreement.',
-          show: true
-        });
         setIsGameStarted(false);
+        // Add 1 second delay for players to see the final position
+        setTimeout(() => {
+          setNotification({
+            title: 'Game Drawn',
+            message: 'The game has ended in a draw by mutual agreement.',
+            show: true
+          });
+        }, 1000);
         setActiveTimer(null);
       });
 
@@ -1790,12 +1802,15 @@ const App: React.FC = () => {
         if (newTimers[activeTimer] <= 0) {
           // Time out
           const winner = activeTimer === 'white' ? 'black' : 'white';
-          setNotification({
-            title: 'Time Out',
-            message: `${winner} wins on time!`,
-            show: true
-          });
           setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
+          // Add 1 second delay for players to see the final position
+          setTimeout(() => {
+            setNotification({
+              title: 'Time Out',
+              message: `${winner} wins on time!`,
+              show: true
+            });
+          }, 1000);
           setActiveTimer(null);
         }
         
@@ -2040,11 +2055,14 @@ const App: React.FC = () => {
       } else {
         message = `${winner} wins by node count!`;
       }
-      setNotification({
-        title: 'Game Over',
-        message,
-        show: true
-      });
+      // Add 1 second delay for players to see the final move
+      setTimeout(() => {
+        setNotification({
+          title: 'Game Over',
+          message,
+          show: true
+        });
+      }, 1000);
       setActiveTimer(null);
     } else {
       // Switch to next player
@@ -2324,12 +2342,15 @@ const App: React.FC = () => {
       } else {
         // Local game - end game as draw
         setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
-        setNotification({
-          title: 'Game Drawn',
-          message: 'The game has ended in a draw by mutual agreement.',
-          show: true
-        });
         setIsGameStarted(false);
+        // Add 1 second delay for players to see the final position
+        setTimeout(() => {
+          setNotification({
+            title: 'Game Drawn',
+            message: 'The game has ended in a draw by mutual agreement.',
+            show: true
+          });
+        }, 1000);
         setActiveTimer(null);
       }
     } else {
