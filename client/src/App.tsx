@@ -1299,6 +1299,9 @@ const App: React.FC = () => {
     // If it's a custom theme, apply custom colors
     if (theme === 'custom') {
       applyCustomColors(customColors);
+    } else {
+      // Clear custom colors when switching away from custom theme
+      clearCustomColors();
     }
   };
 
@@ -1309,6 +1312,15 @@ const App: React.FC = () => {
     root.style.setProperty('--black-ion', colors.blackIon);
     root.style.setProperty('--node-color', colors.nodeColor);
     root.style.setProperty('--board-color', colors.boardColor);
+  };
+
+  // Clear custom colors from CSS variables
+  const clearCustomColors = () => {
+    const root = document.documentElement;
+    root.style.removeProperty('--white-ion');
+    root.style.removeProperty('--black-ion');
+    root.style.removeProperty('--node-color');
+    root.style.removeProperty('--board-color');
   };
 
   // Handle theme change
@@ -1345,8 +1357,9 @@ const App: React.FC = () => {
     localStorage.removeItem('fluxSoundEnabled');
     localStorage.removeItem('fluxCustomColors');
     
-    // Reset document theme
+    // Reset document theme and clear any custom colors
     document.documentElement.setAttribute('data-theme', 'classic');
+    clearCustomColors();
   };
 
     // PWA installation detection
