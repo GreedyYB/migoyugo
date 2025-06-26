@@ -1647,11 +1647,11 @@ const App: React.FC = () => {
           }
           // Add 1 second delay for players to see the final move
           setTimeout(() => {
-            setNotification({
-              title: 'Game Over',
-              message,
-              show: true
-            });
+          setNotification({
+            title: 'Game Over',
+            message,
+            show: true
+          });
           }, 1000);
           setActiveTimer(null);
         }
@@ -1661,13 +1661,13 @@ const App: React.FC = () => {
         setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
         // Add 1 second delay for players to see the final move
         setTimeout(() => {
-          setNotification({
-            title: 'Game Over',
-            message: data.reason === 'resignation' ? 
-              `${data.winner} wins by resignation!` : 
-              `${data.winner} wins!`,
-            show: true
-          });
+        setNotification({
+          title: 'Game Over',
+          message: data.reason === 'resignation' ? 
+            `${data.winner} wins by resignation!` : 
+            `${data.winner} wins!`,
+          show: true
+        });
         }, 1000);
         setActiveTimer(null);
       });
@@ -1676,11 +1676,11 @@ const App: React.FC = () => {
         setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
         // Add 1 second delay for players to see the final position
         setTimeout(() => {
-          setNotification({
-            title: 'Opponent Disconnected',
-            message: 'Your opponent has disconnected from the game.',
-            show: true
-          });
+        setNotification({
+          title: 'Opponent Disconnected',
+          message: 'Your opponent has disconnected from the game.',
+          show: true
+        });
         }, 1000);
         setActiveTimer(null);
       });
@@ -1808,11 +1808,11 @@ const App: React.FC = () => {
           setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
           // Add 1 second delay for players to see the final position
           setTimeout(() => {
-            setNotification({
-              title: 'Time Out',
-              message: `${winner} wins on time!`,
-              show: true
-            });
+          setNotification({
+            title: 'Time Out',
+            message: `${winner} wins on time!`,
+            show: true
+          });
           }, 1000);
           setActiveTimer(null);
         }
@@ -2061,11 +2061,11 @@ const App: React.FC = () => {
       }
       // Add 1 second delay for players to see the final move
       setTimeout(() => {
-        setNotification({
-          title: 'Game Over',
-          message,
-          show: true
-        });
+      setNotification({
+        title: 'Game Over',
+        message,
+        show: true
+      });
       }, 1000);
       setActiveTimer(null);
     } else {
@@ -2822,34 +2822,34 @@ const App: React.FC = () => {
         <div className="game-board-area">
           {/* Top player info */}
           <div className="player-info" style={{ width: 'calc(var(--board-size) + 4px)', boxSizing: 'border-box' }}>
-            <div className={`player ${gameState.currentPlayer === 'white' ? 'active' : ''}`} id="player-white">
-              <div className="player-color white"></div>
-              <span>
-                {(() => {
-                  if (!isGameStarted) {
-                    return 'White';
-                  } else if (gameMode === 'online' && playerColor) {
-                    // Multiplayer game - show actual usernames with color
-                    const whiteName = playerColor === 'white' ? 
-                      (authState.user?.username || 'Guest') : 
-                      opponentName;
-                    return `${whiteName} (white)`;
-                  } else if ((gameMode === 'ai-1' || gameMode === 'ai-2') && authState.isAuthenticated) {
-                    // AI game with authenticated user - show username for white (human player)
-                    return `${authState.user?.username} (white)`;
-                  } else {
-                    // Local human vs human or unauthenticated - use gameState players
-                    return gameState.players.white;
-                  }
-                })()}
-              </span>
-              <span>Nodes: <span id="white-score">{gameState.scores.white}</span></span>
-            </div>
-            {timerEnabled && (
-              <div className="player-timer" id="white-timer">
-                {formatTime(timers.white)}
+              <div className={`player ${gameState.currentPlayer === 'white' ? 'active' : ''}`} id="player-white">
+                <div className="player-color white"></div>
+                <span>
+                  {(() => {
+                    if (!isGameStarted) {
+                      return 'White';
+                    } else if (gameMode === 'online' && playerColor) {
+                      // Multiplayer game - show actual usernames with color
+                      const whiteName = playerColor === 'white' ? 
+                        (authState.user?.username || 'Guest') : 
+                        opponentName;
+                      return `${whiteName} (white)`;
+                    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2') && authState.isAuthenticated) {
+                      // AI game with authenticated user - show username for white (human player)
+                      return `${authState.user?.username} (white)`;
+                    } else {
+                      // Local human vs human or unauthenticated - use gameState players
+                      return gameState.players.white;
+                    }
+                  })()}
+                </span>
+                <span>Nodes: <span id="white-score">{gameState.scores.white}</span></span>
               </div>
-            )}
+              {timerEnabled && (
+                <div className="player-timer" id="white-timer">
+                  {formatTime(timers.white)}
+                </div>
+              )}
           </div>
 
           {/* Game board */}
@@ -3411,7 +3411,7 @@ const App: React.FC = () => {
       {/* Game notification */}
       {notification.show && (
         <>
-          <div className="overlay" style={{ display: 'block' }} />
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setNotification(prev => ({ ...prev, show: false }))} />
           <div className="notification" style={{ display: 'block' }}>
             <h2>{notification.title}</h2>
             {notification.title === 'Play Online' && !authState.isAuthenticated && !authState.isGuest ? (
