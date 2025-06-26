@@ -4000,9 +4000,6 @@ const App: React.FC = () => {
       {/* Mobile Review Bar - Only visible on mobile when in review mode */}
       {isReviewMode && isMobileDevice && (
         <div id="mobile-review-bar">
-          <div className="move-counter">
-            Move {currentReviewMove} of {moveHistory.length}
-          </div>
           <div className="review-controls">
             <button 
               className="btn" 
@@ -4024,6 +4021,9 @@ const App: React.FC = () => {
             >
               ◀
             </button>
+            <span className="move-counter">
+              Move {currentReviewMove} of {moveHistory.length}
+            </span>
             <button 
               className="btn" 
               onMouseDown={(e) => startHoldScroll('next', e)}
