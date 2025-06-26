@@ -1749,6 +1749,12 @@ const App: React.FC = () => {
 
       newSocket.on('rematchAccepted', (data) => {
         console.log('Rematch accepted, starting new game:', data);
+        
+        // Exit review mode immediately if currently in review
+        setIsReviewMode(false);
+        setCurrentReviewMove(0);
+        setOriginalGameState(null);
+        
         // Reset rematch state
         setRematchState({
           requested: false,
@@ -2283,7 +2289,12 @@ const App: React.FC = () => {
       socket.emit('respondToRematch', { gameId, accept });
     }
     
-    if (!accept) {
+    if (accept) {
+      // Exit review mode immediately when accepting rematch
+      setIsReviewMode(false);
+      setCurrentReviewMove(0);
+      setOriginalGameState(null);
+    } else {
       // Reset rematch state and close modal on decline
       setRematchState({
         requested: false,
@@ -2416,6 +2427,10 @@ const App: React.FC = () => {
     setPlayerColor(null);
     setOpponentName('');
     setGameId('');
+    // Exit review mode if currently in review
+    setIsReviewMode(false);
+    setCurrentReviewMove(0);
+    setOriginalGameState(null);
     setRematchState({
       requested: false,
       fromPlayer: null,
