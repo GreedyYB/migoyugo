@@ -2740,6 +2740,7 @@ html, body {
         gap: 0 !important;
         border: 2px solid var(--secondary-color) !important;
         border-radius: 0 !important;
+        width: calc(96vw + 4px) !important;
     }
 
     .board {
