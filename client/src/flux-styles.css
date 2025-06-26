@@ -1477,7 +1477,7 @@ input:checked + .slider:before {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
-    z-index: 1000;
+    z-index: 17000;
 }
 
 #tutorial-content {
@@ -1595,7 +1595,7 @@ input:checked + .slider:before {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
+    z-index: 16999;
 }
 
 /* Main Game Styles */
@@ -2531,7 +2531,7 @@ html, body {
         transform: translate(-50%, -50%) !important;
         max-height: 90vh !important;
         overflow-y: auto !important;
-        z-index: 2000 !important;
+        z-index: 15000 !important;
     }
     
     .mobile-controls-modal .option-row {

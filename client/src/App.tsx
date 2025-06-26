@@ -3491,7 +3491,7 @@ const App: React.FC = () => {
       {/* Mobile Controls Modal */}
       {showMobileControls && (
         <>
-          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowMobileControls(false)} />
+          <div className="overlay" style={{ display: 'block', zIndex: 14999 }} onClick={() => setShowMobileControls(false)} />
           <div className="notification mobile-controls-modal" style={{ display: 'block', maxWidth: '90vw', width: '400px', minWidth: '350px' }}>
             <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Game Options</h2>
             
