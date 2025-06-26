@@ -441,17 +441,6 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3
   }
 };
 
-// Sound function
-const playSound = (soundName: 'ion' | 'vector' | 'nexus') => {
-  try {
-    const audio = new Audio(`/sounds/${soundName}.mp3`);
-    audio.volume = 0.3; // Set to 30% volume
-    audio.play().catch(e => console.log('Sound play failed:', e));
-  } catch (e) {
-    console.log('Sound loading failed:', e);
-  }
-};
-
 // Helper function to get API URL
 const getApiUrl = () => {
   return process.env.NODE_ENV === 'production' 
@@ -1378,6 +1367,22 @@ const App: React.FC = () => {
     // Reset document theme and clear any custom colors
     document.documentElement.setAttribute('data-theme', 'classic');
     clearCustomColors();
+  };
+
+  // Sound function
+  const playSound = (soundName: 'ion' | 'vector' | 'nexus') => {
+    // Check if sound is enabled before playing
+    if (!soundEnabled) {
+      return;
+    }
+    
+    try {
+      const audio = new Audio(`/sounds/${soundName}.mp3`);
+      audio.volume = 0.3; // Set to 30% volume
+      audio.play().catch(e => console.log('Sound play failed:', e));
+    } catch (e) {
+      console.log('Sound loading failed:', e);
+    }
   };
 
     // PWA installation detection
