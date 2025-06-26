@@ -1707,7 +1707,9 @@ const App: React.FC = () => {
         // Add 1 second delay for players to see the final move
         setTimeout(() => {
           let message = '';
-          if (data.reason === 'resignation') {
+          if (data.reason === 'draw') {
+            message = 'The game has ended in a draw by mutual agreement.';
+          } else if (data.reason === 'resignation') {
             message = `${data.winner} wins by resignation!`;
           } else if (data.reason === 'timeout') {
             message = `${data.winner} wins on time!`;
@@ -1716,7 +1718,7 @@ const App: React.FC = () => {
           }
           
           setNotification({
-            title: data.reason === 'timeout' ? 'Time Out' : 'Game Over',
+            title: data.reason === 'timeout' ? 'Time Out' : (data.reason === 'draw' ? 'Game Drawn' : 'Game Over'),
             message,
             show: true
           });
