@@ -810,6 +810,13 @@ h1 {
         max-width: 96vw !important;
         margin: 0 auto !important;
     }
+
+    /* Make game drawn modal wider on mobile to match board width */
+    .notification.game-drawn-modal {
+        width: 96vw !important;
+        max-width: 96vw !important;
+        margin: 0 auto !important;
+    }
 }
 
 .rules-popup {

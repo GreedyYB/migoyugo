@@ -3493,7 +3493,7 @@ const App: React.FC = () => {
       {notification.show && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setNotification(prev => ({ ...prev, show: false }))} />
-          <div className="notification" style={{ display: 'block' }}>
+          <div className={`notification ${notification.title === 'Game Drawn' ? 'game-drawn-modal' : ''}`} style={{ display: 'block' }}>
             <h2>{notification.title}</h2>
             {notification.title === 'Play Online' && !authState.isAuthenticated && !authState.isGuest ? (
               <div className="notification-buttons">
