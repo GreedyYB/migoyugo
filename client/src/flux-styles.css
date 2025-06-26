@@ -1182,7 +1182,7 @@ input:checked + .slider:before {
 
     #mobile-review-bar {
         display: flex !important;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
         justify-content: center;
         width: 100vw;
@@ -1196,8 +1196,13 @@ input:checked + .slider:before {
     }
 
     #mobile-review-bar .review-controls {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
         flex-wrap: nowrap !important;
-        gap: 2px !important;
+        gap: 8px !important;
+        width: 100%;
     }
 
     #mobile-review-bar .btn {
@@ -1223,10 +1228,12 @@ input:checked + .slider:before {
 
     #mobile-review-bar .move-counter {
         text-align: center;
-        font-size: 1em;
-        margin-bottom: 6px;
+        font-size: 0.9em;
+        margin: 0 8px;
         color: #2c3e50;
         font-weight: bold;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     /* Hide game log in review mode on mobile */
@@ -2334,7 +2341,7 @@ html, body {
 
     #mobile-review-bar {
         display: flex !important;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
         justify-content: center;
         width: 100vw;
@@ -2348,8 +2355,13 @@ html, body {
     }
 
     #mobile-review-bar .review-controls {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
         flex-wrap: nowrap !important;
-        gap: 2px !important;
+        gap: 8px !important;
+        width: 100%;
     }
 
     #mobile-review-bar .btn {
@@ -2375,10 +2387,12 @@ html, body {
 
     #mobile-review-bar .move-counter {
         text-align: center;
-        font-size: 1em;
-        margin-bottom: 6px;
+        font-size: 0.9em;
+        margin: 0 8px;
         color: #2c3e50;
         font-weight: bold;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     /* Hide game log in review mode on mobile */
