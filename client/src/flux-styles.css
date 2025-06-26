@@ -558,6 +558,7 @@ h1 {
     box-sizing: border-box;
     margin-left: auto;
     margin-right: auto;
+    text-align: center;
 }
 
 /* Scrollbar styles */
@@ -605,17 +606,16 @@ h1 {
 }
 
 .review-controls {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     padding: 6px 3px;
     margin: 0;
     margin-left: -5px;
-    gap: 4px;
+    gap: 6px;
     touch-action: manipulation;
     -webkit-touch-callout: none;
     user-select: none;
-    width: 236px;
     box-sizing: border-box;
 }
 
@@ -675,15 +675,13 @@ h1 {
 
 .move-counter {
     text-align: center;
-    margin: 0;
-    margin-left: -3px;
+    margin: 0 4px;
     font-weight: bold;
     font-size: 0.8rem;
     color: #495057;
     white-space: nowrap;
-    flex: 1;
-    padding: 0 4px;
-    min-width: 80px;
+    padding: 0 2px;
+    min-width: 60px;
 }
 
 /* Hover effects for hold functionality */
@@ -2848,5 +2846,28 @@ html, body {
     
     .game-container {
         display: none;
+    }
+}
+
+/* Mobile Review Bar Restructure - Override existing styles */
+@media (max-width: 600px) {
+    #mobile-review-bar {
+        flex-direction: column !important;
+        padding: 8px 0 6px 0 !important;
+    }
+
+    #mobile-review-bar .review-buttons {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
+        margin-bottom: 4px;
+    }
+
+    #mobile-review-bar .move-counter {
+        margin: 0 !important;
+        flex-shrink: 1 !important;
     }
 }
