@@ -2738,6 +2738,8 @@ html, body {
 
     .game-board-area {
         gap: 0 !important;
+        border: 2px solid var(--secondary-color) !important;
+        border-radius: 0 !important;
     }
 
     .board {
