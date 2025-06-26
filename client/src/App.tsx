@@ -2295,6 +2295,12 @@ const App: React.FC = () => {
 
   // Mobile: Direct draw offer
   const offerDraw = () => {
+    // Don't allow draw offers in AI games
+    if (gameMode.startsWith('ai-')) {
+      setToast('Draw offers are not available against AI opponents');
+      return;
+    }
+    
     if (gameMode === 'online' && socket && gameId) {
       // Online game - send draw offer to server
       socket.emit('draw-offer', { gameId });
@@ -3913,9 +3919,13 @@ const App: React.FC = () => {
           </button>
           <button 
             className="btn" 
-            onClick={isGameStarted && gameState.gameStatus === 'active' ? offerDraw : () => setShowMobileControls(true)}
+            onClick={isGameStarted && gameState.gameStatus === 'active' ? 
+              (gameMode.startsWith('ai-') ? () => setShowMobileControls(true) : offerDraw) : 
+              () => setShowMobileControls(true)}
           >
-            {isGameStarted && gameState.gameStatus === 'active' ? 'Offer Draw' : 'Game Options'}
+            {isGameStarted && gameState.gameStatus === 'active' ? 
+              (gameMode.startsWith('ai-') ? 'Game Options' : 'Offer Draw') : 
+              'Game Options'}
           </button>
           <button 
             className="btn" 
