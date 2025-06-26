@@ -824,6 +824,16 @@ h1 {
         max-width: 96vw !important;
         margin: 0 auto !important;
     }
+
+    /* Update banner mobile responsiveness */
+    #update-banner div {
+        flex-direction: column !important;
+        text-align: center !important;
+    }
+    
+    #update-banner span {
+        margin-bottom: 10px !important;
+    }
 }
 
 .rules-popup {
