@@ -3997,6 +3997,65 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Mobile Review Bar - Only visible on mobile when in review mode */}
+      {isReviewMode && isMobileDevice && (
+        <div id="mobile-review-bar">
+          <div className="move-counter">
+            Move {currentReviewMove} of {moveHistory.length}
+          </div>
+          <div className="review-controls">
+            <button 
+              className="btn" 
+              onClick={firstMove}
+              disabled={currentReviewMove <= 0}
+              title="First Move"
+            >
+              ⏮
+            </button>
+            <button 
+              className="btn" 
+              onMouseDown={(e) => startHoldScroll('prev', e)}
+              onMouseUp={(e) => stopHoldScroll(e)}
+              onMouseLeave={(e) => stopHoldScroll(e)}
+              onTouchStart={(e) => startHoldScroll('prev', e)}
+              onTouchEnd={(e) => stopHoldScroll(e)}
+              disabled={currentReviewMove <= 0}
+              title="Previous Move"
+            >
+              ◀
+            </button>
+            <button 
+              className="btn" 
+              onMouseDown={(e) => startHoldScroll('next', e)}
+              onMouseUp={(e) => stopHoldScroll(e)}
+              onMouseLeave={(e) => stopHoldScroll(e)}
+              onTouchStart={(e) => startHoldScroll('next', e)}
+              onTouchEnd={(e) => stopHoldScroll(e)}
+              disabled={currentReviewMove >= moveHistory.length}
+              title="Next Move"
+            >
+              ▶
+            </button>
+            <button 
+              className="btn" 
+              onClick={lastMove}
+              disabled={currentReviewMove >= moveHistory.length}
+              title="Last Move"
+            >
+              ⏭
+            </button>
+            <button 
+              className="btn" 
+              onClick={exitReviewMode}
+              title="Exit Review"
+              style={{ backgroundColor: '#dc3545', color: 'white' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Button Container - Only visible on mobile */}
       <div id="mobile-button-container">
         <div id="mobile-action-bar">
