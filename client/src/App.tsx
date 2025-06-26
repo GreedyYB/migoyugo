@@ -1623,7 +1623,7 @@ const App: React.FC = () => {
         setIsGameStarted(true);
         setShowMatchmaking(false);
         setIsSearchingMatch(false);
-        setToast(`Game start - you are playing as ${data.playerColor} (${data.timerSettings?.timerEnabled ? `${data.timerSettings.minutesPerPlayer}+${data.timerSettings.incrementSeconds}` : 'no timer'})`);
+        showToast(`Game start - you are playing as ${data.playerColor} (${data.timerSettings?.timerEnabled ? `${data.timerSettings.minutesPerPlayer}+${data.timerSettings.incrementSeconds}` : 'no timer'})`);
       });
 
       newSocket.on('waitingForOpponent', () => {
@@ -1767,7 +1767,7 @@ const App: React.FC = () => {
           ...prev,
           waitingForResponse: true
         }));
-        setToast('Rematch request sent to opponent');
+        showToast('Rematch request sent to opponent');
       });
 
       newSocket.on('rematchAccepted', (data) => {
@@ -2406,14 +2406,14 @@ const App: React.FC = () => {
   const offerDraw = () => {
     // Don't allow draw offers in AI games
     if (gameMode.startsWith('ai-')) {
-      setToast('Draw offers are not available against AI opponents');
+      showToast('Draw offers are not available against AI opponents');
       return;
     }
     
     if (gameMode === 'online' && socket && gameId) {
       // Online game - send draw offer to server
       socket.emit('draw-offer', { gameId });
-      setToast('Draw offer sent');
+      showToast('Draw offer sent');
     } else {
       // Local game - show draw offer to opponent
       const offeringPlayer = gameState.currentPlayer;
@@ -2450,7 +2450,7 @@ const App: React.FC = () => {
         socket.emit('draw-decline', { gameId });
       } else {
         // Local game - just close the modal
-        setToast('Draw offer declined');
+        showToast('Draw offer declined');
       }
     }
   };
