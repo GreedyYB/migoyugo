@@ -2783,6 +2783,25 @@ html, body {
     }
 }
 
+/* Mobile button positioning - relative to game content instead of fixed to screen bottom */
+@media (max-width: 600px) {
+    #mobile-action-bar {
+        position: relative !important;
+        bottom: auto !important;
+        margin-top: 10px !important;
+    }
+
+    #mobile-utility-bar {
+        position: relative !important;
+        bottom: auto !important;
+        margin-top: 10px !important;
+    }
+
+    body {
+        padding-bottom: 20px !important;
+    }
+}
+
 /* Force portrait orientation - hide content in landscape on mobile */
 @media (max-width: 600px) and (orientation: landscape) {
     body::before {
