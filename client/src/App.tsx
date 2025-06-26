@@ -16,6 +16,7 @@ interface GameState {
   gameStatus: 'waiting' | 'active' | 'finished';
   lastMove: { row: number; col: number; player: 'white' | 'black' } | null;
   players: { white: string; black: string };
+  nexusLine?: { row: number; col: number }[] | null;
 }
 
 interface MoveHistoryEntry {
@@ -1171,7 +1172,8 @@ const App: React.FC = () => {
     scores: { white: 0, black: 0 },
     gameStatus: 'waiting',
     lastMove: null,
-    players: { white: 'Player 1', black: 'Player 2' }
+    players: { white: 'Player 1', black: 'Player 2' },
+    nexusLine: null
   });
 
   // UI state
@@ -1618,7 +1620,8 @@ const App: React.FC = () => {
           currentPlayer: moveData.currentPlayer,
           scores: moveData.scores,
           lastMove: { row: moveData.row, col: moveData.col, player: moveData.player },
-          gameStatus: moveData.gameOver ? 'finished' : 'active'
+          gameStatus: moveData.gameOver ? 'finished' : 'active',
+          nexusLine: moveData.nexus || null
         }));
 
         // Add to move history
@@ -2044,7 +2047,8 @@ const App: React.FC = () => {
         board: newBoard,
         scores: newScores,
         lastMove: { row, col, player: currentPlayer },
-        gameStatus: 'finished'
+        gameStatus: 'finished',
+        nexusLine: nexus || null
       }));
       
       let message = '';
@@ -2073,7 +2077,8 @@ const App: React.FC = () => {
         currentPlayer: nextPlayer,
         scores: newScores,
         lastMove: { row, col, player: currentPlayer },
-        gameStatus: 'active'
+        gameStatus: 'active',
+        nexusLine: null
       }));
     }
   }, [gameState.board, gameState.currentPlayer, setMoveHistory, setGameState, setNotification, setActiveTimer]);
@@ -2175,7 +2180,8 @@ const App: React.FC = () => {
         players: { 
           white: 'White', 
           black: gameMode === 'local' ? 'Black' : `CORE ${gameMode.toUpperCase()}`
-        }
+        },
+        nexusLine: null
       });
       setIsGameStarted(true);
       setMoveHistory([]);
@@ -2371,7 +2377,8 @@ const App: React.FC = () => {
       scores: { white: 0, black: 0 },
       gameStatus: 'waiting',
       lastMove: null,
-      players: { white: 'White', black: 'Black' }
+      players: { white: 'White', black: 'Black' },
+      nexusLine: null
     });
     setIsGameStarted(false);
     setMoveHistory([]);
@@ -2471,7 +2478,8 @@ const App: React.FC = () => {
       board: initialBoard,
       currentPlayer: 'white',
       scores: { white: 0, black: 0 },
-      lastMove: null
+      lastMove: null,
+      nexusLine: null
     }));
   };
 
@@ -2523,12 +2531,19 @@ const App: React.FC = () => {
       player: moveHistory[moveIndex - 1].player
     } : null;
     
+    // Check for nexus at the final position if this is the last move
+    let nexusLine: { row: number; col: number }[] | null = null;
+    if (moveIndex === moveHistory.length && lastMove) {
+      nexusLine = checkForNexus(board, lastMove.row, lastMove.col, lastMove.player);
+    }
+    
     setGameState(prev => ({
       ...prev,
       board,
       currentPlayer,
       scores,
-      lastMove
+      lastMove,
+      nexusLine
     }));
   }, [moveHistory, setCurrentReviewMove, setGameState]);
 
@@ -2625,11 +2640,12 @@ const App: React.FC = () => {
   const renderCell = (row: number, col: number) => {
     const cell = gameState.board[row][col];
     const isLastMove = gameState.lastMove?.row === row && gameState.lastMove?.col === col;
+    const isNexusCell = gameState.nexusLine?.some(pos => pos.row === row && pos.col === col) || false;
     
     return (
       <div
         key={`${row}-${col}`}
-        className={`cell ${isLastMove ? 'last-move' : ''}`}
+        className={`cell ${isLastMove ? 'last-move' : ''} ${isNexusCell ? 'nexus-cell' : ''}`}
         onClick={() => handleCellClick(row, col)}
       >
         {/* Cell coordinate labels - only show on edges like a chess board */}
