@@ -803,6 +803,13 @@ h1 {
         padding: 12px 24px;
         text-align: center;
     }
+
+    /* Make matchmaking modal wider on mobile to match board width */
+    .notification.matchmaking-modal {
+        width: 96vw !important;
+        max-width: 96vw !important;
+        margin: 0 auto !important;
+    }
 }
 
 .rules-popup {
