@@ -1250,6 +1250,9 @@ const App: React.FC = () => {
   }>({ requested: false, fromPlayer: null });
   const [toast, setToast] = useState<string>('');
   const [showResignConfirmation, setShowResignConfirmation] = useState(false);
+  const [showResignDrawModal, setShowResignDrawModal] = useState(false);
+  const [showDrawOffer, setShowDrawOffer] = useState(false);
+  const [pendingDrawFrom, setPendingDrawFrom] = useState<string | null>(null);
   const [originalGameState, setOriginalGameState] = useState<GameState | null>(null);
   const [showMobileControls, setShowMobileControls] = useState(false);
 
@@ -1741,6 +1744,30 @@ const App: React.FC = () => {
           show: false
         });
         showToast('Opponent declined the rematch');
+      });
+
+      // Draw offer events
+      newSocket.on('drawOffered', (data) => {
+        console.log('Draw offer received from opponent');
+        setPendingDrawFrom(data.fromPlayer);
+        setShowDrawOffer(true);
+      });
+
+      newSocket.on('drawAccepted', () => {
+        console.log('Draw offer accepted');
+        setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
+        setNotification({
+          title: 'Game Drawn',
+          message: 'The game has ended in a draw by mutual agreement.',
+          show: true
+        });
+        setIsGameStarted(false);
+        setActiveTimer(null);
+      });
+
+      newSocket.on('drawDeclined', () => {
+        console.log('Draw offer declined');
+        showToast('Opponent declined the draw offer');
       });
 
       return () => {
@@ -2245,6 +2272,69 @@ const App: React.FC = () => {
 
   const cancelResignation = () => {
     setShowResignConfirmation(false);
+  };
+
+  // Desktop: Show resign/draw modal
+  const showResignDrawOptions = () => {
+    setShowResignDrawModal(true);
+  };
+
+  const handleResignFromModal = () => {
+    setShowResignDrawModal(false);
+    setShowResignConfirmation(true);
+  };
+
+  const handleDrawFromModal = () => {
+    setShowResignDrawModal(false);
+    offerDraw();
+  };
+
+  const cancelResignDrawModal = () => {
+    setShowResignDrawModal(false);
+  };
+
+  // Mobile: Direct draw offer
+  const offerDraw = () => {
+    if (gameMode === 'online' && socket && gameId) {
+      // Online game - send draw offer to server
+      socket.emit('draw-offer', { gameId });
+      setToast('Draw offer sent');
+    } else {
+      // Local game - show draw offer to opponent
+      const offeringPlayer = gameState.currentPlayer;
+      setPendingDrawFrom(offeringPlayer);
+      setShowDrawOffer(true);
+    }
+  };
+
+  const respondToDrawOffer = (accept: boolean) => {
+    setShowDrawOffer(false);
+    setPendingDrawFrom(null);
+    
+    if (accept) {
+      if (gameMode === 'online' && socket && gameId) {
+        // Online game - send draw acceptance to server
+        socket.emit('draw-accept', { gameId });
+      } else {
+        // Local game - end game as draw
+        setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
+        setNotification({
+          title: 'Game Drawn',
+          message: 'The game has ended in a draw by mutual agreement.',
+          show: true
+        });
+        setIsGameStarted(false);
+        setActiveTimer(null);
+      }
+    } else {
+      if (gameMode === 'online' && socket && gameId) {
+        // Online game - send draw rejection to server
+        socket.emit('draw-decline', { gameId });
+      } else {
+        // Local game - just close the modal
+        setToast('Draw offer declined');
+      }
+    }
   };
 
   const resetGame = () => {
@@ -2765,10 +2855,10 @@ const App: React.FC = () => {
           <div className="player-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '256px', marginBottom: '0' }}>
             <button 
               className="btn action-btn" 
-              onClick={isGameStarted && gameState.gameStatus === 'active' ? resignGame : startGame}
+              onClick={isGameStarted && gameState.gameStatus === 'active' ? showResignDrawOptions : startGame}
               style={{ height: '40px', padding: '0 24px' }}
             >
-              {isGameStarted && gameState.gameStatus === 'active' ? 'Resign' : 'Start'}
+              {isGameStarted && gameState.gameStatus === 'active' ? 'Resign/Draw' : 'Start'}
             </button>
             <button 
               className="btn action-btn" 
@@ -3543,6 +3633,92 @@ const App: React.FC = () => {
         </>
       )}
 
+      {/* Desktop Resign/Draw Modal */}
+      {showResignDrawModal && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} />
+          <div className="notification" style={{ display: 'block' }}>
+            <h2>🎯 Choose Your Action</h2>
+            <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5', margin: '20px 0' }}>
+              What would you like to do?
+            </p>
+            <div className="notification-buttons">
+              <button 
+                className="btn" 
+                onClick={handleResignFromModal}
+                style={{ 
+                  backgroundColor: '#dc3545', 
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              >
+                🏳️ Resign Game
+              </button>
+              <button 
+                className="btn" 
+                onClick={handleDrawFromModal}
+                style={{ 
+                  backgroundColor: '#17a2b8', 
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              >
+                🤝 Offer Draw
+              </button>
+              <button 
+                className="btn" 
+                onClick={cancelResignDrawModal}
+                style={{ 
+                  backgroundColor: '#28a745', 
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              >
+                ⚔️ Continue Playing
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Draw Offer Modal */}
+      {showDrawOffer && (
+        <>
+          <div className="overlay" style={{ display: 'block' }} />
+          <div className="notification" style={{ display: 'block' }}>
+            <h2>🤝 Draw Offer</h2>
+            <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5', margin: '20px 0' }}>
+              {pendingDrawFrom === 'white' ? 'White' : 'Black'} player has offered a draw.
+              {'\n\n'}Do you accept?
+            </p>
+            <div className="notification-buttons">
+              <button 
+                className="btn" 
+                onClick={() => respondToDrawOffer(true)}
+                style={{ 
+                  backgroundColor: '#28a745', 
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              >
+                ✅ Accept Draw
+              </button>
+              <button 
+                className="btn" 
+                onClick={() => respondToDrawOffer(false)}
+                style={{ 
+                  backgroundColor: '#dc3545', 
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              >
+                ❌ Decline Draw
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Stats Modal */}
       {showStats && (
         <>
@@ -3737,10 +3913,9 @@ const App: React.FC = () => {
           </button>
           <button 
             className="btn" 
-            onClick={() => setShowMobileControls(true)}
-            style={{ display: !isGameStarted ? 'block' : 'none' }}
+            onClick={isGameStarted && gameState.gameStatus === 'active' ? offerDraw : () => setShowMobileControls(true)}
           >
-            Game Options
+            {isGameStarted && gameState.gameStatus === 'active' ? 'Offer Draw' : 'Game Options'}
           </button>
           <button 
             className="btn" 
