@@ -894,6 +894,68 @@ function countNodes(board, playerColor) {
   return count;
 }
 
+function startServerTimer(gameId) {
+  const game = games.get(gameId);
+  if (!game || !game.timerSettings.timerEnabled) return;
+  
+  console.log(`Starting server timer for game ${gameId}`);
+  
+  // Clear any existing timer
+  if (game.timerInterval) {
+    clearInterval(game.timerInterval);
+  }
+  
+  game.timerInterval = setInterval(() => {
+    if (game.gameStatus !== 'active') {
+      clearInterval(game.timerInterval);
+      return;
+    }
+    
+    const currentPlayer = game.currentPlayer;
+    game.timers[currentPlayer] -= 1;
+    
+    // Broadcast timer update to all players
+    io.to(gameId).emit('timerUpdate', {
+      timers: game.timers,
+      activeTimer: currentPlayer
+    });
+    
+    // Check for timeout
+    if (game.timers[currentPlayer] <= 0) {
+      const winner = currentPlayer === 'white' ? 'black' : 'white';
+      game.gameStatus = 'finished';
+      clearInterval(game.timerInterval);
+      
+      io.to(gameId).emit('gameEnd', {
+        winner,
+        reason: 'timeout',
+        timers: game.timers
+      });
+    }
+  }, 1000);
+  
+  game.lastMoveTime = Date.now();
+}
+
+function stopServerTimer(gameId) {
+  const game = games.get(gameId);
+  if (game && game.timerInterval) {
+    clearInterval(game.timerInterval);
+    game.timerInterval = null;
+    console.log(`Stopped server timer for game ${gameId}`);
+  }
+}
+
+function addTimeIncrement(gameId) {
+  const game = games.get(gameId);
+  if (!game || !game.timerSettings.timerEnabled || game.timerSettings.incrementSeconds === 0) return;
+  
+  const currentPlayer = game.currentPlayer === 'white' ? 'black' : 'white'; // Previous player gets increment
+  game.timers[currentPlayer] += game.timerSettings.incrementSeconds;
+  
+  console.log(`Added ${game.timerSettings.incrementSeconds}s increment to ${currentPlayer} in game ${gameId}`);
+}
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -943,7 +1005,13 @@ io.on('connection', (socket) => {
         moveHistory: [],
         scores: { white: 0, black: 0 },
         lastMove: null,
-        timerSettings: standardTimer
+        timerSettings: standardTimer,
+        timers: {
+          white: standardTimer.minutesPerPlayer * 60,
+          black: standardTimer.minutesPerPlayer * 60
+        },
+        timerInterval: null,
+        lastMoveTime: Date.now()
       };
       
       games.set(gameId, gameState);
@@ -966,7 +1034,8 @@ io.on('connection', (socket) => {
             white: opponent.name,
             black: playerName
           }
-        }
+        },
+        timers: gameState.timers
       });
       
       socket.emit('gameStart', {
@@ -982,8 +1051,14 @@ io.on('connection', (socket) => {
             white: opponent.name,
             black: playerName
           }
-        }
+        },
+        timers: gameState.timers
       });
+      
+      // Start server-side timer
+      if (standardTimer.timerEnabled) {
+        startServerTimer(gameId);
+      }
       
     } else {
       // Add to waiting list
@@ -1046,6 +1121,17 @@ io.on('connection', (socket) => {
     game.lastMove = { row, col, player: playerColor };
     game.moveHistory.push({ row, col, player: playerColor, vectors: vectors.length });
     
+    // Add time increment for the player who just moved
+    addTimeIncrement(gameId);
+    
+    // Stop timer if game is over, otherwise restart for next player
+    if (gameOver) {
+      stopServerTimer(gameId);
+    } else if (game.timerSettings.timerEnabled) {
+      // Restart timer for the new current player
+      startServerTimer(gameId);
+    }
+    
     // Broadcast move to both players
     const moveData = {
       row,
@@ -1059,7 +1145,8 @@ io.on('connection', (socket) => {
       scores: game.scores,
       gameOver,
       winner,
-      nexus
+      nexus,
+      timers: game.timers
     };
     
     io.to(gameId).emit('moveUpdate', moveData);
@@ -1080,6 +1167,7 @@ io.on('connection', (socket) => {
     const winner = playerColor === 'white' ? 'black' : 'white';
     
     game.gameStatus = 'finished';
+    stopServerTimer(gameId);
     
     io.to(gameId).emit('gameEnd', {
       winner,
@@ -1109,6 +1197,7 @@ io.on('connection', (socket) => {
     if (!game || game.gameStatus !== 'active') return;
     
     game.gameStatus = 'finished';
+    stopServerTimer(gameId);
     
     // Notify both players that the game ended in a draw
     io.to(gameId).emit('drawAccepted');
@@ -1265,6 +1354,13 @@ io.on('connection', (socket) => {
       // Both players agreed to rematch - create new game
       const newGameId = uuidv4();
       
+      // Use same timer settings as original game
+      const timerSettings = game.timerSettings || {
+        timerEnabled: true,
+        minutesPerPlayer: 10,
+        incrementSeconds: 0
+      };
+      
       // Swap colors for the rematch
       const newGameState = {
         id: newGameId,
@@ -1277,7 +1373,14 @@ io.on('connection', (socket) => {
         gameStatus: 'active',
         moveHistory: [],
         scores: { white: 0, black: 0 },
-        lastMove: null
+        lastMove: null,
+        timerSettings: timerSettings,
+        timers: {
+          white: timerSettings.minutesPerPlayer * 60,
+          black: timerSettings.minutesPerPlayer * 60
+        },
+        timerInterval: null,
+        lastMoveTime: Date.now()
       };
       
       games.set(newGameId, newGameState);
@@ -1307,7 +1410,8 @@ io.on('connection', (socket) => {
             white: whitePlayerName,
             black: blackPlayerName
           }
-        }
+        },
+        timers: newGameState.timers
       });
       
       io.to(newGameState.players.black.id).emit('rematchAccepted', {
@@ -1322,8 +1426,14 @@ io.on('connection', (socket) => {
             white: whitePlayerName,
             black: blackPlayerName
           }
-        }
+        },
+        timers: newGameState.timers
       });
+      
+      // Start server timer for new game
+      if (timerSettings.timerEnabled) {
+        startServerTimer(newGameId);
+      }
       
     } else {
       // Rematch declined
@@ -1352,6 +1462,7 @@ io.on('connection', (socket) => {
           const remainingPlayer = game.players.white.id === socket.id ? 
             game.players.black.socket : game.players.white.socket;
           
+          stopServerTimer(gameId);
           remainingPlayer.emit('opponentDisconnected');
         }
         games.delete(gameId);

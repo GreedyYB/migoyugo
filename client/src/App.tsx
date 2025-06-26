@@ -1613,13 +1613,9 @@ const App: React.FC = () => {
           setMinutesPerPlayer(data.timerSettings.minutesPerPlayer);
           setIncrementSeconds(data.timerSettings.incrementSeconds);
           
-          // Initialize timers
-          if (data.timerSettings.timerEnabled) {
-            const timeInSeconds = data.timerSettings.minutesPerPlayer * 60;
-            setTimers({
-              white: timeInSeconds,
-              black: timeInSeconds
-            });
+          // Initialize timers from server data
+          if (data.timerSettings.timerEnabled && data.timers) {
+            setTimers(data.timers);
             setActiveTimer(data.gameState.currentPlayer);
           }
         }
@@ -1632,6 +1628,11 @@ const App: React.FC = () => {
 
       newSocket.on('waitingForOpponent', () => {
         setIsSearchingMatch(true);
+      });
+
+      newSocket.on('timerUpdate', (data) => {
+        setTimers(data.timers);
+        setActiveTimer(data.activeTimer);
       });
 
       newSocket.on('moveUpdate', (moveData) => {
@@ -1666,6 +1667,11 @@ const App: React.FC = () => {
           }
         ]);
 
+        // Update timers from server
+        if (moveData.timers) {
+          setTimers(moveData.timers);
+        }
+
         if (moveData.gameOver) {
           let message = '';
           if (moveData.winner === 'draw') {
@@ -1684,22 +1690,37 @@ const App: React.FC = () => {
           });
           }, 1000);
           setActiveTimer(null);
+        } else {
+          setActiveTimer(moveData.currentPlayer);
         }
       });
 
       newSocket.on('gameEnd', (data) => {
         setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
+        setActiveTimer(null);
+        
+        // Update timers if provided (for timeout scenarios)
+        if (data.timers) {
+          setTimers(data.timers);
+        }
+        
         // Add 1 second delay for players to see the final move
         setTimeout(() => {
-        setNotification({
-          title: 'Game Over',
-          message: data.reason === 'resignation' ? 
-            `${data.winner} wins by resignation!` : 
-            `${data.winner} wins!`,
-          show: true
-        });
+          let message = '';
+          if (data.reason === 'resignation') {
+            message = `${data.winner} wins by resignation!`;
+          } else if (data.reason === 'timeout') {
+            message = `${data.winner} wins on time!`;
+          } else {
+            message = `${data.winner} wins!`;
+          }
+          
+          setNotification({
+            title: data.reason === 'timeout' ? 'Time Out' : 'Game Over',
+            message,
+            show: true
+          });
         }, 1000);
-        setActiveTimer(null);
       });
 
       newSocket.on('opponentDisconnected', () => {
@@ -1774,6 +1795,13 @@ const App: React.FC = () => {
         }));
         setMoveHistory([]);
         setNotification({ title: '', message: '', show: false });
+        
+        // Reset timers from server data
+        if (data.timers) {
+          setTimers(data.timers);
+          setActiveTimer(data.gameState.currentPlayer);
+        }
+        
         showToast(`Rematch started - you are now playing as ${data.playerColor}`);
       });
 
@@ -1827,9 +1855,9 @@ const App: React.FC = () => {
     }
   }, [gameMode, authState.isGuest, authState.user]);
 
-  // Timer logic
+  // Timer logic (only for local games - online games use server timers)
   useEffect(() => {
-    if (!timerEnabled || !isGameStarted || gameState.gameStatus !== 'active' || !activeTimer) {
+    if (!timerEnabled || !isGameStarted || gameState.gameStatus !== 'active' || !activeTimer || gameMode === 'online') {
       return;
     }
 
@@ -1858,7 +1886,7 @@ const App: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timerEnabled, isGameStarted, gameState.gameStatus, activeTimer]);
+  }, [timerEnabled, isGameStarted, gameState.gameStatus, activeTimer, gameMode]);
 
   const showToast = useCallback((message: string, duration: number = 4000) => {
     setToast(message);
