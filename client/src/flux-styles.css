@@ -2754,6 +2754,35 @@ html, body {
     }
 }
 
+/* Override all mobile game-board-area widths to include border space */
+@media (max-width: 600px) {
+    .game-board-area {
+        width: calc(96vw + 4px) !important;
+        max-width: calc(96vw + 4px) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-board-area {
+        width: calc(92vw + 4px) !important;
+        max-width: calc(92vw + 4px) !important;
+    }
+}
+
+@media (max-width: 400px), (max-height: 600px) and (max-width: 600px) {
+    .game-board-area {
+        width: calc(90vw + 4px) !important;
+        max-width: calc(90vw + 4px) !important;
+    }
+}
+
+@media (max-height: 500px) and (max-width: 600px) {
+    .game-board-area {
+        width: calc(88vw + 4px) !important;
+        max-width: calc(88vw + 4px) !important;
+    }
+}
+
 /* Force portrait orientation - hide content in landscape on mobile */
 @media (max-width: 600px) and (orientation: landscape) {
     body::before {
