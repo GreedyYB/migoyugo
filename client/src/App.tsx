@@ -3473,6 +3473,19 @@ const App: React.FC = () => {
                       </p>
                     </div>
                     <div className="notification-buttons">
+                      {/* Show Review Game button for online games with move history */}
+                      {isMobileDevice && moveHistory.length > 0 && (
+                        <button 
+                          className="btn" 
+                          onClick={() => {
+                            setNotification(prev => ({ ...prev, show: false }));
+                            enterReviewMode();
+                          }}
+                          style={{ backgroundColor: '#17a2b8', color: 'white' }}
+                        >
+                          📋 Review Game
+                        </button>
+                      )}
                       <button className="btn" onClick={() => respondToRematch(true)} style={{ backgroundColor: '#28a745', color: 'white' }}>
                         ⚔️ Accept Rematch
                       </button>
@@ -3498,6 +3511,19 @@ const App: React.FC = () => {
                       </p>
                     </div>
                     <div className="notification-buttons">
+                      {/* Show Review Game button for online games with move history */}
+                      {isMobileDevice && moveHistory.length > 0 && (
+                        <button 
+                          className="btn" 
+                          onClick={() => {
+                            setNotification(prev => ({ ...prev, show: false }));
+                            enterReviewMode();
+                          }}
+                          style={{ backgroundColor: '#17a2b8', color: 'white' }}
+                        >
+                          📋 Review Game
+                        </button>
+                      )}
                       <button className="btn" onClick={() => setNotification(prev => ({ ...prev, show: false }))}>
                         Continue Waiting
                       </button>
@@ -3514,6 +3540,19 @@ const App: React.FC = () => {
                       </p>
                     </div>
                     <div className="notification-buttons">
+                      {/* Show Review Game button for online games with move history */}
+                      {isMobileDevice && moveHistory.length > 0 && (
+                        <button 
+                          className="btn" 
+                          onClick={() => {
+                            setNotification(prev => ({ ...prev, show: false }));
+                            enterReviewMode();
+                          }}
+                          style={{ backgroundColor: '#28a745', color: 'white' }}
+                        >
+                          📋 Review Game
+                        </button>
+                      )}
                       <button 
                         className="btn" 
                         onClick={(e) => {
