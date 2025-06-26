@@ -1191,6 +1191,9 @@ const App: React.FC = () => {
   const [statsLoading, setStatsLoading] = useState(false);
   const [showPWABanner, setShowPWABanner] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  
+  // Mobile detection state
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
 
   // Settings state
   const [currentTheme, setCurrentTheme] = useState('classic');
@@ -1264,6 +1267,20 @@ const App: React.FC = () => {
   // Load settings from localStorage on component mount
   useEffect(() => {
     loadSavedSettings();
+  }, []);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobile = window.innerWidth <= 600 || 
+                      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobileDevice(isMobile);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Apply theme when currentTheme changes
@@ -3523,6 +3540,28 @@ const App: React.FC = () => {
                     </div>
                   </>
                 )}
+              </>
+            ) : notification.title === 'Game Over' && moveHistory.length > 0 ? (
+              <>
+                <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5' }}>{notification.message}</p>
+                <div className="notification-buttons">
+                  {/* Show Review Game button on mobile devices */}
+                  {isMobileDevice && (
+                    <button 
+                      className="btn" 
+                      onClick={() => {
+                        setNotification(prev => ({ ...prev, show: false }));
+                        enterReviewMode();
+                      }}
+                      style={{ backgroundColor: '#28a745', color: 'white' }}
+                    >
+                      📋 Review Game
+                    </button>
+                  )}
+                  <button className="btn" onClick={() => setNotification(prev => ({ ...prev, show: false }))}>
+                    Close
+                  </button>
+                </div>
               </>
             ) : (
               <>
