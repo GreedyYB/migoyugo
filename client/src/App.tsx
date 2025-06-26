@@ -3641,7 +3641,7 @@ const App: React.FC = () => {
       {/* Resign Confirmation Modal */}
       {showResignConfirmation && (
         <>
-          <div className="overlay" style={{ display: 'block' }} />
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowResignConfirmation(false)} />
           <div className="notification" style={{ display: 'block' }}>
             <h2>⚠️ Confirm Resignation</h2>
             <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5', margin: '20px 0' }}>
@@ -3679,7 +3679,7 @@ const App: React.FC = () => {
       {/* Desktop Resign/Draw Modal */}
       {showResignDrawModal && (
         <>
-          <div className="overlay" style={{ display: 'block' }} />
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowResignDrawModal(false)} />
           <div className="notification" style={{ display: 'block' }}>
             <h2>🎯 Choose Your Action</h2>
             <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5', margin: '20px 0' }}>
@@ -3727,7 +3727,7 @@ const App: React.FC = () => {
       {/* Draw Offer Modal */}
       {showDrawOffer && (
         <>
-          <div className="overlay" style={{ display: 'block' }} />
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowDrawOffer(false)} />
           <div className="notification" style={{ display: 'block' }}>
             <h2>🤝 Draw Offer</h2>
             <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5', margin: '20px 0' }}>
