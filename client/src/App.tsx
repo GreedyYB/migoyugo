@@ -2024,12 +2024,12 @@ const App: React.FC = () => {
         setUserStats(data.stats);
         setShowStats(true);
       } else {
-        setToast("Failed to load statistics");
+        setToast("New feature coming soon!");
         setTimeout(() => setToast(''), 3000);
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
-      setToast("Failed to load statistics");
+      setToast("New feature coming soon!");
       setTimeout(() => setToast(''), 3000);
     } finally {
       setStatsLoading(false);
