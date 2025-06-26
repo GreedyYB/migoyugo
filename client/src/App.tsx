@@ -3370,7 +3370,7 @@ const App: React.FC = () => {
       {/* Matchmaking modal */}
       {showMatchmaking && (
         <>
-          <div className="overlay" style={{ display: 'block' }} />
+          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowMatchmaking(false)} />
           <div className="notification" style={{ display: 'block', position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2000 }}>
             <h2>Online Multiplayer</h2>
             <div style={{ marginBottom: '15px', fontSize: '0.9rem', color: '#666' }}>
