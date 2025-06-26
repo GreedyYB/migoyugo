@@ -1623,7 +1623,7 @@ const App: React.FC = () => {
         setIsGameStarted(true);
         setShowMatchmaking(false);
         setIsSearchingMatch(false);
-        showToast(`Game start - you are playing as ${data.playerColor} (${data.timerSettings?.timerEnabled ? `${data.timerSettings.minutesPerPlayer}+${data.timerSettings.incrementSeconds}` : 'no timer'})`);
+        setToast(`Game start - you are playing as ${data.playerColor} (${data.timerSettings?.timerEnabled ? `${data.timerSettings.minutesPerPlayer}+${data.timerSettings.incrementSeconds}` : 'no timer'})`);
       });
 
       newSocket.on('waitingForOpponent', () => {
@@ -1765,7 +1765,7 @@ const App: React.FC = () => {
           ...prev,
           waitingForResponse: true
         }));
-        showToast('Rematch request sent to opponent');
+        setToast('Rematch request sent to opponent');
       });
 
       newSocket.on('rematchAccepted', (data) => {
@@ -2043,7 +2043,15 @@ const App: React.FC = () => {
   };
 
   const makeLocalMove = useCallback((row: number, col: number) => {
-    if (!isValidMove(gameState.board, row, col, gameState.currentPlayer)) return;
+    // Check basic validity first
+    if (row < 0 || row >= 8 || col < 0 || col >= 8) return;
+    if (gameState.board[row][col] !== null) return;
+    
+    // Check if move would create a line too long and show specific message
+    if (wouldCreateLineTooLong(gameState.board, row, col, gameState.currentPlayer)) {
+      showToast("Illegal move. You may not create a line longer than 4 of your own color");
+      return;
+    }
     
     const currentPlayer = gameState.currentPlayer;
     const newBoard = gameState.board.map(r => [...r]);
@@ -2190,6 +2198,12 @@ const App: React.FC = () => {
     if (gameMode === 'online') {
       if (!playerColor || gameState.currentPlayer !== playerColor) return;
       if (gameState.board[row][col] !== null) return;
+      
+      // Check if move would create a line too long before sending to server
+      if (wouldCreateLineTooLong(gameState.board, row, col, playerColor)) {
+        showToast("Illegal move. You may not create a line longer than 4 of your own color");
+        return;
+      }
       
       socket?.emit('makeMove', { gameId, row, col });
     } else {
