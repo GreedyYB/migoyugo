@@ -3474,7 +3474,7 @@ const App: React.FC = () => {
                   Cancel
                 </button>
               </div>
-            ) : notification.title === 'Game Over' && gameMode === 'online' && gameState.gameStatus === 'finished' ? (
+            ) : (notification.title === 'Game Over' || notification.title === 'Game Drawn' || notification.title === 'Time Out' || notification.title === 'Opponent Disconnected') && gameMode === 'online' && gameState.gameStatus === 'finished' ? (
               <>
                 <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5' }}>{notification.message}</p>
                 {rematchState.requested ? (
@@ -3489,7 +3489,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="notification-buttons">
                       {/* Show Review Game button for online games with move history */}
-                      {isMobileDevice && moveHistory.length > 0 && (
+                      {moveHistory.length > 0 && (
                         <button 
                           className="btn" 
                           onClick={() => {
@@ -3527,7 +3527,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="notification-buttons">
                       {/* Show Review Game button for online games with move history */}
-                      {isMobileDevice && moveHistory.length > 0 && (
+                      {moveHistory.length > 0 && (
                         <button 
                           className="btn" 
                           onClick={() => {
@@ -3556,7 +3556,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="notification-buttons">
                       {/* Show Review Game button for online games with move history */}
-                      {isMobileDevice && moveHistory.length > 0 && (
+                      {moveHistory.length > 0 && (
                         <button 
                           className="btn" 
                           onClick={() => {
@@ -3595,23 +3595,21 @@ const App: React.FC = () => {
                   </>
                 )}
               </>
-            ) : notification.title === 'Game Over' && moveHistory.length > 0 ? (
+            ) : (notification.title === 'Game Over' || notification.title === 'Game Drawn' || notification.title === 'Time Out') && moveHistory.length > 0 ? (
               <>
                 <p style={{ whiteSpace: 'pre-line', lineHeight: '1.5' }}>{notification.message}</p>
                 <div className="notification-buttons">
-                  {/* Show Review Game button on mobile devices */}
-                  {isMobileDevice && (
-                    <button 
-                      className="btn" 
-                      onClick={() => {
-                        setNotification(prev => ({ ...prev, show: false }));
-                        enterReviewMode();
-                      }}
-                      style={{ backgroundColor: '#28a745', color: 'white' }}
-                    >
-                      📋 Review Game
-                    </button>
-                  )}
+                  {/* Show Review Game button for all devices when there's move history */}
+                  <button 
+                    className="btn" 
+                    onClick={() => {
+                      setNotification(prev => ({ ...prev, show: false }));
+                      enterReviewMode();
+                    }}
+                    style={{ backgroundColor: '#28a745', color: 'white' }}
+                  >
+                    📋 Review Game
+                  </button>
                   <button className="btn" onClick={() => setNotification(prev => ({ ...prev, show: false }))}>
                     Close
                   </button>
