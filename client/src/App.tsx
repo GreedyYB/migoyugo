@@ -1887,15 +1887,33 @@ const App: React.FC = () => {
       });
 
       newSocket.on('roomJoined', (data) => {
-        setCurrentRoom({
-          code: data.roomCode,
-          isHost: false,
-          hostName: data.host.name,
-          guestName: data.guest.name,
-          status: data.status
+        console.log('roomJoined event received:', data);
+        
+        // Update room state for both host and guest
+        setCurrentRoom(prev => {
+          const isJoiningGuest = !prev; // If no previous room state, this socket is the guest joining
+          
+          if (isJoiningGuest) {
+            // This is the guest joining
+            showToast(`Joined room ${data.roomCode}!`);
+            return {
+              code: data.roomCode,
+              isHost: false,
+              hostName: data.host.name,
+              guestName: data.guest.name,
+              status: data.status
+            };
+          } else {
+            // This is the host receiving the update that guest joined
+            showToast(`${data.guest.name} joined the room!`);
+            return {
+              ...prev,
+              guestName: data.guest.name,
+              status: data.status
+            };
+          }
         });
         setShowRoomModal(false);
-        showToast(`Joined room ${data.roomCode}!`);
       });
 
       newSocket.on('guestLeft', (data) => {
@@ -2543,8 +2561,12 @@ const App: React.FC = () => {
   };
 
   const startRoomGame = () => {
+    console.log('startRoomGame called', { socket: !!socket, currentRoom, isHost: currentRoom?.isHost });
     if (socket && currentRoom && currentRoom.isHost) {
+      console.log('Emitting startRoomGame for room:', currentRoom.code);
       socket.emit('startRoomGame', { roomCode: currentRoom.code });
+    } else {
+      console.log('Cannot start room game - missing requirements');
     }
   };
 
