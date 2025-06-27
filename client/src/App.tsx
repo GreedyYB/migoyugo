@@ -3025,14 +3025,14 @@ const App: React.FC = () => {
                     if (!isGameStarted) {
                       return 'White';
                     } else if (gameMode === 'online' && playerColor) {
-                      // Multiplayer game - show actual usernames with color
+                      // Multiplayer game - show actual usernames without color labels
                       const whiteName = playerColor === 'white' ? 
                         (authState.user?.username || 'Guest') : 
                         opponentName;
-                      return `${whiteName} (white)`;
-                    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2') && authState.isAuthenticated) {
+                      return whiteName;
+                    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
                       // AI game with authenticated user - show username for white (human player)
-                      return `${authState.user?.username} (white)`;
+                      return authState.user?.username;
                     } else {
                       // Local human vs human or unauthenticated - use gameState players
                       return gameState.players.white;
@@ -3064,14 +3064,14 @@ const App: React.FC = () => {
                   if (!isGameStarted) {
                     return 'Black';
                   } else if (gameMode === 'online' && playerColor) {
-                    // Multiplayer game - show actual usernames with color
+                    // Multiplayer game - show actual usernames without color labels
                     const blackName = playerColor === 'black' ? 
                       (authState.user?.username || 'Guest') : 
                       opponentName;
-                    return `${blackName} (black)`;
-                  } else if ((gameMode === 'ai-1' || gameMode === 'ai-2') && authState.isAuthenticated) {
-                    // AI game - black is always the AI, show AI name with color
-                    return `${gameState.players.black} (black)`;
+                    return blackName;
+                  } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
+                    // AI game - black is always the AI, show AI name without color label
+                    return gameState.players.black;
                   } else {
                     // Local human vs human or unauthenticated - use gameState players
                     return gameState.players.black;
