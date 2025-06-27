@@ -1251,6 +1251,17 @@ const App: React.FC = () => {
   const [originalGameState, setOriginalGameState] = useState<GameState | null>(null);
   const [showMobileControls, setShowMobileControls] = useState(false);
 
+  // Room-based multiplayer state
+  const [currentRoom, setCurrentRoom] = useState<{
+    code: string;
+    isHost: boolean;
+    hostName: string;
+    guestName?: string;
+    status: 'waiting' | 'ready' | 'active';
+  } | null>(null);
+  const [showRoomModal, setShowRoomModal] = useState(false);
+  const [roomCodeInput, setRoomCodeInput] = useState('');
+
   // Tutorial animation ref
   const animationRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -1629,6 +1640,12 @@ const App: React.FC = () => {
         setIsGameStarted(true);
         setShowMatchmaking(false);
         setIsSearchingMatch(false);
+        
+        // Clear room state when game starts from a room
+        if (data.fromRoom) {
+          setCurrentRoom(null);
+        }
+        
         showToast(`Game start - you are playing as ${data.playerColor} (${data.timerSettings?.timerEnabled ? `${data.timerSettings.minutesPerPlayer}+${data.timerSettings.incrementSeconds}` : 'no timer'})`);
       });
 
@@ -1855,6 +1872,50 @@ const App: React.FC = () => {
       newSocket.on('drawDeclined', () => {
         console.log('Draw offer declined');
         showToast('Opponent declined the draw offer');
+      });
+
+      // Room-based multiplayer event handlers
+      newSocket.on('roomCreated', (data) => {
+        setCurrentRoom({
+          code: data.roomCode,
+          isHost: true,
+          hostName: data.playerName,
+          status: 'waiting'
+        });
+        setShowRoomModal(false);
+        showToast(`Room ${data.roomCode} created! Share this code with your friend.`);
+      });
+
+      newSocket.on('roomJoined', (data) => {
+        setCurrentRoom({
+          code: data.roomCode,
+          isHost: false,
+          hostName: data.host.name,
+          guestName: data.guest.name,
+          status: data.status
+        });
+        setShowRoomModal(false);
+        showToast(`Joined room ${data.roomCode}!`);
+      });
+
+      newSocket.on('guestLeft', (data) => {
+        if (currentRoom && currentRoom.code === data.roomCode) {
+          setCurrentRoom(prev => prev ? {
+            ...prev,
+            guestName: undefined,
+            status: 'waiting'
+          } : null);
+          showToast(data.reason === 'disconnected' ? 'Guest disconnected' : 'Guest left the room');
+        }
+      });
+
+      newSocket.on('roomClosed', (data) => {
+        setCurrentRoom(null);
+        showToast(data.message);
+      });
+
+      newSocket.on('roomError', (data) => {
+        showToast(data.message);
       });
 
       return () => {
@@ -2457,6 +2518,33 @@ const App: React.FC = () => {
         // Local game - just close the modal
         showToast('Draw offer declined');
       }
+    }
+  };
+
+  // Room-based multiplayer functions
+  const createRoom = () => {
+    if (socket) {
+      socket.emit('createRoom');
+    }
+  };
+
+  const joinRoom = () => {
+    if (socket && roomCodeInput.trim()) {
+      socket.emit('joinRoom', { roomCode: roomCodeInput.trim() });
+      setRoomCodeInput('');
+    }
+  };
+
+  const leaveRoom = () => {
+    if (socket && currentRoom) {
+      socket.emit('leaveRoom', { roomCode: currentRoom.code });
+      setCurrentRoom(null);
+    }
+  };
+
+  const startRoomGame = () => {
+    if (socket && currentRoom && currentRoom.isHost) {
+      socket.emit('startRoomGame', { roomCode: currentRoom.code });
     }
   };
 
@@ -3493,7 +3581,7 @@ const App: React.FC = () => {
       )}
 
       {/* Matchmaking modal */}
-      {showMatchmaking && (
+      {showMatchmaking && !currentRoom && (
         <>
           <div className="overlay" style={{ display: 'block', zIndex: 10001 }} onClick={() => setShowMatchmaking(false)} />
           <div className="notification matchmaking-modal" style={{ display: 'block', zIndex: 10002 }}>
@@ -3518,16 +3606,150 @@ const App: React.FC = () => {
               </div>
             </div>
             
-            <p>{isSearchingMatch ? 'Searching for a match...' : 'Ready to find an opponent?'}</p>
-            <div className="notification-buttons">
-              {!isSearchingMatch ? (
-                <>
-                  <button className="btn" onClick={findMatch}>Find Match</button>
+            {isSearchingMatch ? (
+              <>
+                <p>Searching for a match...</p>
+                <div className="notification-buttons">
+                  <button className="btn" onClick={cancelMatchmaking}>Cancel Search</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>Choose how to play:</p>
+                <div className="notification-buttons">
+                  <button className="btn" onClick={findMatch}>🎯 Quick Match</button>
+                  <button className="btn" onClick={() => setShowRoomModal(true)}>🏠 Private Room</button>
                   <button className="btn" onClick={() => setShowMatchmaking(false)}>Cancel</button>
-                </>
-              ) : (
-                <button className="btn" onClick={cancelMatchmaking}>Cancel Search</button>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Room modal */}
+      {showRoomModal && (
+        <>
+          <div className="overlay" style={{ display: 'block', zIndex: 10001 }} onClick={() => setShowRoomModal(false)} />
+          <div className="notification" style={{ display: 'block', zIndex: 10002 }}>
+            <h2>Private Room</h2>
+            <p>Create a room to invite a friend, or join an existing room:</p>
+            
+            <div style={{ margin: '20px 0' }}>
+              <div style={{ marginBottom: '15px' }}>
+                <input
+                  type="text"
+                  placeholder="Enter room code (e.g. ABC123)"
+                  value={roomCodeInput}
+                  onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    fontSize: '16px',
+                    textAlign: 'center',
+                    letterSpacing: '2px',
+                    fontFamily: 'monospace'
+                  }}
+                  maxLength={6}
+                />
+              </div>
+            </div>
+            
+            <div className="notification-buttons">
+              <button className="btn" onClick={createRoom}>Create Room</button>
+              <button 
+                className="btn" 
+                onClick={joinRoom}
+                disabled={!roomCodeInput.trim()}
+                style={{ 
+                  opacity: roomCodeInput.trim() ? 1 : 0.5,
+                  cursor: roomCodeInput.trim() ? 'pointer' : 'not-allowed'
+                }}
+              >
+                Join Room
+              </button>
+              <button className="btn" onClick={() => setShowRoomModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Current room display */}
+      {currentRoom && (
+        <>
+          <div className="overlay" style={{ display: 'block', zIndex: 10001 }} />
+          <div className="notification" style={{ display: 'block', zIndex: 10002 }}>
+            <h2>Room {currentRoom.code}</h2>
+            
+            <div style={{ margin: '20px 0', textAlign: 'center' }}>
+              <div style={{ 
+                padding: '15px', 
+                backgroundColor: '#f8f9fa', 
+                border: '1px solid #dee2e6', 
+                borderRadius: '8px',
+                marginBottom: '15px'
+              }}>
+                <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '10px' }}>
+                  Share this code with your friend:
+                </div>
+                <div style={{ 
+                  fontSize: '2rem', 
+                  fontWeight: 'bold', 
+                  letterSpacing: '4px',
+                  fontFamily: 'monospace',
+                  color: '#007bff'
+                }}>
+                  {currentRoom.code}
+                </div>
+              </div>
+              
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>Host:</strong> {currentRoom.hostName} {currentRoom.isHost && '(You)'}
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <strong>Guest:</strong> {currentRoom.guestName || 'Waiting...'}
+                </div>
+                
+                {currentRoom.status === 'waiting' && (
+                  <div style={{ 
+                    padding: '10px', 
+                    backgroundColor: '#fff3cd', 
+                    border: '1px solid #ffeaa7',
+                    borderRadius: '4px',
+                    color: '#856404'
+                  }}>
+                    ⏳ Waiting for opponent to join...
+                  </div>
+                )}
+                
+                {currentRoom.status === 'ready' && (
+                  <div style={{ 
+                    padding: '10px', 
+                    backgroundColor: '#d4edda', 
+                    border: '1px solid #c3e6cb',
+                    borderRadius: '4px',
+                    color: '#155724'
+                  }}>
+                    ✅ Both players ready! {currentRoom.isHost ? 'You can start the game.' : 'Waiting for host to start...'}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="notification-buttons">
+              {currentRoom.isHost && currentRoom.status === 'ready' && (
+                <button 
+                  className="btn" 
+                  onClick={startRoomGame}
+                  style={{ backgroundColor: '#28a745', color: 'white' }}
+                >
+                  Start Game
+                </button>
               )}
+              <button className="btn" onClick={leaveRoom}>Leave Room</button>
             </div>
           </div>
         </>
