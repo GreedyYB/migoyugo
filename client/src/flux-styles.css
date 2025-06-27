@@ -2239,6 +2239,11 @@ html, body {
         left: 0;
         right: 0;
     }
+    
+    /* Adjust welcome message position on mobile to prevent overlap with FLUX title */
+    header > div[style*="position: absolute"][style*="top: 20px"] {
+        top: 23px !important;
+    }
 
     :root {
         --cell-size: calc(96vw / 8) !important;
