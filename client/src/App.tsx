@@ -1540,60 +1540,6 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Enhanced screen orientation handling for mobile devices
-  useEffect(() => {
-    // Check if we're on mobile
-    const isMobile = () => window.innerWidth <= 600 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (!isMobile()) return;
-    
-    const checkOrientation = () => {
-      const isLandscape = window.innerHeight < window.innerWidth;
-      const isMobileSize = window.innerWidth <= 600;
-      
-      if (isMobileSize && isLandscape) {
-        document.body.classList.add('force-portrait');
-        document.documentElement.classList.add('force-portrait');
-      } else {
-        document.body.classList.remove('force-portrait');
-        document.documentElement.classList.remove('force-portrait');
-      }
-    };
-
-    const handleOrientationChange = () => {
-      // Single check with small delay to allow orientation to complete
-      setTimeout(checkOrientation, 100);
-    };
-
-    // Initial check
-    checkOrientation();
-
-    // Event listeners for orientation change events
-    window.addEventListener('orientationchange', handleOrientationChange);
-    window.addEventListener('resize', handleOrientationChange);
-    
-    // Try Screen Orientation API if available (works in PWA mode)
-    const tryLockOrientation = async () => {
-      try {
-        if ('screen' in window && 'orientation' in (window.screen as any) && 'lock' in (window.screen as any).orientation) {
-          await (window.screen as any).orientation.lock('portrait-primary');
-          console.log('Successfully locked to portrait using Screen Orientation API');
-        }
-      } catch (error) {
-        console.log('Screen Orientation API lock failed (normal in browser):', error);
-      }
-    };
-
-    tryLockOrientation();
-
-    return () => {
-      window.removeEventListener('orientationchange', handleOrientationChange);
-      window.removeEventListener('resize', handleOrientationChange);
-      document.body.classList.remove('force-portrait');
-      document.documentElement.classList.remove('force-portrait');
-    };
-  }, []);
-
   // Check authentication status on component mount
   useEffect(() => {
     const checkAuth = async () => {
@@ -1794,11 +1740,11 @@ const App: React.FC = () => {
             message = `${data.winner} wins!`;
           }
           
-          setNotification({
+        setNotification({
             title: data.reason === 'timeout' ? 'Time Out' : (data.reason === 'draw' ? 'Game Drawn' : 'Game Over'),
             message,
-            show: true
-          });
+          show: true
+        });
         }, 1000);
       });
 
@@ -3685,12 +3631,12 @@ const App: React.FC = () => {
             {isSearchingMatch ? (
               <>
                 <p>Searching for a match...</p>
-                <div className="notification-buttons">
+            <div className="notification-buttons">
                   <button className="btn" onClick={cancelMatchmaking}>Cancel Search</button>
                 </div>
               </>
             ) : (
-              <>
+                <>
                 <p>Choose how to play:</p>
                 <div className="notification-buttons">
                   <button className="btn" onClick={findMatch}>🎯 Quick Match</button>
