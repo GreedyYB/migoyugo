@@ -1540,6 +1540,69 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Enhanced screen orientation handling for mobile devices
+  useEffect(() => {
+    // Check if we're on mobile
+    const isMobile = () => window.innerWidth <= 600 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (!isMobile()) return;
+
+    let orientationCheckInterval: NodeJS.Timeout;
+    
+    const checkOrientation = () => {
+      const isLandscape = window.innerHeight < window.innerWidth;
+      const isMobileSize = window.innerWidth <= 600;
+      
+      if (isMobileSize && isLandscape) {
+        document.body.classList.add('force-portrait');
+        document.documentElement.classList.add('force-portrait');
+      } else {
+        document.body.classList.remove('force-portrait');
+        document.documentElement.classList.remove('force-portrait');
+      }
+    };
+
+    const handleOrientationChange = () => {
+      // Multiple checks to catch all orientation changes
+      checkOrientation();
+      setTimeout(checkOrientation, 100);
+      setTimeout(checkOrientation, 300);
+      setTimeout(checkOrientation, 500);
+    };
+
+    // Initial check
+    checkOrientation();
+    
+    // Continuous monitoring (every 500ms) to catch any missed rotations
+    orientationCheckInterval = setInterval(checkOrientation, 500);
+
+    // Event listeners for multiple orientation change events
+    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener('resize', handleOrientationChange);
+    
+    // Try Screen Orientation API if available (works in PWA mode)
+    const tryLockOrientation = async () => {
+      try {
+        if ('screen' in window && 'orientation' in (window.screen as any) && 'lock' in (window.screen as any).orientation) {
+          await (window.screen as any).orientation.lock('portrait-primary');
+          console.log('Successfully locked to portrait using Screen Orientation API');
+        }
+      } catch (error) {
+        console.log('Screen Orientation API lock failed (normal in browser):', error);
+      }
+    };
+
+    tryLockOrientation();
+
+    return () => {
+      clearInterval(orientationCheckInterval);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      window.removeEventListener('resize', handleOrientationChange);
+      document.body.classList.remove('force-portrait');
+      document.documentElement.classList.remove('force-portrait');
+    };
+  }, []);
+
   // Check authentication status on component mount
   useEffect(() => {
     const checkAuth = async () => {
