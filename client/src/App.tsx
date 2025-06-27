@@ -1546,8 +1546,6 @@ const App: React.FC = () => {
     const isMobile = () => window.innerWidth <= 600 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     if (!isMobile()) return;
-
-    let orientationCheckInterval: NodeJS.Timeout;
     
     const checkOrientation = () => {
       const isLandscape = window.innerHeight < window.innerWidth;
@@ -1563,20 +1561,14 @@ const App: React.FC = () => {
     };
 
     const handleOrientationChange = () => {
-      // Multiple checks to catch all orientation changes
-      checkOrientation();
+      // Single check with small delay to allow orientation to complete
       setTimeout(checkOrientation, 100);
-      setTimeout(checkOrientation, 300);
-      setTimeout(checkOrientation, 500);
     };
 
     // Initial check
     checkOrientation();
-    
-    // Continuous monitoring (every 500ms) to catch any missed rotations
-    orientationCheckInterval = setInterval(checkOrientation, 500);
 
-    // Event listeners for multiple orientation change events
+    // Event listeners for orientation change events
     window.addEventListener('orientationchange', handleOrientationChange);
     window.addEventListener('resize', handleOrientationChange);
     
@@ -1595,7 +1587,6 @@ const App: React.FC = () => {
     tryLockOrientation();
 
     return () => {
-      clearInterval(orientationCheckInterval);
       window.removeEventListener('orientationchange', handleOrientationChange);
       window.removeEventListener('resize', handleOrientationChange);
       document.body.classList.remove('force-portrait');

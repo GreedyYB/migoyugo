@@ -2868,10 +2868,6 @@ html, body {
 
 /* Method 0: Immediate CSS-only blocking (works instantly on page load) */
 @media screen and (max-width: 600px) and (max-height: 500px) and (orientation: landscape) {
-    #root {
-        display: none !important;
-    }
-    
     body::after {
         content: "🔄 Please rotate your device to portrait mode to play Flux" !important;
         position: fixed !important;
@@ -2893,6 +2889,10 @@ html, body {
         box-sizing: border-box !important;
         line-height: 1.5 !important;
         font-weight: bold !important;
+    }
+    
+    #root {
+        display: none !important;
     }
 }
 
@@ -2949,84 +2949,48 @@ html, body {
     }
 }
 
-/* Method 2: JavaScript-triggered force portrait mode - Enhanced */
-@media screen and (max-width: 600px) {
-    body.force-portrait::before,
-    html.force-portrait body::before {
-        content: "🔄 Please rotate your device to portrait mode to play Flux" !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        background: var(--primary-color) !important;
-        color: white !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 1.3rem !important;
-        text-align: center !important;
-        z-index: 999999 !important;
-        padding: 30px !important;
-        box-sizing: border-box !important;
-        line-height: 1.5 !important;
-        font-weight: bold !important;
-    }
-    
-    body.force-portrait *:not(body):not(html),
-    html.force-portrait *:not(body):not(html) {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-    }
-    
-    body.force-portrait,
-    html.force-portrait body {
-        overflow: hidden !important;
-        position: fixed !important;
-        width: 100% !important;
-        height: 100% !important;
-    }
+/* Method 2: JavaScript-triggered force portrait mode - Enhanced (ONLY for landscape) */
+body.force-portrait::before,
+html.force-portrait body::before {
+    content: "🔄 Please rotate your device to portrait mode to play Flux" !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: var(--primary-color) !important;
+    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.3rem !important;
+    text-align: center !important;
+    z-index: 999999 !important;
+    padding: 30px !important;
+    box-sizing: border-box !important;
+    line-height: 1.5 !important;
+    font-weight: bold !important;
 }
 
-/* Backup method: Direct landscape blocking regardless of screen size */
-@media screen and (orientation: landscape) and (max-height: 600px) {
-    html, body {
-        overflow: hidden !important;
-    }
-    
-    body::before {
-        content: "🔄 Please rotate your device to portrait mode to play Flux" !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        background: var(--primary-color) !important;
-        color: white !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 1.3rem !important;
-        text-align: center !important;
-        z-index: 999999 !important;
-        padding: 30px !important;
-        box-sizing: border-box !important;
-        line-height: 1.5 !important;
-        font-weight: bold !important;
-    }
-    
-    *:not(body::before) {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-    }
+body.force-portrait *:not(body):not(html):not(body::before),
+html.force-portrait *:not(body):not(html):not(body::before) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
+
+body.force-portrait,
+html.force-portrait body {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+
 
 /* Mobile Review Bar Restructure - Override existing styles */
 @media (max-width: 600px) {
