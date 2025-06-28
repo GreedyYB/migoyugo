@@ -713,6 +713,100 @@ const minimax = (
 // Global transposition table instance
 const globalTransTable = new TranspositionTable();
 
+// Optimized AI-4 evaluation function (avoids infinite loops)
+const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): number => {
+  let score = 0;
+  const playerColor = 'black';
+  const opponentColor = 'white';
+  
+  // Create test board
+  const testBoard = board.map(r => [...r]);
+  testBoard[row][col] = { color: playerColor, isNode: false };
+  
+  // PRIORITY 1: Vector Formation (instant scoring)
+  const vectors = checkForVectors(testBoard, row, col, playerColor);
+  if (vectors.length > 0) {
+    score += 2000 * vectors.length; // Huge bonus for vectors
+  }
+  
+  // PRIORITY 2: Check for nexus (instant win)
+  if (vectors.length > 0) {
+    testBoard[row][col] = { color: playerColor, isNode: true, nodeType: 'standard' };
+    const nexus = checkForNexus(testBoard, row, col, playerColor);
+    if (nexus) {
+      score += 10000; // Instant win
+    }
+  }
+  
+  // PRIORITY 3: Block opponent threats (critical defense)
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (isValidMove(board, r, c, opponentColor) && r === row && c === col) {
+        const opponentTestBoard = board.map(row => [...row]);
+        opponentTestBoard[r][c] = { color: opponentColor, isNode: false };
+        const opponentVectors = checkForVectors(opponentTestBoard, r, c, opponentColor);
+        
+        if (opponentVectors.length > 0) {
+          score += 1500 * opponentVectors.length; // High priority to block
+          
+          // Check if opponent can win with nexus
+          opponentTestBoard[r][c] = { color: opponentColor, isNode: true, nodeType: 'standard' };
+          const opponentNexus = checkForNexus(opponentTestBoard, r, c, opponentColor);
+          if (opponentNexus) {
+            score += 9000; // Must block winning moves
+          }
+        }
+      }
+    }
+  }
+  
+  // PRIORITY 4: Positional factors (simplified)
+  const centerDistance = Math.abs(row - 3.5) + Math.abs(col - 3.5);
+  score += (7 - centerDistance) * 15; // Center control
+  
+  // PRIORITY 5: Connectivity (piece support)
+  let connections = 0;
+  const directions = [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]];
+  for (const [dr, dc] of directions) {
+    const newRow = row + dr;
+    const newCol = col + dc;
+    if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+      if (board[newRow][newCol]?.color === playerColor) {
+        connections++;
+      }
+    }
+  }
+  score += connections * 25;
+  
+  // PRIORITY 6: Line potential (setup for future vectors)
+  for (const [dr, dc] of directions) {
+    let lineLength = 1;
+    
+    // Count in positive direction
+    let r = row + dr, c = col + dc;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c]?.color === playerColor) {
+      lineLength++;
+      r += dr;
+      c += dc;
+    }
+    
+    // Count in negative direction
+    r = row - dr;
+    c = col - dc;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c]?.color === playerColor) {
+      lineLength++;
+      r -= dr;
+      c -= dc;
+    }
+    
+    if (lineLength >= 3) {
+      score += 100 * lineLength; // Bonus for potential lines
+    }
+  }
+  
+  return score;
+};
+
 // Simple AI logic
 // AI Helper Functions
 const evaluateMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black', difficulty: 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'): number => {
@@ -798,29 +892,42 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
 // Simplified AI evaluation - removed complex alpha-beta for performance
 
 const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'): {row: number, col: number} | null => {
-  // AI-4: Advanced minimax with opening book
+  // AI-4: Simplified strong AI (avoiding infinite loops)
   if (difficulty === 'ai-4') {
     // Check opening book first
-    const boardString = getBoardString(board);
-    const openingMoves = openingBook.get(boardString);
+    const totalPieces = board.flat().filter(cell => cell !== null).length;
     
-    if (openingMoves && openingMoves.length > 0) {
-      // Filter valid moves from opening book
-      const validOpeningMoves = openingMoves.filter(move => 
-        isValidMove(board, move.row, move.col, 'black')
-      );
+    // Opening book for first few moves
+    if (totalPieces <= 3) {
+      const centerMoves = [
+        {row: 3, col: 3}, {row: 4, col: 4}, {row: 3, col: 4}, {row: 4, col: 3},
+        {row: 2, col: 3}, {row: 3, col: 2}, {row: 5, col: 4}, {row: 4, col: 5}
+      ];
       
-      if (validOpeningMoves.length > 0) {
-        // Choose best opening move (highest weight)
-        validOpeningMoves.sort((a, b) => b.weight - a.weight);
-        return {row: validOpeningMoves[0].row, col: validOpeningMoves[0].col};
+      for (const move of centerMoves) {
+        if (isValidMove(board, move.row, move.col, 'black')) {
+          return move;
+        }
       }
     }
     
-    // Use minimax search
-    const depth = 6; // Deep search for master-level play
-    const result = minimax(board, depth, -Infinity, Infinity, true, 'black', globalTransTable);
-    return result.bestMove;
+    // Use enhanced tactical evaluation (depth 3 for performance)
+    const validMoves: {row: number, col: number, score: number}[] = [];
+    
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        if (isValidMove(board, row, col, 'black')) {
+          const score = evaluateAI4Move(board, row, col);
+          validMoves.push({row, col, score});
+        }
+      }
+    }
+    
+    if (validMoves.length === 0) return null;
+    
+    // Sort and take best move
+    validMoves.sort((a, b) => b.score - a.score);
+    return validMoves[0];
   }
   
   // Original AI logic for levels 1-3
@@ -2738,9 +2845,9 @@ const App: React.FC = () => {
         minThinkTime = 1500; // 1.5 seconds minimum
         maxThinkTime = 2500; // 2.5 seconds maximum
       } else {
-        // ai-4: Master level - longer thinking time for complex calculations
-        minThinkTime = 3000; // 3 seconds minimum
-        maxThinkTime = 5000; // 5 seconds maximum
+        // ai-4: Master level - reasonable thinking time
+        minThinkTime = 1000; // 1 second minimum
+        maxThinkTime = 2000; // 2 seconds maximum
       }
       
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
