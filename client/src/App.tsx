@@ -775,6 +775,37 @@ const checkAdjacentNodeThreat = (board: (Cell | null)[][], row: number, col: num
   return false;
 };
 
+// Helper function: Detects if placing a piece at (row, col) for playerColor creates three connected nodes with open ends
+const createsDoubleEndedNodeThreat = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black'): boolean => {
+  const directions = [
+    [0, 1], [1, 0], [1, 1], [1, -1]
+  ];
+  for (const [dr, dc] of directions) {
+    let count = 1;
+    let ends = [false, false];
+    // Forward direction
+    let r = row + dr, c = col + dc;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c]?.color === playerColor && board[r][c]?.isNode) {
+      count++;
+      r += dr;
+      c += dc;
+    }
+    if (r >= 0 && r < 8 && c >= 0 && c < 8 && !board[r][c]) ends[0] = true;
+    // Backward direction
+    r = row - dr; c = col - dc;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c]?.color === playerColor && board[r][c]?.isNode) {
+      count++;
+      r -= dr;
+      c -= dc;
+    }
+    if (r >= 0 && r < 8 && c >= 0 && c < 8 && !board[r][c]) ends[1] = true;
+    if (count === 3 && ends[0] && ends[1]) {
+      return true;
+    }
+  }
+  return false;
+};
+
 // Enhanced AI-4 evaluation with 2-ply lookahead (uses extra thinking time)
 const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): number => {
   let score = 0;
@@ -1031,6 +1062,35 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
 const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'): {row: number, col: number} | null => {
   // AI-4: Simplified strong AI (avoiding infinite loops)
   if (difficulty === 'ai-4') {
+    // Must-block threat detection: block any cell where white can create a double-ended node threat next turn
+    const mustBlockCells: {row: number, col: number}[] = [];
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        if (!board[row][col]) {
+          // Simulate white playing here
+          const testBoard = board.map(r => [...r]);
+          testBoard[row][col] = { color: 'white', isNode: false };
+          // Check if this creates a double-ended node threat for white
+          if (createsDoubleEndedNodeThreat(testBoard, row, col, 'white')) {
+            mustBlockCells.push({row, col});
+          }
+        }
+      }
+    }
+    if (mustBlockCells.length > 0) {
+      // Pick the must-block cell with the best positional score
+      let best = mustBlockCells[0];
+      let bestScore = -Infinity;
+      for (const cell of mustBlockCells) {
+        const score = evaluateAI4Move(board, cell.row, cell.col);
+        if (score > bestScore) {
+          bestScore = score;
+          best = cell;
+        }
+      }
+      return best;
+    }
+    
     // Check opening book first
     const totalPieces = board.flat().filter(cell => cell !== null).length;
     
@@ -3704,6 +3764,37 @@ const App: React.FC = () => {
         )}
       </div>
     );
+  };
+
+  // Detects if placing a piece at (row, col) for playerColor creates three connected nodes with open ends
+  const createsDoubleEndedNodeThreat = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black'): boolean => {
+    const directions = [
+      [0, 1], [1, 0], [1, 1], [1, -1]
+    ];
+    for (const [dr, dc] of directions) {
+      let count = 1;
+      let ends = [false, false];
+      // Forward direction
+      let r = row + dr, c = col + dc;
+      while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c]?.color === playerColor && board[r][c]?.isNode) {
+        count++;
+        r += dr;
+        c += dc;
+      }
+      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !board[r][c]) ends[0] = true;
+      // Backward direction
+      r = row - dr; c = col - dc;
+      while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c]?.color === playerColor && board[r][c]?.isNode) {
+        count++;
+        r -= dr;
+        c -= dc;
+      }
+      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !board[r][c]) ends[1] = true;
+      if (count === 3 && ends[0] && ends[1]) {
+        return true;
+      }
+    }
+    return false;
   };
 
   return (
