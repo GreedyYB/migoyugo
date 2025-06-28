@@ -713,7 +713,7 @@ const minimax = (
 // Global transposition table instance
 const globalTransTable = new TranspositionTable();
 
-// Optimized AI-4 evaluation function (avoids infinite loops)
+// Enhanced AI-4 evaluation with 2-ply lookahead (uses extra thinking time)
 const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): number => {
   let score = 0;
   const playerColor = 'black';
@@ -760,11 +760,52 @@ const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): nu
     }
   }
   
-  // PRIORITY 4: Positional factors (simplified)
+  // PRIORITY 4: 2-PLY LOOKAHEAD (uses extra thinking time for deeper analysis)
+  // After making this move, what are opponent's best responses?
+  let bestOpponentResponse = -Infinity;
+  let opponentMoves = 0;
+  
+  for (let r = 0; r < 8 && opponentMoves < 8; r++) { // Limit to 8 moves for performance
+    for (let c = 0; c < 8 && opponentMoves < 8; c++) {
+      if (isValidMove(testBoard, r, c, opponentColor)) {
+        opponentMoves++;
+        const opponentBoard = testBoard.map(row => [...row]);
+        opponentBoard[r][c] = { color: opponentColor, isNode: false };
+        
+        let opponentScore = 0;
+        
+        // Check if opponent can form vectors
+        const opponentVectors = checkForVectors(opponentBoard, r, c, opponentColor);
+        if (opponentVectors.length > 0) {
+          opponentScore += 2000 * opponentVectors.length;
+          
+          // Check if opponent can win with nexus
+          opponentBoard[r][c] = { color: opponentColor, isNode: true, nodeType: 'standard' };
+          const opponentNexus = checkForNexus(opponentBoard, r, c, opponentColor);
+          if (opponentNexus) {
+            opponentScore += 10000; // Opponent wins
+          }
+        }
+        
+        // Add positional value for opponent
+        const oppCenterDist = Math.abs(r - 3.5) + Math.abs(c - 3.5);
+        opponentScore += (7 - oppCenterDist) * 10;
+        
+        bestOpponentResponse = Math.max(bestOpponentResponse, opponentScore);
+      }
+    }
+  }
+  
+  // Subtract opponent's best response potential (defensive thinking)
+  if (bestOpponentResponse > -Infinity) {
+    score -= bestOpponentResponse * 0.8; // 80% weight to opponent threats
+  }
+  
+  // PRIORITY 5: Positional factors
   const centerDistance = Math.abs(row - 3.5) + Math.abs(col - 3.5);
   score += (7 - centerDistance) * 15; // Center control
   
-  // PRIORITY 5: Connectivity (piece support)
+  // PRIORITY 6: Connectivity (piece support)
   let connections = 0;
   const directions = [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]];
   for (const [dr, dc] of directions) {
@@ -778,7 +819,7 @@ const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): nu
   }
   score += connections * 25;
   
-  // PRIORITY 6: Line potential (setup for future vectors)
+  // PRIORITY 7: Line potential (setup for future vectors)
   for (const [dr, dc] of directions) {
     let lineLength = 1;
     
@@ -802,6 +843,34 @@ const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): nu
     if (lineLength >= 3) {
       score += 100 * lineLength; // Bonus for potential lines
     }
+  }
+  
+  // PRIORITY 8: Fork opportunities (multiple threats)
+  let forkPotential = 0;
+  for (const [dr, dc] of directions) {
+    let potentialLines = 0;
+    const r1 = row + dr, c1 = col + dc;
+    const r2 = row - dr, c2 = col - dc;
+    
+    if (r1 >= 0 && r1 < 8 && c1 >= 0 && c1 < 8 && !board[r1][c1]) {
+      if (r1 + dr >= 0 && r1 + dr < 8 && c1 + dc >= 0 && c1 + dc < 8 && 
+          board[r1 + dr][c1 + dc]?.color === playerColor) {
+        potentialLines++;
+      }
+    }
+    
+    if (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8 && !board[r2][c2]) {
+      if (r2 - dr >= 0 && r2 - dr < 8 && c2 - dc >= 0 && c2 - dc < 8 && 
+          board[r2 - dr][c2 - dc]?.color === playerColor) {
+        potentialLines++;
+      }
+    }
+    
+    forkPotential += potentialLines;
+  }
+  
+  if (forkPotential >= 2) {
+    score += 300 * forkPotential; // Bonus for creating multiple threats
   }
   
   return score;
@@ -2845,9 +2914,9 @@ const App: React.FC = () => {
         minThinkTime = 1500; // 1.5 seconds minimum
         maxThinkTime = 2500; // 2.5 seconds maximum
       } else {
-        // ai-4: Master level - reasonable thinking time
-        minThinkTime = 1000; // 1 second minimum
-        maxThinkTime = 2000; // 2 seconds maximum
+        // ai-4: Master level - extended thinking time for deeper analysis
+        minThinkTime = 2000; // 2 seconds minimum
+        maxThinkTime = 4000; // 4 seconds maximum
       }
       
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
