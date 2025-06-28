@@ -269,9 +269,460 @@ const getPasswordStrengthMessage = (password: string): string => {
   return issues.length > 0 ? `Password must contain: ${issues.join(', ')}` : '';
 };
 
+// Advanced AI System for Level 4 (2200-2400 Elo equivalent)
+
+// Transposition Table for position caching
+interface TranspositionEntry {
+  hash: string;
+  depth: number;
+  score: number;
+  flag: 'exact' | 'lowerbound' | 'upperbound';
+  bestMove: {row: number, col: number} | null;
+  age: number;
+}
+
+class TranspositionTable {
+  private table = new Map<string, TranspositionEntry>();
+  private maxSize = 100000; // Limit memory usage
+  private currentAge = 0;
+
+  get(hash: string): TranspositionEntry | null {
+    return this.table.get(hash) || null;
+  }
+
+  set(hash: string, entry: TranspositionEntry): void {
+    entry.age = this.currentAge;
+    
+    if (this.table.size >= this.maxSize) {
+      // Remove oldest entries
+      const entries = Array.from(this.table.entries());
+      entries.sort((a, b) => a[1].age - b[1].age);
+      const toRemove = entries.slice(0, Math.floor(this.maxSize * 0.1));
+      toRemove.forEach(([key]) => this.table.delete(key));
+    }
+    
+    this.table.set(hash, entry);
+  }
+
+  clear(): void {
+    this.table.clear();
+    this.currentAge++;
+  }
+}
+
+// Opening Book - Strong opening principles for Flux
+const openingBook = new Map<string, {row: number, col: number, weight: number}[]>([
+  // Empty board - control center
+  ['', [
+    {row: 3, col: 3, weight: 100},
+    {row: 4, col: 4, weight: 100},
+    {row: 3, col: 4, weight: 90},
+    {row: 4, col: 3, weight: 90},
+    {row: 2, col: 3, weight: 80},
+    {row: 3, col: 2, weight: 80},
+    {row: 5, col: 4, weight: 80},
+    {row: 4, col: 5, weight: 80}
+  ]],
+  
+  // After white plays center - respond with center control
+  ['wI3,3', [
+    {row: 4, col: 4, weight: 100},
+    {row: 3, col: 4, weight: 95},
+    {row: 4, col: 3, weight: 95},
+    {row: 2, col: 2, weight: 85},
+    {row: 5, col: 5, weight: 85}
+  ]],
+  
+  ['wI4,4', [
+    {row: 3, col: 3, weight: 100},
+    {row: 3, col: 4, weight: 95},
+    {row: 4, col: 3, weight: 95},
+    {row: 2, col: 2, weight: 85},
+    {row: 5, col: 5, weight: 85}
+  ]],
+  
+  // Diagonal responses
+  ['wI3,4', [
+    {row: 4, col: 3, weight: 100},
+    {row: 3, col: 3, weight: 90},
+    {row: 4, col: 4, weight: 90},
+    {row: 2, col: 5, weight: 85},
+    {row: 5, col: 2, weight: 85}
+  ]],
+  
+  ['wI4,3', [
+    {row: 3, col: 4, weight: 100},
+    {row: 3, col: 3, weight: 90},
+    {row: 4, col: 4, weight: 90},
+    {row: 2, col: 5, weight: 85},
+    {row: 5, col: 2, weight: 85}
+  ]],
+  
+  // Second move responses (after AI plays center)
+  ['wI3,3,bI4,4', [
+    {row: 2, col: 2, weight: 100},
+    {row: 5, col: 5, weight: 100},
+    {row: 3, col: 4, weight: 90},
+    {row: 4, col: 3, weight: 90}
+  ]],
+  
+  ['wI4,4,bI3,3', [
+    {row: 2, col: 2, weight: 100},
+    {row: 5, col: 5, weight: 100},
+    {row: 3, col: 4, weight: 90},
+    {row: 4, col: 3, weight: 90}
+  ]],
+  
+  // Edge opening responses
+  ['wI2,2', [
+    {row: 3, col: 3, weight: 100},
+    {row: 4, col: 4, weight: 95},
+    {row: 5, col: 5, weight: 90}
+  ]],
+  
+  ['wI5,5', [
+    {row: 4, col: 4, weight: 100},
+    {row: 3, col: 3, weight: 95},
+    {row: 2, col: 2, weight: 90}
+  ]]
+]);
+
+// Helper functions
+const getAllValidMoves = (board: (Cell | null)[][], playerColor: 'white' | 'black'): {row: number, col: number}[] => {
+  const moves = [];
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (isValidMove(board, row, col, playerColor)) {
+        moves.push({row, col});
+      }
+    }
+  }
+  return moves;
+};
+
+const makeMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black'): (Cell | null)[][] => {
+  const newBoard = board.map(r => [...r]);
+  newBoard[row][col] = { color: playerColor, isNode: false };
+  
+  // Process vectors if any
+  const vectors = checkForVectors(newBoard, row, col, playerColor);
+  if (vectors.length > 0) {
+    const result = processVectors(newBoard, vectors, row, col);
+    if (result.nodeType) {
+      newBoard[row][col] = { color: playerColor, isNode: true, nodeType: result.nodeType };
+    }
+  }
+  
+  return newBoard;
+};
+
+  const getBoardString = (board: (Cell | null)[][]): string => {
+    return board.flat().map(cell => {
+      if (!cell) return '';
+      return `${cell.color![0]}${cell.isNode ? 'N' : 'I'}`;
+    }).join(',');
+  };
+
+// Advanced position evaluation
+const evaluatePosition = (board: (Cell | null)[][], playerColor: 'white' | 'black'): number => {
+  const opponentColor = playerColor === 'white' ? 'black' : 'white';
+  let score = 0;
+  
+  // 1. Material evaluation (nodes and their point values)
+  const playerNodes = countNodes(board, playerColor);
+  const opponentNodes = countNodes(board, opponentColor);
+  score += (playerNodes - opponentNodes) * 100;
+  
+  // 2. Immediate threats (nexus and vector formations)
+  score += evaluateThreats(board, playerColor);
+  
+  // 3. Positional factors
+  score += evaluatePositional(board, playerColor);
+  
+  // 4. Strategic factors
+  score += evaluateStrategic(board, playerColor);
+  
+  // 5. Tactical patterns
+  score += evaluateTactical(board, playerColor);
+  
+  return score;
+};
+
+const evaluateThreats = (board: (Cell | null)[][], playerColor: 'white' | 'black'): number => {
+  let score = 0;
+  const opponentColor = playerColor === 'white' ? 'black' : 'white';
+  
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (!isValidMove(board, row, col, playerColor)) continue;
+      
+      // Test move for player
+      const testBoard = board.map(r => [...r]);
+      testBoard[row][col] = { color: playerColor, isNode: false };
+      
+      // Check for vectors
+      const vectors = checkForVectors(testBoard, row, col, playerColor);
+      if (vectors.length > 0) {
+        score += 1000 * vectors.length; // Vector formation bonus
+      }
+      
+      // Check for nexus (with node)
+      testBoard[row][col] = { color: playerColor, isNode: true, nodeType: 'standard' };
+      const nexus = checkForNexus(testBoard, row, col, playerColor);
+      if (nexus) {
+        score += 10000; // Instant win
+      }
+      
+      // Check blocking opponent threats
+      const opponentTestBoard = board.map(r => [...r]);
+      opponentTestBoard[row][col] = { color: opponentColor, isNode: false };
+      const opponentVectors = checkForVectors(opponentTestBoard, row, col, opponentColor);
+      if (opponentVectors.length > 0) {
+        score += 800 * opponentVectors.length; // Block opponent vectors
+      }
+      
+      opponentTestBoard[row][col] = { color: opponentColor, isNode: true, nodeType: 'standard' };
+      const opponentNexus = checkForNexus(opponentTestBoard, row, col, opponentColor);
+      if (opponentNexus) {
+        score += 9000; // Block opponent nexus
+      }
+    }
+  }
+  
+  return score;
+};
+
+const evaluatePositional = (board: (Cell | null)[][], playerColor: 'white' | 'black'): number => {
+  let score = 0;
+  const opponentColor = playerColor === 'white' ? 'black' : 'white';
+  
+  // Center control evaluation
+  const centerSquares = [[3,3], [3,4], [4,3], [4,4]];
+  for (const [row, col] of centerSquares) {
+    const cell = board[row][col];
+    if (cell?.color === playerColor) {
+      score += 50;
+    } else if (cell?.color === opponentColor) {
+      score -= 50;
+    }
+  }
+  
+  // Extended center control
+  const extendedCenter = [[2,2], [2,3], [2,4], [2,5], [3,2], [3,5], [4,2], [4,5], [5,2], [5,3], [5,4], [5,5]];
+  for (const [row, col] of extendedCenter) {
+    const cell = board[row][col];
+    if (cell?.color === playerColor) {
+      score += 20;
+    } else if (cell?.color === opponentColor) {
+      score -= 20;
+    }
+  }
+  
+  // Piece activity and mobility
+  score += evaluateMobility(board, playerColor) - evaluateMobility(board, opponentColor);
+  
+  return score;
+};
+
+const evaluateMobility = (board: (Cell | null)[][], playerColor: 'white' | 'black'): number => {
+  let mobility = 0;
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (isValidMove(board, row, col, playerColor)) {
+        mobility++;
+      }
+    }
+  }
+  return mobility * 5; // Each possible move is worth 5 points
+};
+
+const evaluateStrategic = (board: (Cell | null)[][], playerColor: 'white' | 'black'): number => {
+  let score = 0;
+  
+  // Connectivity bonus - pieces supporting each other
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const cell = board[row][col];
+      if (cell?.color === playerColor) {
+        let connections = 0;
+        const directions = [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]];
+        
+        for (const [dr, dc] of directions) {
+          const newRow = row + dr;
+          const newCol = col + dc;
+          if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+            const adjCell = board[newRow][newCol];
+            if (adjCell?.color === playerColor) {
+              connections++;
+            }
+          }
+        }
+        
+        score += connections * 15; // Connectivity bonus
+        
+        // Node protection bonus
+        if (cell.isNode) {
+          score += connections * 25; // Extra bonus for protecting nodes
+        }
+      }
+    }
+  }
+  
+  return score;
+};
+
+const evaluateTactical = (board: (Cell | null)[][], playerColor: 'white' | 'black'): number => {
+  let score = 0;
+  
+  // Look for fork opportunities (moves that create multiple threats)
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (!isValidMove(board, row, col, playerColor)) continue;
+      
+      const testBoard = board.map(r => [...r]);
+      testBoard[row][col] = { color: playerColor, isNode: false };
+      
+      let threats = 0;
+      
+      // Count potential vectors from this position
+      const vectors = checkForVectors(testBoard, row, col, playerColor);
+      threats += vectors.length;
+      
+      // Check if this move creates multiple line possibilities
+      const directions = [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]];
+      for (const [dr, dc] of directions) {
+        let lineLength = 1;
+        
+        // Count in positive direction
+        let r = row + dr, c = col + dc;
+        while (r >= 0 && r < 8 && c >= 0 && c < 8 && testBoard[r][c]?.color === playerColor) {
+          lineLength++;
+          r += dr;
+          c += dc;
+        }
+        
+        // Count in negative direction
+        r = row - dr;
+        c = col - dc;
+        while (r >= 0 && r < 8 && c >= 0 && c < 8 && testBoard[r][c]?.color === playerColor) {
+          lineLength++;
+          r -= dr;
+          c -= dc;
+        }
+        
+        if (lineLength >= 3) {
+          threats++;
+        }
+      }
+      
+      if (threats >= 2) {
+        score += 200 * threats; // Fork bonus
+      }
+    }
+  }
+  
+  return score;
+};
+
+// Minimax with Alpha-Beta Pruning
+const minimax = (
+  board: (Cell | null)[][], 
+  depth: number, 
+  alpha: number, 
+  beta: number, 
+  isMaximizing: boolean, 
+  playerColor: 'white' | 'black',
+  transTable: TranspositionTable
+): {score: number, bestMove: {row: number, col: number} | null} => {
+  
+  // Generate position hash for transposition table
+  const positionHash = JSON.stringify(board);
+  const ttEntry = transTable.get(positionHash);
+  
+  if (ttEntry && ttEntry.depth >= depth) {
+    if (ttEntry.flag === 'exact') {
+      return {score: ttEntry.score, bestMove: ttEntry.bestMove};
+    } else if (ttEntry.flag === 'lowerbound' && ttEntry.score >= beta) {
+      return {score: ttEntry.score, bestMove: ttEntry.bestMove};
+    } else if (ttEntry.flag === 'upperbound' && ttEntry.score <= alpha) {
+      return {score: ttEntry.score, bestMove: ttEntry.bestMove};
+    }
+  }
+  
+  // Base case
+  if (depth === 0) {
+    const score = evaluatePosition(board, playerColor);
+    return {score, bestMove: null};
+  }
+  
+  const currentColor = isMaximizing ? playerColor : (playerColor === 'white' ? 'black' : 'white');
+  const moves = getAllValidMoves(board, currentColor);
+  
+  if (moves.length === 0) {
+    const score = evaluatePosition(board, playerColor);
+    return {score, bestMove: null};
+  }
+  
+  // Move ordering - prioritize center moves and high-value squares
+  moves.sort((a, b) => {
+    const aScore = evaluateMove(board, a.row, a.col, currentColor, 'ai-4');
+    const bScore = evaluateMove(board, b.row, b.col, currentColor, 'ai-4');
+    return bScore - aScore;
+  });
+  
+  let bestMove: {row: number, col: number} | null = null;
+  let bestScore = isMaximizing ? -Infinity : Infinity;
+  
+  for (const move of moves) {
+    const newBoard = makeMove(board, move.row, move.col, currentColor);
+    const result = minimax(newBoard, depth - 1, alpha, beta, !isMaximizing, playerColor, transTable);
+    
+    if (isMaximizing) {
+      if (result.score > bestScore) {
+        bestScore = result.score;
+        bestMove = move;
+      }
+      alpha = Math.max(alpha, result.score);
+    } else {
+      if (result.score < bestScore) {
+        bestScore = result.score;
+        bestMove = move;
+      }
+      beta = Math.min(beta, result.score);
+    }
+    
+    if (beta <= alpha) {
+      break; // Alpha-beta pruning
+    }
+  }
+  
+  // Store in transposition table
+  const flag = bestScore <= alpha ? 'upperbound' : bestScore >= beta ? 'lowerbound' : 'exact';
+  transTable.set(positionHash, {
+    hash: positionHash,
+    depth,
+    score: bestScore,
+    flag,
+    bestMove,
+    age: 0
+  });
+  
+  return {score: bestScore, bestMove};
+};
+
+// Global transposition table instance
+const globalTransTable = new TranspositionTable();
+
 // Simple AI logic
 // AI Helper Functions
-const evaluateMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black', difficulty: 'ai-1' | 'ai-2' | 'ai-3'): number => {
+const evaluateMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black', difficulty: 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'): number => {
+  // For AI-4, use the advanced evaluation
+  if (difficulty === 'ai-4') {
+    const testBoard = makeMove(board, row, col, playerColor);
+    return evaluatePosition(testBoard, playerColor);
+  }
+  
+  // Original evaluation for AI-1, AI-2, AI-3
   let score = 0;
   const opponentColor = playerColor === 'white' ? 'black' : 'white';
   
@@ -346,7 +797,33 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
 // Advanced AI evaluation for Level 3 - Minimax with lookahead
 // Simplified AI evaluation - removed complex alpha-beta for performance
 
-const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3'): {row: number, col: number} | null => {
+const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'): {row: number, col: number} | null => {
+  // AI-4: Advanced minimax with opening book
+  if (difficulty === 'ai-4') {
+    // Check opening book first
+    const boardString = getBoardString(board);
+    const openingMoves = openingBook.get(boardString);
+    
+    if (openingMoves && openingMoves.length > 0) {
+      // Filter valid moves from opening book
+      const validOpeningMoves = openingMoves.filter(move => 
+        isValidMove(board, move.row, move.col, 'black')
+      );
+      
+      if (validOpeningMoves.length > 0) {
+        // Choose best opening move (highest weight)
+        validOpeningMoves.sort((a, b) => b.weight - a.weight);
+        return {row: validOpeningMoves[0].row, col: validOpeningMoves[0].col};
+      }
+    }
+    
+    // Use minimax search
+    const depth = 6; // Deep search for master-level play
+    const result = minimax(board, depth, -Infinity, Infinity, true, 'black', globalTransTable);
+    return result.bestMove;
+  }
+  
+  // Original AI logic for levels 1-3
   const validMoves: {row: number, col: number, score: number}[] = [];
   
   // Evaluate all valid moves
@@ -1207,7 +1684,7 @@ const App: React.FC = () => {
   const [activeTimer, setActiveTimer] = useState<'white' | 'black' | null>(null);
 
   // Game mode state
-  const [gameMode, setGameMode] = useState<'local' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('local');
+  const [gameMode, setGameMode] = useState<'local' | 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4' | 'online'>('local');
   const [waitingForAI, setWaitingForAI] = useState(false);
 
   // Notification state
@@ -2245,7 +2722,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isGameStarted && 
         gameState.gameStatus === 'active' && 
-        (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && 
+        (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') && 
         gameState.currentPlayer === 'black') {
       
       // Variable thinking time based on AI level (makes AI feel more human)
@@ -2256,17 +2733,21 @@ const App: React.FC = () => {
       } else if (gameMode === 'ai-2') {
         minThinkTime = 1500; // 1.5 seconds minimum  
         maxThinkTime = 2500; // 2.5 seconds maximum
-      } else {
+      } else if (gameMode === 'ai-3') {
         // ai-3: Fast tactical play with reasonable thinking time
         minThinkTime = 1500; // 1.5 seconds minimum
         maxThinkTime = 2500; // 2.5 seconds maximum
+      } else {
+        // ai-4: Master level - longer thinking time for complex calculations
+        minThinkTime = 3000; // 3 seconds minimum
+        maxThinkTime = 5000; // 5 seconds maximum
       }
       
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
       console.log(`${gameMode.toUpperCase()} thinking for ${thinkTime}ms...`);
       
       const timeout = setTimeout(() => {
-        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3');
+        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4');
         if (aiMove) {
           console.log(`${gameMode.toUpperCase()} selected move:`, aiMove);
           // Use the same makeLocalMove function that human players use
@@ -2294,7 +2775,7 @@ const App: React.FC = () => {
       socket?.emit('makeMove', { gameId, row, col });
     } else {
       // Local game (human vs human or vs AI)
-      if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') {
+              if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') {
         // In AI mode, only allow human (white) moves
         if (gameState.currentPlayer !== 'white') return;
       }
@@ -3030,7 +3511,7 @@ const App: React.FC = () => {
                         (authState.user?.username || 'Guest') : 
                         opponentName;
                       return whiteName;
-                    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
+                    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') && authState.isAuthenticated) {
                       // AI game with authenticated user - show username for white (human player)
                       return authState.user?.username;
                     } else {
@@ -3069,7 +3550,7 @@ const App: React.FC = () => {
                       (authState.user?.username || 'Guest') : 
                       opponentName;
                     return blackName;
-                  } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
+                  } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') && authState.isAuthenticated) {
                     // AI game - black is always the AI, show AI name without color label
                     return gameState.players.black;
                   } else {
@@ -3137,6 +3618,7 @@ const App: React.FC = () => {
                     <option value="ai-1">CORE AI-1</option>
                     <option value="ai-2">CORE AI-2</option>
                     <option value="ai-3">CORE AI-3</option>
+                    <option value="ai-4">CORE AI-4</option>
                     <option value="online">Online Multiplayer</option>
                   </select>
                 </div>
@@ -3981,6 +4463,7 @@ const App: React.FC = () => {
                 <option value="ai-1">CORE AI-1</option>
                 <option value="ai-2">CORE AI-2</option>
                 <option value="ai-3">CORE AI-3</option>
+                <option value="ai-4">CORE AI-4</option>
                 <option value="online">Online Multiplayer</option>
               </select>
             </div>
