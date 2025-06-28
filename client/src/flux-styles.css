@@ -2867,7 +2867,7 @@ html, body {
 /* Force portrait orientation - hide content in landscape on mobile */
 @media (max-width: 600px) and (orientation: landscape) {
     body::before {
-        content: "Please rotate your device to portrait mode to play Flux";
+        content: "To play Flux, please rotate to portrait mode";
         position: fixed;
         top: 0;
         left: 0;
@@ -2881,10 +2881,16 @@ html, body {
         font-size: 1.5rem;
         text-align: center;
         z-index: 9999;
+        padding: 20px;
+        box-sizing: border-box;
     }
     
     .game-container {
-        display: none;
+        display: none !important;
+    }
+    
+    header {
+        display: none !important;
     }
 }
 
