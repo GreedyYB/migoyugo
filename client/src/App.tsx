@@ -713,6 +713,68 @@ const minimax = (
 // Global transposition table instance
 const globalTransTable = new TranspositionTable();
 
+// Check for "adjacent nodes + ion sacrifice" threat pattern (the tactic user discovered)
+const checkAdjacentNodeThreat = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black'): boolean => {
+  // This detects the pattern: Node-Node-Empty-Ion where Ion can sacrifice to create double threat
+  const directions = [
+    [-1, 0], [1, 0],   // vertical
+    [0, -1], [0, 1],   // horizontal  
+    [-1, -1], [1, 1],  // diagonal \
+    [-1, 1], [1, -1]   // diagonal /
+  ];
+  
+  for (const [dr, dc] of directions) {
+    // Check if placing ion here creates the dangerous pattern
+    // Pattern: [Node][Node][Empty][Ion-position][Empty] or [Empty][Ion-position][Empty][Node][Node]
+    
+    // Look in one direction for: Node-Node-Empty sequence
+    let r = row + dr;
+    let c = col + dc;
+    
+    // Check if next position is empty
+    if (r >= 0 && r < 8 && c >= 0 && c < 8 && !board[r][c]) {
+      // Look further for two adjacent nodes
+      r += dr;
+      c += dc;
+      if (r >= 0 && r < 8 && c >= 0 && c < 8 && 
+          board[r][c]?.color === playerColor && board[r][c]?.isNode) {
+        
+        r += dr;
+        c += dc;
+        if (r >= 0 && r < 8 && c >= 0 && c < 8 && 
+            board[r][c]?.color === playerColor && board[r][c]?.isNode) {
+          
+          // Found pattern: [Ion][Empty][Node][Node] - this creates double threat
+          return true;
+        }
+      }
+    }
+    
+    // Check opposite direction for: Empty-Node-Node sequence  
+    r = row - dr;
+    c = col - dc;
+    
+    if (r >= 0 && r < 8 && c >= 0 && c < 8 && !board[r][c]) {
+      r -= dr;
+      c -= dc;
+      if (r >= 0 && r < 8 && c >= 0 && c < 8 && 
+          board[r][c]?.color === playerColor && board[r][c]?.isNode) {
+        
+        r -= dr;
+        c -= dc;
+        if (r >= 0 && r < 8 && c >= 0 && c < 8 && 
+            board[r][c]?.color === playerColor && board[r][c]?.isNode) {
+          
+          // Found pattern: [Node][Node][Empty][Ion] - this creates double threat
+          return true;
+        }
+      }
+    }
+  }
+  
+  return false;
+};
+
 // Enhanced AI-4 evaluation with 2-ply lookahead (uses extra thinking time)
 const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): number => {
   let score = 0;
@@ -738,7 +800,7 @@ const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): nu
     }
   }
   
-  // PRIORITY 3: Block opponent threats (critical defense)
+  // PRIORITY 3: Block opponent threats (ENHANCED - nearly equal to vector formation)
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       if (isValidMove(board, r, c, opponentColor) && r === row && c === col) {
@@ -747,14 +809,20 @@ const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): nu
         const opponentVectors = checkForVectors(opponentTestBoard, r, c, opponentColor);
         
         if (opponentVectors.length > 0) {
-          score += 1500 * opponentVectors.length; // High priority to block
+          score += 1900 * opponentVectors.length; // INCREASED: Almost as important as making vectors
           
           // Check if opponent can win with nexus
           opponentTestBoard[r][c] = { color: opponentColor, isNode: true, nodeType: 'standard' };
           const opponentNexus = checkForNexus(opponentTestBoard, r, c, opponentColor);
           if (opponentNexus) {
-            score += 9000; // Must block winning moves
+            score += 9500; // INCREASED: Must block winning moves
           }
+        }
+        
+        // NEW: Check for "adjacent nodes + ion sacrifice" threat pattern
+        const adjacentNodeThreat = checkAdjacentNodeThreat(board, r, c, opponentColor);
+        if (adjacentNodeThreat) {
+          score += 1800; // High priority - this creates double threats
         }
       }
     }
