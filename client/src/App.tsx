@@ -3797,6 +3797,22 @@ const App: React.FC = () => {
     return false;
   };
 
+  // Add state for player color choice
+  const [playerColorChoice, setPlayerColorChoice] = useState<'white' | 'black' | 'random'>('white');
+
+  // When starting a new AI game, determine playerColor based on playerColorChoice
+  const startAIGame = () => {
+    let chosenColor: 'white' | 'black';
+    if (playerColorChoice === 'random') {
+      chosenColor = Math.random() < 0.5 ? 'white' : 'black';
+    } else {
+      chosenColor = playerColorChoice;
+    }
+    setPlayerColor(chosenColor);
+    setGameMode(gameMode); // Use the current gameMode state
+    // ... rest of your game start logic ...
+  };
+
   return (
     <div className="App">
       <header>
@@ -3957,6 +3973,42 @@ const App: React.FC = () => {
                     <option value="online">Online Multiplayer</option>
                   </select>
                 </div>
+
+                {/* Color selection segmented control for AI games */}
+                {(gameMode.startsWith('ai-')) && (
+                  <div className="option-row" style={{ marginTop: 8, marginBottom: 8, justifyContent: 'center' }}>
+                    <span style={{ marginRight: 8 }}>Play as:</span>
+                    <div style={{ display: 'inline-flex', gap: 4 }}>
+                      <button
+                        type="button"
+                        className={`color-choice-btn${playerColorChoice === 'white' ? ' selected' : ''}`}
+                        aria-label="Play as White"
+                        onClick={() => setPlayerColorChoice('white')}
+                        style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc', background: playerColorChoice === 'white' ? '#ecf0f1' : 'white', fontWeight: playerColorChoice === 'white' ? 'bold' : 'normal' }}
+                      >
+                        ⚪
+                      </button>
+                      <button
+                        type="button"
+                        className={`color-choice-btn${playerColorChoice === 'black' ? ' selected' : ''}`}
+                        aria-label="Play as Black"
+                        onClick={() => setPlayerColorChoice('black')}
+                        style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc', background: playerColorChoice === 'black' ? '#2c3e50' : 'white', color: playerColorChoice === 'black' ? 'white' : '#2c3e50', fontWeight: playerColorChoice === 'black' ? 'bold' : 'normal' }}
+                      >
+                        ⚫
+                      </button>
+                      <button
+                        type="button"
+                        className={`color-choice-btn${playerColorChoice === 'random' ? ' selected' : ''}`}
+                        aria-label="Random Color"
+                        onClick={() => setPlayerColorChoice('random')}
+                        style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc', background: playerColorChoice === 'random' ? '#f9e79f' : 'white', fontWeight: playerColorChoice === 'random' ? 'bold' : 'normal' }}
+                      >
+                        🎲
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="option-row">
                   <label htmlFor="timer-toggle">Game Timer:</label>
