@@ -3024,66 +3024,62 @@ const App: React.FC = () => {
 
   // AI move logic with human-like thinking time
   useEffect(() => {
-    if (isGameStarted && 
-        gameState.gameStatus === 'active' && 
-        (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') && 
-        gameState.currentPlayer === 'black') {
-      
-      // Variable thinking time based on AI level (makes AI feel more human)
+    if (
+      isGameStarted &&
+      gameState.gameStatus === 'active' &&
+      (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') &&
+      playerColor &&
+      gameState.currentPlayer !== playerColor
+    ) {
+      // AI's turn
       let minThinkTime, maxThinkTime;
       if (gameMode === 'ai-1') {
-        minThinkTime = 1000; // 1 second minimum
-        maxThinkTime = 2000; // 2 seconds maximum
+        minThinkTime = 1000;
+        maxThinkTime = 2000;
       } else if (gameMode === 'ai-2') {
-        minThinkTime = 1500; // 1.5 seconds minimum  
-        maxThinkTime = 2500; // 2.5 seconds maximum
+        minThinkTime = 1500;
+        maxThinkTime = 2500;
       } else if (gameMode === 'ai-3') {
-        // ai-3: Fast tactical play with reasonable thinking time
-        minThinkTime = 1500; // 1.5 seconds minimum
-        maxThinkTime = 2500; // 2.5 seconds maximum
+        minThinkTime = 1500;
+        maxThinkTime = 2500;
       } else {
-        // ai-4: Master level - extended thinking time for deeper analysis
-        minThinkTime = 2000; // 2 seconds minimum
-        maxThinkTime = 4000; // 4 seconds maximum
+        minThinkTime = 2000;
+        maxThinkTime = 4000;
       }
-      
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
       console.log(`${gameMode.toUpperCase()} thinking for ${thinkTime}ms...`);
-      
       const timeout = setTimeout(() => {
         const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4');
         if (aiMove) {
           console.log(`${gameMode.toUpperCase()} selected move:`, aiMove);
-          // Use the same makeLocalMove function that human players use
           makeLocalMove(aiMove.row, aiMove.col);
         }
       }, thinkTime);
-      
       return () => clearTimeout(timeout);
     }
-  }, [gameState.currentPlayer, gameState.gameStatus, isGameStarted, gameMode, gameState.board, makeLocalMove]);
+  }, [gameState.currentPlayer, gameState.gameStatus, isGameStarted, gameMode, gameState.board, makeLocalMove, playerColor]);
 
   const handleCellClick = (row: number, col: number) => {
     if (!isGameStarted || gameState.gameStatus !== 'active' || isReviewMode) return;
-    
+
     if (gameMode === 'online') {
       if (!playerColor || gameState.currentPlayer !== playerColor) return;
       if (gameState.board[row][col] !== null) return;
-      
-      // Check if move would create a line too long before sending to server
       if (wouldCreateLineTooLong(gameState.board, row, col, playerColor)) {
         showToast("Illegal move. You may not create a line longer than 4 of your own color");
         return;
       }
-      
       socket?.emit('makeMove', { gameId, row, col });
     } else {
       // Local game (human vs human or vs AI)
-              if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') {
-        // In AI mode, only allow human (white) moves
-        if (gameState.currentPlayer !== 'white') return;
+      if (
+        (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') &&
+        playerColor &&
+        gameState.currentPlayer !== playerColor
+      ) {
+        // Not human's turn
+        return;
       }
-      
       makeLocalMove(row, col);
     }
   };
@@ -3810,7 +3806,29 @@ const App: React.FC = () => {
     }
     setPlayerColor(chosenColor);
     setGameMode(gameMode); // Use the current gameMode state
-    // ... rest of your game start logic ...
+
+    // Initialize the game state with the selected color as the starting player
+    const newBoard = Array(8).fill(null).map(() => Array(8).fill(null));
+    setGameState({
+      board: newBoard,
+      currentPlayer: chosenColor,
+      scores: { white: 0, black: 0 },
+      gameStatus: 'active',
+      lastMove: null,
+      players: {
+        white: 'White',
+        black: `CORE ${gameMode.toUpperCase()}`
+      },
+      nexusLine: null
+    });
+    setIsGameStarted(true);
+    setMoveHistory([]);
+
+    if (timerEnabled) {
+      const totalSeconds = minutesPerPlayer * 60;
+      setTimers({ white: totalSeconds, black: totalSeconds });
+      setActiveTimer(chosenColor);
+    }
   };
 
   return (
@@ -3927,7 +3945,12 @@ const App: React.FC = () => {
             <button 
               className="btn action-btn" 
               onClick={isGameStarted && gameState.gameStatus === 'active' ? showResignDrawOptions : startGame}
-              style={{ height: '40px', padding: '0 24px' }}
+              style={{ 
+                height: '40px', 
+                padding: '0 24px',
+                backgroundColor: !isGameStarted ? '#28a745' : undefined,
+                color: !isGameStarted ? 'white' : undefined
+              }}
             >
               {isGameStarted && gameState.gameStatus === 'active' ? 'Resign/Draw' : 'Start'}
             </button>
@@ -4827,7 +4850,7 @@ const App: React.FC = () => {
         <>
           <div className="overlay" style={{ display: 'block', zIndex: 14999 }} onClick={() => setShowMobileControls(false)} />
           <div className="notification mobile-controls-modal" style={{ display: 'block', maxWidth: '90vw', width: '400px', minWidth: '350px' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Game Options</h2>
+            <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Opponent</h2>
             
             {/* Opponent selection */}
             <div className="option-row" style={{ marginBottom: '20px' }}>
@@ -5308,6 +5331,10 @@ const App: React.FC = () => {
           <button 
             className="btn" 
             onClick={isGameStarted && gameState.gameStatus === 'active' ? resignGame : startGame}
+            style={{ 
+              backgroundColor: !isGameStarted ? '#28a745' : undefined,
+              color: !isGameStarted ? 'white' : undefined
+            }}
           >
             {isGameStarted && gameState.gameStatus === 'active' ? 'Resign' : 'Start'}
           </button>
@@ -5318,8 +5345,8 @@ const App: React.FC = () => {
               () => setShowMobileControls(true)}
           >
             {isGameStarted && gameState.gameStatus === 'active' ? 
-              (gameMode.startsWith('ai-') ? 'Game Options' : 'Offer Draw') : 
-              'Game Options'}
+              (gameMode.startsWith('ai-') ? 'Opponent' : 'Offer Draw') : 
+              'Opponent'}
           </button>
           <button 
             className="btn" 
