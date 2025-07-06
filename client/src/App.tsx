@@ -3269,9 +3269,9 @@ const App: React.FC = () => {
 
   // Mobile: Direct draw offer
   const offerDraw = () => {
-    // Don't allow draw offers in AI games
-    if (gameMode.startsWith('ai-')) {
-      showToast('Draw offers are not available against AI opponents');
+    // Only allow draw offers in online multiplayer games
+    if (gameMode !== 'online') {
+      showToast('Draw offers are only available in online multiplayer games');
       return;
     }
     
@@ -3279,11 +3279,6 @@ const App: React.FC = () => {
       // Online game - send draw offer to server
       socket.emit('draw-offer', { gameId });
       showToast('Draw offer sent');
-    } else {
-      // Local game - show draw offer to opponent
-      const offeringPlayer = gameState.currentPlayer;
-      setPendingDrawFrom(offeringPlayer);
-      setShowDrawOffer(true);
     }
   };
 
@@ -3944,7 +3939,8 @@ const App: React.FC = () => {
           <div className="player-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '256px', marginBottom: '0' }}>
             <button 
               className="btn action-btn" 
-              onClick={isGameStarted && gameState.gameStatus === 'active' ? showResignDrawOptions : startGame}
+              onClick={isGameStarted && gameState.gameStatus === 'active' ? 
+                (gameMode === 'online' ? showResignDrawOptions : resignGame) : startGame}
               style={{ 
                 height: '40px', 
                 padding: '0 24px',
@@ -3952,7 +3948,8 @@ const App: React.FC = () => {
                 color: !isGameStarted ? 'white' : undefined
               }}
             >
-              {isGameStarted && gameState.gameStatus === 'active' ? 'Resign/Draw' : 'Start'}
+              {isGameStarted && gameState.gameStatus === 'active' ? 
+                (gameMode === 'online' ? 'Resign/Draw' : 'Resign') : 'Start'}
             </button>
             <button 
               className="btn action-btn" 
@@ -5018,17 +5015,19 @@ const App: React.FC = () => {
               >
                 🏳️ Resign Game
               </button>
-              <button 
-                className="btn" 
-                onClick={handleDrawFromModal}
-                style={{ 
-                  backgroundColor: '#17a2b8', 
-                  color: 'white',
-                  fontWeight: 'bold'
-                }}
-              >
-                🤝 Offer Draw
-              </button>
+              {gameMode === 'online' && (
+                <button 
+                  className="btn" 
+                  onClick={handleDrawFromModal}
+                  style={{ 
+                    backgroundColor: '#17a2b8', 
+                    color: 'white',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  🤝 Offer Draw
+                </button>
+              )}
               <button 
                 className="btn" 
                 onClick={cancelResignDrawModal}
@@ -5341,11 +5340,11 @@ const App: React.FC = () => {
           <button 
             className="btn" 
             onClick={isGameStarted && gameState.gameStatus === 'active' ? 
-              (gameMode.startsWith('ai-') ? () => setShowMobileControls(true) : offerDraw) : 
+              (gameMode === 'online' ? offerDraw : () => setShowMobileControls(true)) : 
               () => setShowMobileControls(true)}
           >
             {isGameStarted && gameState.gameStatus === 'active' ? 
-              (gameMode.startsWith('ai-') ? 'Opponent' : 'Offer Draw') : 
+              (gameMode === 'online' ? 'Offer Draw' : 'Opponent') : 
               'Opponent'}
           </button>
           <button 
