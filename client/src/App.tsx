@@ -4227,7 +4227,7 @@ const App: React.FC = () => {
       {showSettings && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowSettings(false)} />
-          <div className="notification settings-dialog" style={{ display: 'block', maxWidth: '500px' }}>
+                      <div className="notification settings-dialog" style={{ display: 'block' }}>
             <h2>Settings</h2>
             
             {/* Theme Section */}
@@ -4329,7 +4329,7 @@ const App: React.FC = () => {
       {showLogin && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowLogin(false)} />
-          <div className="notification" style={{ display: 'block', maxWidth: '500px', width: '90vw' }}>
+          <div className="notification" style={{ display: 'block' }}>
             <h2>Log In</h2>
             <form onSubmit={(e) => {
               e.preventDefault();
@@ -4383,7 +4383,7 @@ const App: React.FC = () => {
       {showSignup && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowSignup(false)} />
-          <div className="notification" style={{ display: 'block', maxWidth: '500px', width: '90vw' }}>
+          <div className="notification" style={{ display: 'block' }}>
             <h2>Sign Up</h2>
             <form onSubmit={(e) => {
               e.preventDefault();
@@ -4456,7 +4456,7 @@ const App: React.FC = () => {
       {showStatsAuth && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowStatsAuth(false)} />
-          <div className="notification stats-auth-modal" style={{ display: 'block', maxWidth: '500px', width: '90vw' }}>
+          <div className="notification stats-auth-modal" style={{ display: 'block' }}>
             <h2>Track Your Stats</h2>
             <p style={{ marginBottom: '20px', lineHeight: '1.5' }}>
               To view and track your game statistics, you need a player account. 
@@ -4846,7 +4846,7 @@ const App: React.FC = () => {
       {showMobileControls && (
         <>
           <div className="overlay" style={{ display: 'block', zIndex: 14999 }} onClick={() => setShowMobileControls(false)} />
-          <div className="notification mobile-controls-modal" style={{ display: 'block', maxWidth: '90vw', width: '400px', minWidth: '350px' }}>
+          <div className="notification mobile-controls-modal" style={{ display: 'block' }}>
             <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Opponent</h2>
             
             {/* Opponent selection */}
@@ -5086,7 +5086,7 @@ const App: React.FC = () => {
       {showStats && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowStats(false)} />
-          <div className="notification" style={{ display: 'block', maxWidth: '450px' }}>
+          <div className="notification" style={{ display: 'block' }}>
             <h2>📊 Player Statistics</h2>
             {userStats && (
               <div style={{ padding: '20px 0' }}>
