@@ -54,13 +54,13 @@
     --board-hover: #81c784;
 }
 
-/* Ocean Theme */
-[data-theme="ocean"] {
-    --white-ion: #e3f2fd;
-    --black-ion: #1a5f7a;
-    --node-color: #f44336;
-    --board-color: #bbdefb;
-    --board-hover: #90caf9;
+/* Felt Theme */
+[data-theme="felt"] {
+    --white-ion: #f8f9fa;
+    --black-ion: #721c24;
+    --node-color: #ffc107;
+    --board-color: #0f5132;
+    --board-hover: #198754;
 }
 
 * {

@@ -4244,7 +4244,7 @@ const App: React.FC = () => {
                 <option value="dark">Dark Mode</option>
                 <option value="high-contrast">High Contrast</option>
                 <option value="nature">Nature</option>
-                <option value="ocean">Ocean</option>
+                                            <option value="felt">Felt</option>
                   <option value="custom">Custom</option>
               </select>
             </div>
