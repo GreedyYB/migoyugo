@@ -3115,6 +3115,11 @@ const App: React.FC = () => {
       console.log('Matchmaking modal should now be visible');
     } else {
       // Local game start
+      if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') {
+        startAIGame();
+        return;
+      }
+      
       const newBoard = Array(8).fill(null).map(() => Array(8).fill(null));
       setGameState({
         board: newBoard,
@@ -3124,7 +3129,7 @@ const App: React.FC = () => {
         lastMove: null,
         players: { 
           white: 'White', 
-          black: gameMode === 'local' ? 'Black' : `CORE ${gameMode.toUpperCase()}`
+          black: 'Black'
         },
         nexusLine: null
       });
@@ -3800,7 +3805,6 @@ const App: React.FC = () => {
       chosenColor = playerColorChoice;
     }
     setPlayerColor(chosenColor);
-    setGameMode(gameMode); // Use the current gameMode state
 
     // Initialize the game state with the selected color as the starting player
     const newBoard = Array(8).fill(null).map(() => Array(8).fill(null));
