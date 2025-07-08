@@ -3422,6 +3422,26 @@ const App: React.FC = () => {
       demo: null
     },
     {
+      title: "How to Start a Multiplayer Game",
+      message: `
+        <b>Go to the Main Menu:</b><br>
+        From anywhere in the game, click the Flux logo or the "Home" button to return to the main menu.<br><br>
+        <b>Select 'Opponent':</b><br>
+        On the main menu, find 'Opponent', and select 'Online Multiplayer'.<br><br>
+        <b>Choose How to Play:</b><br>
+        <ul style='margin:0 0 0 1.2em;padding:0;'>
+          <li><b>Quick Match:</b> Click "Quick Match" to be paired with a random online opponent. The game will start automatically when a match is found.</li>
+          <li><b>Create a Room:</b> Click "Create Room" to start a private game. You'll get a unique room code to share with a friend.</li>
+          <li><b>Join a Room:</b> If your friend has already created a room, enter the room code they give you and click "Join Room."</li>
+          <li><b>Play as Guest:</b> If you don't want to sign in, you can choose "Play as Guest" to join multiplayer games without creating an account.</li>
+        </ul>
+        <br>
+        <b>Wait for Your Opponent:</b><br>
+        Once both players are in the room (or a match is found), the game will begin automatically.
+      `,
+      demo: null
+    },
+    {
       title: "Ready to Play!",
       message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Vectors or block your opponent?<br>Will you go for a Nexus or fill the board and see who ends up with the most Nodes?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing Flux!",
       demo: null
