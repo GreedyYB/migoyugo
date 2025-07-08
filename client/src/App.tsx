@@ -3424,8 +3424,6 @@ const App: React.FC = () => {
     {
       title: "How to Start a Multiplayer Game",
       message: `
-        <b>Go to the Main Menu:</b><br>
-        From anywhere in the game, click the Flux logo or the "Home" button to return to the main menu.<br><br>
         <b>Select 'Opponent':</b><br>
         On the main menu, find 'Opponent', and select 'Online Multiplayer'.<br><br>
         <b>Choose How to Play:</b><br>
