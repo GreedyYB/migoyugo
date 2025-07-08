@@ -2048,6 +2048,7 @@ const App: React.FC = () => {
 
   // Load settings from localStorage on component mount
   useEffect(() => {
+    setCurrentTheme('classic'); // Always force classic theme
     loadSavedSettings();
   }, []);
 
@@ -2073,12 +2074,11 @@ const App: React.FC = () => {
   // Load saved settings from localStorage
   const loadSavedSettings = () => {
     try {
-      const savedTheme = localStorage.getItem('fluxTheme') || 'classic';
+      // Always use classic theme, ignore saved theme
+      setCurrentTheme('classic');
       const savedSoundEnabled = localStorage.getItem('fluxSoundEnabled');
       const savedCustomColors = localStorage.getItem('fluxCustomColors');
 
-      setCurrentTheme(savedTheme);
-      
       if (savedSoundEnabled !== null) {
         setSoundEnabled(JSON.parse(savedSoundEnabled));
       }
