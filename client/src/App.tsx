@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
-import './flux-styles.css';
+import './kuyoku-styles.css';
 
 // Types
 interface Cell {
@@ -310,7 +310,7 @@ class TranspositionTable {
   }
 }
 
-// Opening Book - Strong opening principles for Flux
+// Opening Book - Strong opening principles for Kuyoku
 const openingBook = new Map<string, {row: number, col: number, weight: number}[]>([
   // Empty board - control center
   ['', [
@@ -2076,8 +2076,8 @@ const App: React.FC = () => {
     try {
       // Always use classic theme, ignore saved theme
       setCurrentTheme('classic');
-      const savedSoundEnabled = localStorage.getItem('fluxSoundEnabled');
-      const savedCustomColors = localStorage.getItem('fluxCustomColors');
+      const savedSoundEnabled = localStorage.getItem('kuyokuSoundEnabled');
+      const savedCustomColors = localStorage.getItem('kuyokuCustomColors');
 
       if (savedSoundEnabled !== null) {
         setSoundEnabled(JSON.parse(savedSoundEnabled));
@@ -2125,20 +2125,20 @@ const App: React.FC = () => {
   // Handle theme change
   const handleThemeChange = (theme: string) => {
     setCurrentTheme(theme);
-    localStorage.setItem('fluxTheme', theme);
+    localStorage.setItem('kuyokuTheme', theme);
   };
 
   // Handle sound toggle
   const handleSoundToggle = (enabled: boolean) => {
     setSoundEnabled(enabled);
-    localStorage.setItem('fluxSoundEnabled', JSON.stringify(enabled));
+    localStorage.setItem('kuyokuSoundEnabled', JSON.stringify(enabled));
   };
 
   // Handle custom color change
   const handleCustomColorChange = (colorType: keyof typeof customColors, color: string) => {
     const newColors = { ...customColors, [colorType]: color };
     setCustomColors(newColors);
-    localStorage.setItem('fluxCustomColors', JSON.stringify(newColors));
+    localStorage.setItem('kuyokuCustomColors', JSON.stringify(newColors));
   };
 
   // Reset settings to defaults
@@ -2152,9 +2152,9 @@ const App: React.FC = () => {
       boardColor: '#d1e6f9'
     });
     
-    localStorage.removeItem('fluxTheme');
-    localStorage.removeItem('fluxSoundEnabled');
-    localStorage.removeItem('fluxCustomColors');
+    localStorage.removeItem('kuyokuTheme');
+    localStorage.removeItem('kuyokuSoundEnabled');
+    localStorage.removeItem('kuyokuCustomColors');
     
     // Reset document theme and clear any custom colors
     document.documentElement.setAttribute('data-theme', 'classic');
@@ -3393,7 +3393,7 @@ const App: React.FC = () => {
   const tutorialSteps = [
     {
       title: "Basic Gameplay",
-      message: "Flux is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing ions on empty cells.",
+      message: "Kuyoku is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing ions on empty cells.",
       demo: "board"
     },
     {
@@ -3441,7 +3441,7 @@ const App: React.FC = () => {
     },
     {
       title: "Ready to Play!",
-      message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Vectors or block your opponent?<br>Will you go for a Nexus or fill the board and see who ends up with the most Nodes?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing Flux!",
+      message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Vectors or block your opponent?<br>Will you go for a Nexus or fill the board and see who ends up with the most Nodes?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing Kuyoku!",
       demo: null
     }
   ];
@@ -3851,7 +3851,7 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <header>
-        <h1>Flux</h1>
+        <h1>Kuyoku</h1>
         {(authState.isAuthenticated || authState.isGuest) && (
           <div style={{ 
             position: 'absolute', 
@@ -4207,10 +4207,10 @@ const App: React.FC = () => {
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowRules(false)} />
           <div className="notification rules-popup" style={{ display: 'block' }}>
-            <h2>Flux Game Rules</h2>
+            <h2>Kuyoku Game Rules</h2>
             
             <h3>Overview</h3>
-            <p>Flux is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Ions") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
+            <p>Kuyoku is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Ions") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
             
             <h3>Core Rules</h3>
             <ul>
@@ -5248,7 +5248,7 @@ const App: React.FC = () => {
           animation: 'slideIn 0.3s ease-out'
         }}>
           <div style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>
-            🎮 Install Flux Game
+            🎮 Install Kuyoku Game
           </div>
           <div style={{ marginBottom: '15px', fontSize: '14px', opacity: 0.9 }}>
             Add to your home screen for fullscreen play with no browser bars!

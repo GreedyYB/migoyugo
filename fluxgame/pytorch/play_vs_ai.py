@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-from fluxgame.FluxGame import FluxGame
+from fluxgame.FluxGame import KuyokuGame
 from fluxgame.pytorch.NNetWrapper import NNetWrapper
 from MCTS import MCTS
 
@@ -34,7 +34,7 @@ def display(board):
         print(' '.join(symbol(x) for x in row))
     print()
 
-g = FluxGame(8)
+g = KuyokuGame(8)
 nnet = NNetWrapper(g)
 nnet.load_checkpoint('./', 'best.pth.tar')
 

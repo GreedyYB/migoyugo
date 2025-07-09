@@ -75,7 +75,7 @@ function showUpdateNotification(registration: ServiceWorkerRegistration) {
       box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     ">
       <div style="max-width: 600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-        <span style="flex: 1; min-width: 200px;">🚀 A new version of Flux is available!</span>
+        <span style={{flex: 1, minWidth: 200}}>🚀 A new version of Kuyoku is available!</span>
         <div style="display: flex; gap: 10px;">
           <button id="update-now" style="
             background: #3498db;
