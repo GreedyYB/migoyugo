@@ -1,7 +1,7 @@
 :root {
     --cell-size: 80px;
     --board-size: calc(8 * var(--cell-size));
-    --primary-color: #2c3e50;
+    --primary-color: #4caf50;
     --secondary-color: #34495e;
     --accent-color: #3498db;
     --last-move-color: #2ecc71;
@@ -9,6 +9,7 @@
     /* Modern viewport units for better mobile support */
     --vh: 1vh;
     --dvh: 1dvh; /* Dynamic viewport height - adjusts for mobile browser UI */
+    --board-color: #e6c28b; /* Bamboo stalk brown */
 }
 
 /* Detect support for dynamic viewport units */
@@ -232,10 +233,11 @@ h1 {
     display: grid;
     grid-template-columns: repeat(8, var(--cell-size));
     grid-template-rows: repeat(8, var(--cell-size));
-    border: 2px solid var(--primary-color);
+    border: 3px solid var(--primary-color) !important;
     position: relative;
     touch-action: manipulation;
     -webkit-touch-callout: none;
+    background-color: var(--board-color) !important;
 }
 
 .column-labels, .row-labels {
@@ -265,7 +267,7 @@ h1 {
 .cell {
     width: var(--cell-size);
     height: var(--cell-size);
-    border: 1px solid #bdc3c7;
+    border: 1px solid var(--primary-color) !important;
     display: flex;
     align-items: center;
     justify-content: center;
