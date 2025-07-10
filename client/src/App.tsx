@@ -1059,148 +1059,57 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
 // Advanced AI evaluation for Level 3 - Minimax with lookahead
 // Simplified AI evaluation - removed complex alpha-beta for performance
 
-const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'): {row: number, col: number} | null => {
-  // AI-4: Simplified strong AI (avoiding infinite loops)
-  if (difficulty === 'ai-4') {
-    // Must-block threat detection: block any cell where white can create a double-ended node threat next turn
-    const mustBlockCells: {row: number, col: number}[] = [];
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 8; col++) {
-        if (!board[row][col]) {
-          // Simulate white playing here
-          const testBoard = board.map(r => [...r]);
-          testBoard[row][col] = { color: 'white', isNode: false };
-          // Check if this creates a double-ended node threat for white
-          if (createsDoubleEndedNodeThreat(testBoard, row, col, 'white')) {
-            mustBlockCells.push({row, col});
-          }
-        }
-      }
-    }
-    if (mustBlockCells.length > 0) {
-      // Pick the must-block cell with the best positional score
-      let best = mustBlockCells[0];
-      let bestScore = -Infinity;
-      for (const cell of mustBlockCells) {
-        const score = evaluateAI4Move(board, cell.row, cell.col);
-        if (score > bestScore) {
-          bestScore = score;
-          best = cell;
-        }
-      }
-      return best;
-    }
-    
-    // Check opening book first
-    const totalPieces = board.flat().filter(cell => cell !== null).length;
-    
-    // Opening book for first few moves
-    if (totalPieces <= 3) {
-      const centerMoves = [
-        {row: 3, col: 3}, {row: 4, col: 4}, {row: 3, col: 4}, {row: 4, col: 3},
-        {row: 2, col: 3}, {row: 3, col: 2}, {row: 5, col: 4}, {row: 4, col: 5}
-      ];
-      
-      for (const move of centerMoves) {
-        if (isValidMove(board, move.row, move.col, 'black')) {
-          return move;
-        }
-      }
-    }
-    
-    // Use enhanced tactical evaluation (depth 3 for performance)
-    const validMoves: {row: number, col: number, score: number}[] = [];
-    
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 8; col++) {
-        if (isValidMove(board, row, col, 'black')) {
-          const score = evaluateAI4Move(board, row, col);
-          validMoves.push({row, col, score});
-        }
-      }
-    }
-    
-    if (validMoves.length === 0) return null;
-    
-    // Sort and take best move
-    validMoves.sort((a, b) => b.score - a.score);
-    return validMoves[0];
-  }
-  
-  // Original AI logic for levels 1-3
-  const validMoves: {row: number, col: number, score: number}[] = [];
-  
-  // Evaluate all valid moves
+const getAIMove = (
+  board: (Cell | null)[][],
+  difficulty: 'ai-1' | 'ai-2' | 'ai-3'
+): { row: number; col: number } | null => {
+  const validMoves: { row: number; col: number; score: number }[] = [];
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       if (isValidMove(board, row, col, 'black')) {
         const score = evaluateMove(board, row, col, 'black', difficulty);
-        validMoves.push({row, col, score});
+        validMoves.push({ row, col, score });
       }
     }
   }
-  
   if (validMoves.length === 0) return null;
-  
   if (difficulty === 'ai-1') {
-    // Level 1 (~1000 Elo): Logical but imperfect play
-    // Sort moves by score and pick from top 3 moves to add variety while staying competitive
     validMoves.sort((a, b) => b.score - a.score);
     const topMoves = validMoves.slice(0, Math.min(3, validMoves.length));
     return topMoves[Math.floor(Math.random() * topMoves.length)];
-    
   } else if (difficulty === 'ai-2') {
-    // Level 2 (~1400 Elo): Strong strategic play with perfect threat blocking
     validMoves.sort((a, b) => b.score - a.score);
-    
-    // Check if there are any critical blocking moves (800+ points = threat blocking)
     const criticalMoves = validMoves.filter(move => move.score >= 800);
     if (criticalMoves.length > 0) {
-      // Always take the highest scoring critical move (perfect threat blocking)
       return criticalMoves[0];
     }
-    
-    // For non-critical moves, pick from top 5 moves for stronger but varied play
     const topMoves = validMoves.slice(0, Math.min(5, validMoves.length));
     return topMoves[Math.floor(Math.random() * topMoves.length)];
-    
   } else {
-    // Level 3 (~1600 Elo): Enhanced tactical play - ZERO RANDOMNESS, FAST RESPONSE
     validMoves.sort((a, b) => b.score - a.score);
-    
-    // Simple opening preference for center control
     const totalMoves = board.flat().filter(cell => cell !== null).length;
     if (totalMoves <= 2) {
-      const centerMoves = [{row: 3, col: 3}, {row: 4, col: 4}, {row: 3, col: 4}, {row: 4, col: 3}];
+      const centerMoves = [
+        { row: 3, col: 3 }, { row: 4, col: 4 }, { row: 3, col: 4 }, { row: 4, col: 3 }
+      ];
       for (const center of centerMoves) {
         if (isValidMove(board, center.row, center.col, 'black')) {
           return center;
         }
       }
     }
-    
-    // Always block critical threats (9000+ = nexus threats)
     const criticalMoves = validMoves.filter(move => move.score >= 9000);
     if (criticalMoves.length > 0) {
       return criticalMoves[0];
     }
-    
-    // Always take winning opportunities (1000+ = win opportunities or threat blocks)  
     const winningMoves = validMoves.filter(move => move.score >= 1000);
     if (winningMoves.length > 0) {
       return winningMoves[0];
     }
-    
-    // For positional play: Enhanced evaluation of top moves only
     const topMoves = validMoves.slice(0, Math.min(5, validMoves.length));
-    
-    // Add simple lookahead bonus for the best moves
     for (const move of topMoves) {
-      // Quick positional bonus for center control and connectivity
       const centerDistance = Math.abs(3.5 - move.row) + Math.abs(3.5 - move.col);
       const centerBonus = Math.max(0, 6 - centerDistance) * 2;
-      
-      // Connectivity bonus - check if move connects to existing pieces
       let connectivityBonus = 0;
       for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
@@ -1212,11 +1121,8 @@ const getAIMove = (board: (Cell | null)[][], difficulty: 'ai-1' | 'ai-2' | 'ai-3
           }
         }
       }
-      
       move.score += centerBonus + connectivityBonus;
     }
-    
-    // Sort enhanced moves and take the best
     topMoves.sort((a, b) => b.score - a.score);
     return topMoves[0];
   }
@@ -3995,26 +3901,72 @@ const App: React.FC = () => {
   // Replace getAIMove for ai-4
   const getAIMove = (
     board: (Cell | null)[][],
-    difficulty: 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'
+    difficulty: 'ai-1' | 'ai-2' | 'ai-3'
   ): { row: number; col: number } | null => {
-    if (difficulty === 'ai-4') {
-      // Opening book for first 2 moves
-      const totalPieces = board.flat().filter(cell => cell !== null).length;
-      if (totalPieces < 2) {
-        for (const move of openingBookAI4) {
-          if (isValidMove(board, move.row, move.col, 'black')) return move;
+    const validMoves: { row: number; col: number; score: number }[] = [];
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        if (isValidMove(board, row, col, 'black')) {
+          const score = evaluateMove(board, row, col, 'black', difficulty);
+          validMoves.push({ row, col, score });
         }
       }
-      // Minimax with alpha-beta, depth 3 (increase to 4 if fast enough)
-      transTableAI4.clear();
-      const { bestMove } = minimaxAI4(board, 3, -Infinity, Infinity, true, 'black', 3);
-      return bestMove;
     }
-    // ... existing code for ai-1, ai-2, ai-3 ...
-    // ... existing code ...
-    return null;
+    if (validMoves.length === 0) return null;
+    if (difficulty === 'ai-1') {
+      validMoves.sort((a, b) => b.score - a.score);
+      const topMoves = validMoves.slice(0, Math.min(3, validMoves.length));
+      return topMoves[Math.floor(Math.random() * topMoves.length)];
+    } else if (difficulty === 'ai-2') {
+      validMoves.sort((a, b) => b.score - a.score);
+      const criticalMoves = validMoves.filter(move => move.score >= 800);
+      if (criticalMoves.length > 0) {
+        return criticalMoves[0];
+      }
+      const topMoves = validMoves.slice(0, Math.min(5, validMoves.length));
+      return topMoves[Math.floor(Math.random() * topMoves.length)];
+    } else {
+      validMoves.sort((a, b) => b.score - a.score);
+      const totalMoves = board.flat().filter(cell => cell !== null).length;
+      if (totalMoves <= 2) {
+        const centerMoves = [
+          { row: 3, col: 3 }, { row: 4, col: 4 }, { row: 3, col: 4 }, { row: 4, col: 3 }
+        ];
+        for (const center of centerMoves) {
+          if (isValidMove(board, center.row, center.col, 'black')) {
+            return center;
+          }
+        }
+      }
+      const criticalMoves = validMoves.filter(move => move.score >= 9000);
+      if (criticalMoves.length > 0) {
+        return criticalMoves[0];
+      }
+      const winningMoves = validMoves.filter(move => move.score >= 1000);
+      if (winningMoves.length > 0) {
+        return winningMoves[0];
+      }
+      const topMoves = validMoves.slice(0, Math.min(5, validMoves.length));
+      for (const move of topMoves) {
+        const centerDistance = Math.abs(3.5 - move.row) + Math.abs(3.5 - move.col);
+        const centerBonus = Math.max(0, 6 - centerDistance) * 2;
+        let connectivityBonus = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = move.row + dr;
+            const nc = move.col + dc;
+            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && board[nr][nc]?.color === 'black') {
+              connectivityBonus += 3;
+            }
+          }
+        }
+        move.score += centerBonus + connectivityBonus;
+      }
+      topMoves.sort((a, b) => b.score - a.score);
+      return topMoves[0];
+    }
   };
-  // ... existing code ...
 
   return (
     <div className="App">
