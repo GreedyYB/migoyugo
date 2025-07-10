@@ -3848,6 +3848,177 @@ const App: React.FC = () => {
     }
   };
 
+  // --- AI-4: Strongest AI ---
+  // Opening Book for first 2 moves (center and adjacent to center)
+  const openingBookAI4: { row: number; col: number }[] = [
+    { row: 3, col: 3 }, { row: 3, col: 4 }, { row: 4, col: 3 }, { row: 4, col: 4 },
+    { row: 2, col: 3 }, { row: 3, col: 2 }, { row: 5, col: 4 }, { row: 4, col: 5 }
+  ];
+
+  // Transposition Table for minimax
+  const transTableAI4: Map<string, { score: number; bestMove: { row: number; col: number } | null; depth: number }> = new Map();
+
+  function boardHash(board: (Cell | null)[][], player: 'white' | 'black', depth: number): string {
+    return JSON.stringify(board) + '|' + player + '|' + depth;
+  }
+
+  function minimaxAI4(
+    board: (Cell | null)[][],
+    depth: number,
+    alpha: number,
+    beta: number,
+    maximizingPlayer: boolean,
+    playerColor: 'white' | 'black',
+    originalDepth: number
+  ): { score: number; bestMove: { row: number; col: number } | null } {
+    const hash = boardHash(board, playerColor, depth);
+    if (transTableAI4.has(hash)) {
+      const entry = transTableAI4.get(hash)!;
+      if (entry.depth >= depth) return { score: entry.score, bestMove: entry.bestMove };
+    }
+    // Terminal or depth limit
+    const moves: { row: number; col: number }[] = getAllValidMoves(board, playerColor);
+    if (depth === 0 || moves.length === 0) {
+      const score = enhancedEvaluatePosition(board, playerColor, originalDepth - depth);
+      return { score, bestMove: null };
+    }
+    // Move ordering: sort by heuristic
+    moves.sort((a, b) => enhancedEvaluateMove(board, b.row, b.col, playerColor) - enhancedEvaluateMove(board, a.row, a.col, playerColor));
+    let bestMove: { row: number; col: number } | null = null;
+    let bestScore = maximizingPlayer ? -Infinity : Infinity;
+    for (const move of moves) {
+      const newBoard = makeMove(board, move.row, move.col, playerColor);
+      const nextPlayer: 'white' | 'black' = playerColor === 'white' ? 'black' : 'white';
+      const result = minimaxAI4(newBoard, depth - 1, alpha, beta, !maximizingPlayer, nextPlayer, originalDepth);
+      if (maximizingPlayer) {
+        if (result.score > bestScore) {
+          bestScore = result.score;
+          bestMove = move;
+        }
+        alpha = Math.max(alpha, bestScore);
+        if (beta <= alpha) break;
+      } else {
+        if (result.score < bestScore) {
+          bestScore = result.score;
+          bestMove = move;
+        }
+        beta = Math.min(beta, bestScore);
+        if (beta <= alpha) break;
+      }
+    }
+    transTableAI4.set(hash, { score: bestScore, bestMove, depth });
+    return { score: bestScore, bestMove };
+  }
+
+  // Enhanced evaluation function for AI-4
+  function enhancedEvaluatePosition(
+    board: (Cell | null)[][],
+    playerColor: 'white' | 'black',
+    ply: number
+  ): number {
+    // Dynamic weights: early game = center, late = threats
+    const totalPieces = board.flat().filter(cell => cell !== null).length;
+    let score = 0;
+    // Center control (early game)
+    if (totalPieces < 16) {
+      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        if (board[r][c]?.color === playerColor) {
+          const centerDist = Math.abs(r - 3.5) + Math.abs(c - 3.5);
+          score += (7 - centerDist) * 10;
+        }
+      }
+    }
+    // Threats, vectors, nexus (mid/late game)
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      if (board[r][c]?.color === playerColor) {
+        // Vectors
+        const vectors = checkForVectors(board, r, c, playerColor);
+        score += 2000 * vectors.length;
+        // Nexus
+        if (vectors.length > 0) {
+          const testBoard = board.map(row => [...row]);
+          testBoard[r][c] = { color: playerColor, isNode: true, nodeType: 'standard' };
+          if (checkForNexus(testBoard, r, c, playerColor)) score += 10000;
+        }
+        // Forks (multiple threats)
+        let forkCount = 0;
+        const directions = [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]];
+        for (const [dr, dc] of directions) {
+          let line = 1;
+          let rr = r + dr, cc = c + dc;
+          while (rr >= 0 && rr < 8 && cc >= 0 && cc < 8 && board[rr][cc]?.color === playerColor) {
+            line++;
+            rr += dr; cc += dc;
+          }
+          if (line >= 3) forkCount++;
+        }
+        if (forkCount >= 2) score += 300 * forkCount;
+        // Connectivity
+        let connections = 0;
+        for (const [dr, dc] of directions) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && board[nr][nc]?.color === playerColor) connections++;
+        }
+        score += connections * 25;
+      }
+      // Penalize isolated pieces
+      if (board[r][c]?.color === playerColor) {
+        let connected = false;
+        for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && board[nr][nc]?.color === playerColor) connected = true;
+        }
+        if (!connected) score -= 50;
+      }
+    }
+    // Block opponent threats
+    const oppColor = playerColor === 'white' ? 'black' : 'white';
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      if (board[r][c]?.color === oppColor) {
+        const vectors = checkForVectors(board, r, c, oppColor);
+        score -= 1800 * vectors.length;
+        const testBoard = board.map(row => [...row]);
+        testBoard[r][c] = { color: oppColor, isNode: true, nodeType: 'standard' };
+        if (checkForNexus(testBoard, r, c, oppColor)) score -= 9500;
+      }
+    }
+    return score;
+  }
+
+  function enhancedEvaluateMove(
+    board: (Cell | null)[][],
+    row: number,
+    col: number,
+    playerColor: 'white' | 'black'
+  ): number {
+    const testBoard = makeMove(board, row, col, playerColor);
+    return enhancedEvaluatePosition(testBoard, playerColor, 0);
+  }
+
+  // Replace getAIMove for ai-4
+  const getAIMove = (
+    board: (Cell | null)[][],
+    difficulty: 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'
+  ): { row: number; col: number } | null => {
+    if (difficulty === 'ai-4') {
+      // Opening book for first 2 moves
+      const totalPieces = board.flat().filter(cell => cell !== null).length;
+      if (totalPieces < 2) {
+        for (const move of openingBookAI4) {
+          if (isValidMove(board, move.row, move.col, 'black')) return move;
+        }
+      }
+      // Minimax with alpha-beta, depth 3 (increase to 4 if fast enough)
+      transTableAI4.clear();
+      const { bestMove } = minimaxAI4(board, 3, -Infinity, Infinity, true, 'black', 3);
+      return bestMove;
+    }
+    // ... existing code for ai-1, ai-2, ai-3 ...
+    // ... existing code ...
+    return null;
+  };
+  // ... existing code ...
+
   return (
     <div className="App">
       <header>
