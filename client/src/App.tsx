@@ -1988,7 +1988,7 @@ const App: React.FC = () => {
   const [activeTimer, setActiveTimer] = useState<'white' | 'black' | null>(null);
 
   // Game mode state
-  const [gameMode, setGameMode] = useState<'local' | 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4' | 'online'>('local');
+  const [gameMode, setGameMode] = useState<'local' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('local');
   const [waitingForAI, setWaitingForAI] = useState(false);
 
   // Notification state
@@ -3027,7 +3027,7 @@ const App: React.FC = () => {
     if (
       isGameStarted &&
       gameState.gameStatus === 'active' &&
-      (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') &&
+      (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') &&
       playerColor &&
       gameState.currentPlayer !== playerColor
     ) {
@@ -3039,9 +3039,6 @@ const App: React.FC = () => {
       } else if (gameMode === 'ai-2') {
         minThinkTime = 1500;
         maxThinkTime = 2500;
-      } else if (gameMode === 'ai-3') {
-        minThinkTime = 1500;
-        maxThinkTime = 2500;
       } else {
         minThinkTime = 2000;
         maxThinkTime = 4000;
@@ -3049,7 +3046,7 @@ const App: React.FC = () => {
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
       console.log(`${gameMode.toUpperCase()} thinking for ${thinkTime}ms...`);
       const timeout = setTimeout(() => {
-        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4');
+        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3');
         if (aiMove) {
           console.log(`${gameMode.toUpperCase()} selected move:`, aiMove);
           makeLocalMove(aiMove.row, aiMove.col);
@@ -3073,7 +3070,7 @@ const App: React.FC = () => {
     } else {
       // Local game (human vs human or vs AI)
       if (
-        (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') &&
+        (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') &&
         playerColor &&
         gameState.currentPlayer !== playerColor
       ) {
@@ -3115,7 +3112,7 @@ const App: React.FC = () => {
       console.log('Matchmaking modal should now be visible');
     } else {
       // Local game start
-      if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') {
+      if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') {
         startAIGame();
         return;
       }
@@ -4068,7 +4065,7 @@ const App: React.FC = () => {
                         (authState.user?.username || 'Guest') : 
                         opponentName;
                       return whiteName;
-                    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') && authState.isAuthenticated) {
+                    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
                       // AI game with authenticated user - show username for white (human player)
                       return authState.user?.username;
                     } else {
@@ -4107,7 +4104,7 @@ const App: React.FC = () => {
                       (authState.user?.username || 'Guest') : 
                       opponentName;
                     return blackName;
-                  } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') && authState.isAuthenticated) {
+                  } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
                     // AI game - black is always the AI, show AI name without color label
                     return gameState.players.black;
                   } else {
@@ -4182,7 +4179,6 @@ const App: React.FC = () => {
                     <option value="ai-1">CORE AI-1</option>
                     <option value="ai-2">CORE AI-2</option>
                     <option value="ai-3">CORE AI-3</option>
-                    <option value="ai-4">CORE AI-4</option>
                     <option value="online">Online Multiplayer</option>
                   </select>
                 </div>
@@ -5063,7 +5059,6 @@ const App: React.FC = () => {
                 <option value="ai-1">CORE AI-1</option>
                 <option value="ai-2">CORE AI-2</option>
                 <option value="ai-3">CORE AI-3</option>
-                <option value="ai-4">CORE AI-4</option>
                 <option value="online">Online Multiplayer</option>
               </select>
             </div>
