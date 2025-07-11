@@ -1880,8 +1880,8 @@ const App: React.FC = () => {
     blackIon: '#2c3e50',
     nodeColor: '#e74c3c',
     boardColor: '#d1e6f9',
-    hoverColor: '#ffe066', // new default for hover
-    lastMoveColor: '#6dd47e' // new default for last move indicator
+    hoverColor: '#b3d4fc', // classic hover color
+    lastMoveColor: 'rgba(46, 204, 113, 0.2)' // classic last move color
   });
 
   // Review mode state
@@ -2062,8 +2062,8 @@ const App: React.FC = () => {
       blackIon: '#2c3e50',
       nodeColor: '#e74c3c',
       boardColor: '#d1e6f9',
-      hoverColor: '#ffe066', // new default for hover
-      lastMoveColor: '#6dd47e' // new default for last move indicator
+      hoverColor: '#b3d4fc', // classic hover color
+      lastMoveColor: 'rgba(46, 204, 113, 0.2)' // classic last move color
     });
     
     localStorage.removeItem('kuyokuTheme');
