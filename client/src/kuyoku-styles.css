@@ -314,15 +314,13 @@ h1 {
 
 /* Override last-move highlighting for nexus cells */
 .cell.last-move {
-    box-shadow: inset 0 0 10px 2px rgba(46, 204, 113, 0.6);
     background-color: rgba(46, 204, 113, 0.2);
-    background-color: var(--last-move-color) !important;
+    box-shadow: inset 0 0 10px 2px rgba(46, 204, 113, 0.6);
 }
 
 .current-state .cell.last-move {
-    box-shadow: inset 0 0 10px 2px rgba(46, 204, 113, 0.6);
     background-color: rgba(46, 204, 113, 0.2);
-    background-color: var(--last-move-color) !important;
+    box-shadow: inset 0 0 10px 2px rgba(46, 204, 113, 0.6);
 }
 
 /* Remove last move highlighting in review mode */
