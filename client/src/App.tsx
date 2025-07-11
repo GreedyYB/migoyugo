@@ -3545,27 +3545,26 @@ const App: React.FC = () => {
 
   const renderCell = (row: number, col: number) => {
     const cell = gameState.board[row][col];
+    // Only highlight the current last move
     const isLastMove = gameState.lastMove?.row === row && gameState.lastMove?.col === col;
     const isNexusCell = gameState.nexusLine?.some(pos => pos.row === row && pos.col === col) || false;
-    
     return (
       <div
         key={`${row}-${col}`}
-        className={`cell ${isLastMove ? 'last-move' : ''} ${isNexusCell ? 'nexus-cell' : ''}`}
+        className={`cell${isLastMove ? ' last-move' : ''}${isNexusCell ? ' nexus-cell' : ''}`}
         onClick={() => handleCellClick(row, col)}
       >
         {/* Cell coordinate labels - only show on edges like a chess board */}
         {col === 0 && <div className="cell-row-label">{8 - row}</div>}
         {row === 7 && <div className="cell-col-label">{String.fromCharCode(97 + col)}</div>}
-        
         {cell && (
           <>
             {/* Always render the ion (colored piece) */}
-            <div className={`ion ${cell.color} ${isLastMove ? 'new-ion' : ''}`} />
+            <div className={`ion ${cell.color}`} />
             {/* If it's a node, also render the node indicator on top (no animation to avoid transform conflicts) */}
             {cell.isNode && (
               <div 
-                className={`node ${cell.nodeType || 'standard'}`} 
+                className={`node ${cell.nodeType || 'standard'}`}
                 title={`Node type: ${cell.nodeType || 'standard'}`}
               />
             )}
