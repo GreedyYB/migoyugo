@@ -1879,7 +1879,9 @@ const App: React.FC = () => {
     whiteIon: '#ecf0f1',
     blackIon: '#2c3e50',
     nodeColor: '#e74c3c',
-    boardColor: '#d1e6f9'
+    boardColor: '#d1e6f9',
+    hoverColor: '#ffe066', // new default for hover
+    lastMoveColor: '#6dd47e' // new default for last move indicator
   });
 
   // Review mode state
@@ -2017,6 +2019,8 @@ const App: React.FC = () => {
     root.style.setProperty('--black-ion', colors.blackIon);
     root.style.setProperty('--node-color', colors.nodeColor);
     root.style.setProperty('--board-color', colors.boardColor);
+    root.style.setProperty('--hover-color', colors.hoverColor);
+    root.style.setProperty('--last-move-color', colors.lastMoveColor);
   };
 
   // Clear custom colors from CSS variables
@@ -2026,6 +2030,8 @@ const App: React.FC = () => {
     root.style.removeProperty('--black-ion');
     root.style.removeProperty('--node-color');
     root.style.removeProperty('--board-color');
+    root.style.removeProperty('--hover-color');
+    root.style.removeProperty('--last-move-color');
   };
 
   // Handle theme change
@@ -2055,7 +2061,9 @@ const App: React.FC = () => {
       whiteIon: '#ecf0f1',
       blackIon: '#2c3e50',
       nodeColor: '#e74c3c',
-      boardColor: '#d1e6f9'
+      boardColor: '#d1e6f9',
+      hoverColor: '#ffe066', // new default for hover
+      lastMoveColor: '#6dd47e' // new default for last move indicator
     });
     
     localStorage.removeItem('kuyokuTheme');
@@ -4428,6 +4436,24 @@ const App: React.FC = () => {
                       type="color"
                       value={customColors.boardColor}
                       onChange={(e) => handleCustomColorChange('boardColor', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="color-option">
+                    <label>Hover Color:</label>
+                    <input
+                      type="color"
+                      value={customColors.hoverColor}
+                      onChange={(e) => handleCustomColorChange('hoverColor', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="color-option">
+                    <label>Last Move Indicator:</label>
+                    <input
+                      type="color"
+                      value={customColors.lastMoveColor}
+                      onChange={(e) => handleCustomColorChange('lastMoveColor', e.target.value)}
                     />
                   </div>
                 </div>
