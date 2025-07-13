@@ -4306,7 +4306,7 @@ const App: React.FC = () => {
       {showRules && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowRules(false)} />
-          <div className="notification rules-popup" style={{ display: 'block', position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '90vw', maxWidth: 400, maxHeight: '80vh', overflow: 'visible', zIndex: 1002 }}>
+          <div className="notification rules-popup" style={{ display: 'block', position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '96vw', maxWidth: 500, maxHeight: '80vh', overflow: 'visible', zIndex: 1002 }}>
             <button onClick={() => setShowRules(false)} style={{ position: 'absolute', top: 10, right: 10, fontSize: 24, background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontWeight: 'bold', zIndex: 2 }}>×</button>
             <h2><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> Game Rules</h2>
             <div className="rules-content" style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10 }}>
