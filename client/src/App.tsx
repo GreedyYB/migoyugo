@@ -1927,11 +1927,6 @@ const App: React.FC = () => {
     loadSavedSettings();
   }, []);
 
-  // Debug rules modal
-  useEffect(() => {
-    console.log('showRules state changed to:', showRules);
-  }, [showRules]);
-
   // Mobile detection
   useEffect(() => {
     const checkMobile = () => {
@@ -4243,10 +4238,7 @@ const App: React.FC = () => {
               </button>
               <button 
                 className="btn" 
-                onClick={() => {
-                  console.log('Rules button clicked, setting showRules to true');
-                  setShowRules(true);
-                }}
+                onClick={() => setShowRules(true)}
                 style={{ height: '40px', flex: 1, margin: '0 5px' }}
               >
                 Rules
@@ -4314,10 +4306,10 @@ const App: React.FC = () => {
       {showRules && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowRules(false)} />
-          <div className="notification rules-popup" onClick={e => e.stopPropagation()} style={{ border: '5px solid red', backgroundColor: 'yellow', zIndex: 20000 }}>
-            <button onClick={() => setShowRules(false)} style={{ position: 'absolute', top: 10, right: 10, fontSize: 24, background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontWeight: 'bold', zIndex: 2 }}>×</button>
+          <div className="notification settings-dialog" style={{ display: 'block' }}>
             <h2><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> Game Rules</h2>
-            <div className="rules-content" style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10 }}>
+            
+            <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10 }}>
               <h3>Objective</h3>
               <p><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Ions") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
               
@@ -4336,7 +4328,10 @@ const App: React.FC = () => {
               <h3>Winning the Game</h3>
               <p>The main objective is to form a "Nexus" (a Vector of 4 Nodes) to win the game. If no player can form a Nexus and no more legal moves are possible, the player with the most Nodes wins. If both players have the same number of Nodes, the game is a draw.</p>
             </div>
-            <button onClick={() => setShowRules(false)} style={{ position: 'absolute', bottom: 10, right: 10, fontSize: 24, background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontWeight: 'bold', zIndex: 2 }}>×</button>
+
+            <div className="notification-buttons">
+              <button className="btn" onClick={() => setShowRules(false)}>Close</button>
+            </div>
           </div>
         </>
       )}
