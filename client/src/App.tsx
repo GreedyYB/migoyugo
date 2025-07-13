@@ -3947,7 +3947,16 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <header>
-        <h1>MIGOYUGO</h1>
+        <img 
+          src="/migoyugo=logo.png" 
+          alt="MigoYugo" 
+          style={{
+            height: '60px',
+            maxWidth: '300px',
+            objectFit: 'contain',
+            margin: '10px 0'
+          }}
+        />
         {(authState.isAuthenticated || authState.isGuest) && (
           <div style={{ 
             position: 'absolute', 
