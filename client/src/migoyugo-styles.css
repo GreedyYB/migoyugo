@@ -1314,7 +1314,7 @@ input:checked + .slider:before {
         overflow-y: auto !important;
         background: #fff;
         border-radius: 10px;
-        z-index: 5000 !important;
+        z-index: 10001 !important;
         padding: 30px 18px 18px 18px !important;
         display: flex;
         flex-direction: column;
@@ -2483,7 +2483,7 @@ html, body {
         overflow-y: auto !important;
         background: #fff;
         border-radius: 10px;
-        z-index: 5000 !important;
+        z-index: 10001 !important;
         padding: 30px 18px 18px 18px !important;
         display: flex;
         flex-direction: column;
