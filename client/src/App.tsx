@@ -1927,6 +1927,11 @@ const App: React.FC = () => {
     loadSavedSettings();
   }, []);
 
+  // Debug showRules state
+  useEffect(() => {
+    console.log('showRules state changed:', showRules);
+  }, [showRules]);
+
   // Mobile detection
   useEffect(() => {
     const checkMobile = () => {
@@ -4238,7 +4243,10 @@ const App: React.FC = () => {
               </button>
               <button 
                 className="btn" 
-                onClick={() => setShowRules(true)}
+                onClick={() => {
+                  console.log('Rules button clicked!');
+                  setShowRules(true);
+                }}
                 style={{ height: '40px', flex: 1, margin: '0 5px' }}
               >
                 Rules
