@@ -841,7 +841,7 @@ h1 {
 
 .rules-popup h2 {
     margin-bottom: 20px;
-    text-align: center; /* Center the KUYOKU title in rules popup */
+    text-align: center; /* Center the MigoYugo title in rules popup */
 }
 
 .rules-popup h3 {
@@ -2235,7 +2235,7 @@ html, body {
         right: 0;
     }
     
-    /* Adjust welcome message position on mobile to prevent overlap with KUYOKU title */
+    /* Adjust welcome message position on mobile to prevent overlap with MigoYugo title */
     header > div[style*="position: absolute"][style*="top: 20px"] {
         top: 26px !important;
     }
@@ -2862,7 +2862,7 @@ html, body {
 /* Force portrait orientation - hide content in landscape on mobile */
 @media (max-width: 600px) and (orientation: landscape) {
     body::before {
-        content: "To play Kuyoku, please rotate to portrait mode";
+        content: "To play MigoYugo, please rotate to portrait mode";
         position: fixed;
         top: 0;
         left: 0;

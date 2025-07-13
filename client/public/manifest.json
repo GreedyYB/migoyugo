@@ -1,7 +1,7 @@
 {
-  "short_name": "Kuyoku Game",
-  "name": "Kuyoku - Strategic Board Game",
-  "description": "Play Kuyoku, the strategic board game where you build vectors and nodes to create a nexus and win!",
+  "short_name": "MigoYugo Game",
+  "name": "MigoYugo - Strategic Board Game",
+  "description": "Play MigoYugo, the strategic board game where you build vectors and nodes to create a nexus and win!",
   "icons": [
     {
       "src": "favicon.png",

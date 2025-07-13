@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
-import './kuyoku-styles.css';
+import './migoyugo-styles.css';
 
 // Types
 interface Cell {
@@ -310,82 +310,49 @@ class TranspositionTable {
   }
 }
 
-// Opening Book - Strong opening principles for Kuyoku
-const openingBook = new Map<string, {row: number, col: number, weight: number}[]>([
+// Opening Book - Strong opening principles for MigoYugo
+const openingBook: { [key: string]: string[] } = {
   // Empty board - control center
-  ['', [
-    {row: 3, col: 3, weight: 100},
-    {row: 4, col: 4, weight: 100},
-    {row: 3, col: 4, weight: 90},
-    {row: 4, col: 3, weight: 90},
-    {row: 2, col: 3, weight: 80},
-    {row: 3, col: 2, weight: 80},
-    {row: 5, col: 4, weight: 80},
-    {row: 4, col: 5, weight: 80}
-  ]],
+  '': [
+    '3,3', '4,4', '3,4', '4,3', '2,3', '3,2', '5,4', '4,5'
+  ],
   
   // After white plays center - respond with center control
-  ['wI3,3', [
-    {row: 4, col: 4, weight: 100},
-    {row: 3, col: 4, weight: 95},
-    {row: 4, col: 3, weight: 95},
-    {row: 2, col: 2, weight: 85},
-    {row: 5, col: 5, weight: 85}
-  ]],
+  'wI3,3': [
+    '4,4', '3,4', '4,3', '2,2', '5,5'
+  ],
   
-  ['wI4,4', [
-    {row: 3, col: 3, weight: 100},
-    {row: 3, col: 4, weight: 95},
-    {row: 4, col: 3, weight: 95},
-    {row: 2, col: 2, weight: 85},
-    {row: 5, col: 5, weight: 85}
-  ]],
+  'wI4,4': [
+    '3,3', '3,4', '4,3', '2,2', '5,5'
+  ],
   
   // Diagonal responses
-  ['wI3,4', [
-    {row: 4, col: 3, weight: 100},
-    {row: 3, col: 3, weight: 90},
-    {row: 4, col: 4, weight: 90},
-    {row: 2, col: 5, weight: 85},
-    {row: 5, col: 2, weight: 85}
-  ]],
+  'wI3,4': [
+    '4,3', '3,3', '4,4', '2,5', '5,2'
+  ],
   
-  ['wI4,3', [
-    {row: 3, col: 4, weight: 100},
-    {row: 3, col: 3, weight: 90},
-    {row: 4, col: 4, weight: 90},
-    {row: 2, col: 5, weight: 85},
-    {row: 5, col: 2, weight: 85}
-  ]],
+  'wI4,3': [
+    '3,4', '3,3', '4,4', '2,5', '5,2'
+  ],
   
   // Second move responses (after AI plays center)
-  ['wI3,3,bI4,4', [
-    {row: 2, col: 2, weight: 100},
-    {row: 5, col: 5, weight: 100},
-    {row: 3, col: 4, weight: 90},
-    {row: 4, col: 3, weight: 90}
-  ]],
+  'wI3,3,bI4,4': [
+    '2,2', '5,5', '3,4', '4,3'
+  ],
   
-  ['wI4,4,bI3,3', [
-    {row: 2, col: 2, weight: 100},
-    {row: 5, col: 5, weight: 100},
-    {row: 3, col: 4, weight: 90},
-    {row: 4, col: 3, weight: 90}
-  ]],
+  'wI4,4,bI3,3': [
+    '2,2', '5,5', '3,4', '4,3'
+  ],
   
   // Edge opening responses
-  ['wI2,2', [
-    {row: 3, col: 3, weight: 100},
-    {row: 4, col: 4, weight: 95},
-    {row: 5, col: 5, weight: 90}
-  ]],
+  'wI2,2': [
+    '3,3', '4,4', '5,5'
+  ],
   
-  ['wI5,5', [
-    {row: 4, col: 4, weight: 100},
-    {row: 3, col: 3, weight: 95},
-    {row: 2, col: 2, weight: 90}
-  ]]
-]);
+  'wI5,5': [
+    '4,4', '3,3', '2,2'
+  ]
+};
 
 // Helper functions
 const getAllValidMoves = (board: (Cell | null)[][], playerColor: 'white' | 'black'): {row: number, col: number}[] => {
@@ -1392,7 +1359,7 @@ const setupVectorDemo = (container: HTMLElement, animationRef: React.MutableRefO
         });
         
         step++;
-        // Wait 3 seconds before fading everything
+        // Wait 3 seconds before fading
         animationRef.current = setTimeout(() => {
           // Fade out both ions and highlighting together
           Array.from(board.children).forEach(cell => {
@@ -1981,21 +1948,17 @@ const App: React.FC = () => {
 
   // Load saved settings from localStorage
   const loadSavedSettings = () => {
-    try {
-      // Always use classic theme, ignore saved theme
-      setCurrentTheme('classic');
-      const savedSoundEnabled = localStorage.getItem('kuyokuSoundEnabled');
-      const savedCustomColors = localStorage.getItem('kuyokuCustomColors');
+    // Always set theme to classic, ignore saved theme
+    setCurrentTheme('classic');
 
-      if (savedSoundEnabled !== null) {
-        setSoundEnabled(JSON.parse(savedSoundEnabled));
-      }
+    const savedSoundEnabled = localStorage.getItem('migoyugoSoundEnabled');
+    const savedCustomColors = localStorage.getItem('migoyugoCustomColors');
 
-      if (savedCustomColors) {
-        setCustomColors(JSON.parse(savedCustomColors));
-      }
-    } catch (error) {
-      console.error('Error loading saved settings:', error);
+    if (savedSoundEnabled) {
+      setSoundEnabled(JSON.parse(savedSoundEnabled));
+    }
+    if (savedCustomColors) {
+      setCustomColors(JSON.parse(savedCustomColors));
     }
   };
 
@@ -2037,24 +2000,25 @@ const App: React.FC = () => {
   // Handle theme change
   const handleThemeChange = (theme: string) => {
     setCurrentTheme(theme);
-    localStorage.setItem('kuyokuTheme', theme);
+    localStorage.setItem('migoyugoTheme', theme);
   };
 
   // Handle sound toggle
   const handleSoundToggle = (enabled: boolean) => {
     setSoundEnabled(enabled);
-    localStorage.setItem('kuyokuSoundEnabled', JSON.stringify(enabled));
+    localStorage.setItem('migoyugoSoundEnabled', JSON.stringify(enabled));
   };
 
   // Handle custom color change
   const handleCustomColorChange = (colorType: keyof typeof customColors, color: string) => {
     const newColors = { ...customColors, [colorType]: color };
     setCustomColors(newColors);
-    localStorage.setItem('kuyokuCustomColors', JSON.stringify(newColors));
+    localStorage.setItem('migoyugoCustomColors', JSON.stringify(newColors));
   };
 
   // Reset settings to defaults
   const resetSettings = () => {
+    // Reset state to default values
     setCurrentTheme('classic');
     setSoundEnabled(true);
     setCustomColors({
@@ -2062,17 +2026,17 @@ const App: React.FC = () => {
       blackIon: '#2c3e50',
       nodeColor: '#e74c3c',
       boardColor: '#d1e6f9',
-      hoverColor: '#b3d4fc', // classic hover color
-      lastMoveColor: 'rgba(46, 204, 113, 0.2)' // classic last move color
+      hoverColor: '#b3d4fc',
+      lastMoveColor: 'rgba(46, 204, 113, 0.2)'
     });
-    
-    localStorage.removeItem('kuyokuTheme');
-    localStorage.removeItem('kuyokuSoundEnabled');
-    localStorage.removeItem('kuyokuCustomColors');
-    
-    // Reset document theme and clear any custom colors
-    document.documentElement.setAttribute('data-theme', 'classic');
-    clearCustomColors();
+  
+    // Remove from localStorage
+    localStorage.removeItem('migoyugoTheme');
+    localStorage.removeItem('migoyugoSoundEnabled');
+    localStorage.removeItem('migoyugoCustomColors');
+  
+    // Show confirmation
+    showToast('Settings have been reset to default.');
   };
 
   // Sound function
@@ -3303,8 +3267,13 @@ const App: React.FC = () => {
   // Tutorial steps configuration
   const tutorialSteps = [
     {
+      title: "Welcome to the Tutorial!",
+      message: "This quick tutorial will teach you everything you need to know to play MigoYugo.",
+      demo: null
+    },
+    {
       title: "Basic Gameplay",
-      message: "Kuyoku is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing ions on empty cells.",
+      message: "MigoYugo is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing ions on empty cells.",
       demo: "board"
     },
     {
@@ -3352,7 +3321,7 @@ const App: React.FC = () => {
     },
     {
       title: "Ready to Play!",
-      message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Vectors or block your opponent?<br>Will you go for a Nexus or fill the board and see who ends up with the most Nodes?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing Kuyoku!",
+      message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Vectors or block your opponent?<br>Will you go for a Nexus or fill the board and see who ends up with the most Nodes?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing MigoYugo!",
       demo: null
     }
   ];
@@ -3978,7 +3947,7 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <header>
-        <h1>Kuyoku</h1>
+        <h1>MIGOYUGO</h1>
         {(authState.isAuthenticated || authState.isGuest) && (
           <div style={{ 
             position: 'absolute', 
@@ -4333,38 +4302,26 @@ const App: React.FC = () => {
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowRules(false)} />
           <div className="notification rules-popup" style={{ display: 'block' }}>
-            <h2>Kuyoku Game Rules</h2>
-            
-            <h3>Overview</h3>
-            <p>Kuyoku is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Ions") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
-            
-            <h3>Core Rules</h3>
-            <ul>
-              <li>Players take turns placing Ions (white or black) on an 8×8 board.</li>
-              <li>White always moves first.</li>
-              <li>The goal is to form "Vectors" (unbroken lines of exactly 4 Ions of the same color) horizontally, vertically, or diagonally.</li>
-              <li>Players cannot form lines longer than 4 Ions of the same color.</li>
-              <li>When a Vector is formed, the last Ion placed becomes a "Node" (marked with a red indicator) that stays on the board permanently.</li>
-              <li>All other Ions in the Vector are removed from the board (except for existing Nodes).</li>
-            </ul>
-            
-            <h3>Node Values</h3>
-            <p>Creating multiple Vectors simultaneously creates more valuable Nodes:</p>
-            <ul>
-              <li>1 Vector = Standard Node (red dot)</li>
-              <li>2 Vectors at once = Double Node (red horizontal oval)</li>
-              <li>3 Vectors at once = Triple Node (red triangle)</li>
-              <li>4 Vectors at once = Quadruple Node (red diamond)</li>
-            </ul>
-            
-            <h3>Winning the Game</h3>
-            <ul>
-              <li>The main objective is to form a "Nexus" (a Vector of 4 Nodes) to win the game.</li>
-              <li>If no player can form a Nexus and no more legal moves are possible, the player with the most Nodes wins.</li>
-              <li>If both players have the same number of Nodes, the game is a draw.</li>
-            </ul>
-            
-            <button className="btn" onClick={() => setShowRules(false)}>Close Rules</button>
+            <h2>MigoYugo Game Rules</h2>
+            <div className="rules-content">
+              <h3>Objective</h3>
+              <p>MigoYugo is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Ions") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
+              
+              <h3>Gameplay</h3>
+              <p>Players take turns placing Ions (white or black) on an 8×8 board. The goal is to form "Vectors" (unbroken lines of exactly 4 Ions of the same color) horizontally, vertically, or diagonally. Players cannot form lines longer than 4 Ions of the same color. When a Vector is formed, the last Ion placed becomes a "Node" (marked with a red indicator) that stays on the board permanently. All other Ions in the Vector are removed from the board (except for existing Nodes).</p>
+              
+              <h3>Node Values</h3>
+              <p>Creating multiple Vectors simultaneously creates more valuable Nodes:</p>
+              <ul>
+                <li>1 Vector = Standard Node (red dot)</li>
+                <li>2 Vectors at once = Double Node (red horizontal oval)</li>
+                <li>3 Vectors at once = Triple Node (red triangle)</li>
+                <li>4 Vectors at once = Quadruple Node (red diamond)</li>
+              </ul>
+              
+              <h3>Winning the Game</h3>
+              <p>The main objective is to form a "Nexus" (a Vector of 4 Nodes) to win the game. If no player can form a Nexus and no more legal moves are possible, the player with the most Nodes wins. If both players have the same number of Nodes, the game is a draw.</p>
+            </div>
           </div>
         </>
       )}
@@ -4393,7 +4350,7 @@ const App: React.FC = () => {
                 <option value="high-contrast">High Contrast</option>
                 <option value="nature">Nature</option>
                                             <option value="felt">Felt</option>
-                  <option value="custom">Custom</option>
+                <option value="custom">Custom</option>
               </select>
             </div>
               
@@ -5391,7 +5348,7 @@ const App: React.FC = () => {
           animation: 'slideIn 0.3s ease-out'
         }}>
           <div style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>
-            🎮 Install Kuyoku Game
+            🎮 Install MigoYugo Game
           </div>
           <div style={{ marginBottom: '15px', fontSize: '14px', opacity: 0.9 }}>
             Add to your home screen for fullscreen play with no browser bars!
