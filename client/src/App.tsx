@@ -3948,7 +3948,7 @@ const App: React.FC = () => {
     <div className="App">
       <header>
         <img 
-          src="/migoyugo=logo.png" 
+          src="/migoyugo-logo.png" 
           alt="MigoYugo" 
           style={{
             height: '60px',
