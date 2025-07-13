@@ -24,7 +24,7 @@
     --black-ion: #2c3e50;
     --node-color: #e74c3c;
     --board-color: #d1e6f9;
-    --board-hover: #b3d4fc;
+    --board-hover: #a8c3e8;
 }
 
 /* Dark Theme */
@@ -281,7 +281,7 @@ h1 {
 }
 
 .cell:hover {
-    background-color: var(--hover-color) !important;
+    background-color: var(--board-hover) !important;
 }
 
 /* Nexus cell styling - Animated Border */
@@ -1660,7 +1660,7 @@ input:checked + .slider:before {
 }
 
 .game-cell:hover {
-    background-color: var(--hover-color) !important;
+    background-color: var(--board-hover) !important;
 }
 
 .game-ion {

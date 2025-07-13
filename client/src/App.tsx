@@ -1847,7 +1847,7 @@ const App: React.FC = () => {
     blackIon: '#2c3e50',
     nodeColor: '#e74c3c',
     boardColor: '#d1e6f9',
-    hoverColor: '#b3d4fc', // classic hover color
+    hoverColor: '#a8c3e8', // classic hover color (darker than board)
     lastMoveColor: 'rgba(46, 204, 113, 0.2)' // classic last move color
   });
 
@@ -2026,7 +2026,7 @@ const App: React.FC = () => {
       blackIon: '#2c3e50',
       nodeColor: '#e74c3c',
       boardColor: '#d1e6f9',
-      hoverColor: '#b3d4fc',
+      hoverColor: '#a8c3e8',
       lastMoveColor: 'rgba(46, 204, 113, 0.2)'
     });
   
