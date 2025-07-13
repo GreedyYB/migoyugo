@@ -3954,7 +3954,8 @@ const App: React.FC = () => {
             height: '60px',
             maxWidth: '300px',
             objectFit: 'contain',
-            margin: '10px 0'
+            margin: '10px auto',
+            display: 'block'
           }}
         />
         {(authState.isAuthenticated || authState.isGuest) && (
