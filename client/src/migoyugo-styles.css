@@ -280,8 +280,11 @@ h1 {
     background-color: var(--board-color);
 }
 
-.cell:hover {
-    background-color: var(--board-hover) !important;
+/* Only apply hover effects on devices with hover capability (desktop) */
+@media (hover: hover) {
+    .cell:hover {
+        background-color: var(--board-hover) !important;
+    }
 }
 
 /* Nexus cell styling - Animated Border */
@@ -1571,8 +1574,11 @@ input:checked + .slider:before {
     height: 100%;
 }
 
-.tutorial-demo-cell:hover {
-    background-color: #b3d4fc;
+/* Only apply hover effects on devices with hover capability (desktop) */
+@media (hover: hover) {
+    .tutorial-demo-cell:hover {
+        background-color: #b3d4fc;
+    }
 }
 
 .tutorial-demo-ion {
@@ -1659,8 +1665,11 @@ input:checked + .slider:before {
     transition: background-color 0.2s;
 }
 
-.game-cell:hover {
-    background-color: var(--board-hover) !important;
+/* Only apply hover effects on devices with hover capability (desktop) */
+@media (hover: hover) {
+    .game-cell:hover {
+        background-color: var(--board-hover) !important;
+    }
 }
 
 .game-ion {
@@ -2894,6 +2903,15 @@ html, body {
     
     header {
         display: none !important;
+    }
+}
+
+/* Disable hover effects on mobile devices */
+@media (max-width: 600px) {
+    .cell:hover,
+    .game-cell:hover,
+    .tutorial-demo-cell:hover {
+        background-color: var(--board-color) !important;
     }
 }
 
