@@ -775,12 +775,11 @@ h1 {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     background: rgba(0, 0, 0, 0.5);
     z-index: 10000;
-    display: none;
-    pointer-events: auto;
+    display: block;
 }
 
 .toast {
@@ -831,12 +830,20 @@ h1 {
 }
 
 .rules-popup {
-    width: var(--board-size);
-    max-width: var(--board-size);
+    width: 96vw;
+    max-width: 500px;
     max-height: 80vh;
     overflow-y: auto;
     padding: 30px;
     text-align: left;
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 10001;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .rules-popup h2 {
