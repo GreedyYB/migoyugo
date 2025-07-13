@@ -1,7 +1,7 @@
 import sys
 sys.path.append('./alpha-zero-general')
 import numpy as np
-from .FluxGame import KuyokuGame
+from .migoyugoGame import migoyugoGame
 from othello.pytorch.NNet import NNetWrapper
 from .MCTS import MCTS
 
@@ -32,7 +32,7 @@ def display(board):
         print(' '.join(symbol(x) for x in row))
     print()
 
-g = KuyokuGame(8)
+g = migoyugoGame(8)
 nnet = NNetWrapper(g)
 nnet.load_checkpoint('./temp/', 'best.pth.tar')  # Use 'best.pth.tar' if it exists, otherwise 'temp.pth.tar'
 

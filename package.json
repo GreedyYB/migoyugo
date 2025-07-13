@@ -1,7 +1,7 @@
 {
-  "name": "flux-game-react",
+  "name": "migoyugo-react",
   "version": "1.0.0",
-  "description": "Flux strategic board game built with React and Node.js",
+  "description": "migoyugo strategic board game built with React and Node.js",
   "main": "server/index.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
@@ -32,7 +32,7 @@
     "npm": "9.x"
   },
   "keywords": [
-    "flux",
+    "migoyugo",
     "board-game",
     "react",
     "nodejs",

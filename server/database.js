@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const path = require('path');
 
 // Create database connection
-const dbPath = path.join(__dirname, 'flux_game.db');
+const dbPath = path.join(__dirname, 'migoyugo_game.db');
 const db = new sqlite3.Database(dbPath);
 
 // Initialize database tables

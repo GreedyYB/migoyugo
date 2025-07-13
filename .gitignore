@@ -96,7 +96,7 @@ Thumbs.db
 .railway/
 
 # Original game files (keeping for reference but not needed in production)
-flux-script.js
+migoyugo-script.js
 sounds.js
 tutorial-demos.js
 tutorial.js

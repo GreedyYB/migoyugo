@@ -181,7 +181,7 @@ app.get('/api/auth/stats', authenticateToken, async (req, res) => {
 });
 
 // Admin routes - Simple password protection
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'flux-admin-2024';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'migoyugo-admin-2024';
 
 function adminAuth(req, res, next) {
   const { password } = req.query;
@@ -243,7 +243,7 @@ app.get('/admin', (req, res) => {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Flux Game Admin Dashboard</title>
+    <title>migoyugo Game Admin Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * {
@@ -472,7 +472,7 @@ app.get('/admin', (req, res) => {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎮 Flux Game Admin Dashboard</h1>
+            <h1>🎮 migoyugo Game Admin Dashboard</h1>
             <p>Monitor your game's users, statistics, and performance</p>
         </div>
         

@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const { getUserById } = require('./database');
 
 // JWT secret - in production, this should be an environment variable
-const JWT_SECRET = process.env.JWT_SECRET || 'flux-game-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'migoyugo-game-secret-key-2024';
 
 // Generate JWT token
 function generateToken(user) {

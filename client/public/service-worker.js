@@ -1,7 +1,7 @@
 // Use timestamp or build hash for cache versioning
-const CACHE_NAME = `flux-game-v${Date.now()}`;
-const STATIC_CACHE = `flux-static-v${Date.now()}`;
-const DYNAMIC_CACHE = `flux-dynamic-v${Date.now()}`;
+const CACHE_NAME = `migoyugo-game-v${Date.now()}`;
+const STATIC_CACHE = `migoyugo-static-v${Date.now()}`;
+const DYNAMIC_CACHE = `migoyugo-dynamic-v${Date.now()}`;
 
 const urlsToCache = [
   '/',

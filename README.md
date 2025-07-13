@@ -1,4 +1,4 @@
-# migoyugo 
+# migoyugo
 
 A strategic board game built with React and Node.js.
 
@@ -26,7 +26,7 @@ This line was added to test automatic GitHub pushing.
 
 ## Game Overview
 
-Flux is a strategic board game played on an 8x8 grid between two players: White and Black. Players place "Ions" to form "Vectors" (lines of exactly 4), which create "Nodes" that remain on the board. The goal is to form a "Nexus" (4 Nodes in a line) to win.
+migoyugo is a strategic board game played on an 8x8 grid between two players: White and Black. Players place "Ions" to form "Vectors" (lines of exactly 4), which create "Nodes" that remain on the board. The goal is to form a "Nexus" (4 Nodes in a line) to win.
 
 ## Features
 
@@ -57,7 +57,7 @@ Flux is a strategic board game played on an 8x8 grid between two players: White 
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd flux-game-react
+cd migoyugo-react
 ```
 
 2. Install server dependencies:
@@ -155,11 +155,11 @@ No additional environment variables are required for basic functionality. The ap
 ## Project Structure
 
 ```
-flux-game-react/
+migoyugo-react/
 ├── client/                 # React frontend
 │   ├── src/
 │   │   ├── App.tsx        # Main React component
-│   │   ├── flux-styles.css # Original game styles
+│   │   ├── migoyugo-styles.css # Original game styles
 │   │   └── ...
 │   └── package.json
 ├── server/                 # Node.js backend
