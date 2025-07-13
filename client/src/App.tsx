@@ -4271,8 +4271,12 @@ const App: React.FC = () => {
                 )}
               </div>
               <div className="tutorial-navigation">
-                {tutorialStep > 0 && (
+                {tutorialStep > 0 ? (
                   <button className="btn" onClick={prevTutorialStep}>
+                    Previous
+                  </button>
+                ) : (
+                  <button className="btn" style={{ visibility: 'hidden' }}>
                     Previous
                   </button>
                 )}
