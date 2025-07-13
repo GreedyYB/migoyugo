@@ -1927,6 +1927,11 @@ const App: React.FC = () => {
     loadSavedSettings();
   }, []);
 
+  // Debug rules modal
+  useEffect(() => {
+    console.log('showRules state changed to:', showRules);
+  }, [showRules]);
+
   // Mobile detection
   useEffect(() => {
     const checkMobile = () => {
@@ -4238,7 +4243,10 @@ const App: React.FC = () => {
               </button>
               <button 
                 className="btn" 
-                onClick={() => setShowRules(true)}
+                onClick={() => {
+                  console.log('Rules button clicked, setting showRules to true');
+                  setShowRules(true);
+                }}
                 style={{ height: '40px', flex: 1, margin: '0 5px' }}
               >
                 Rules
@@ -4306,7 +4314,7 @@ const App: React.FC = () => {
       {showRules && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowRules(false)} />
-          <div className="notification rules-popup" onClick={e => e.stopPropagation()}>
+          <div className="notification rules-popup" onClick={e => e.stopPropagation()} style={{ border: '5px solid red', backgroundColor: 'yellow', zIndex: 20000 }}>
             <button onClick={() => setShowRules(false)} style={{ position: 'absolute', top: 10, right: 10, fontSize: 24, background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontWeight: 'bold', zIndex: 2 }}>×</button>
             <h2><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> Game Rules</h2>
             <div className="rules-content" style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10 }}>
