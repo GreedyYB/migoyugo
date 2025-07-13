@@ -1,4 +1,4 @@
-# FLUX Game
+# migoyugo 
 
 A strategic board game built with React and Node.js.
 
