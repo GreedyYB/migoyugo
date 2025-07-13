@@ -4305,7 +4305,6 @@ const App: React.FC = () => {
       {/* Rules popup */}
       {showRules && (
         <>
-          <div className="overlay" style={{ display: 'block' }} onClick={() => setShowRules(false)} />
           <div className="notification rules-popup" onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowRules(false)} style={{ position: 'absolute', top: 10, right: 10, fontSize: 24, background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontWeight: 'bold', zIndex: 2 }}>×</button>
             <h2><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> Game Rules</h2>

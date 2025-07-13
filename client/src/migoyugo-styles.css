@@ -780,6 +780,7 @@ h1 {
     background: transparent;
     z-index: 10000;
     display: block;
+    pointer-events: none;
 }
 
 .toast {
