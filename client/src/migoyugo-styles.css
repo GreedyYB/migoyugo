@@ -1028,7 +1028,7 @@ input:checked + .slider:before {
     background-color: #d1e6f9; /* Use exact hex code for your cell color */
 }
 
-.ion.new-ion, .node.new-ion {
+.ion.new-ion {
     animation: bounce-in 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     animation-fill-mode: both;
 }

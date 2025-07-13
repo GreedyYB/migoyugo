@@ -3610,7 +3610,7 @@ const App: React.FC = () => {
             {/* If it's a node, also render the node indicator on top */}
             {cell.isNode && (
               <div 
-                className={`node ${cell.nodeType || 'standard'}${isNewlyPlaced ? ' new-ion' : ''}`}
+                className={`node ${cell.nodeType || 'standard'}`}
                 title={`Node type: ${cell.nodeType || 'standard'}`}
               />
             )}
