@@ -3267,13 +3267,8 @@ const App: React.FC = () => {
   // Tutorial steps configuration
   const tutorialSteps = [
     {
-      title: "Welcome to the Tutorial!",
-      message: "This quick tutorial will teach you everything you need to know to play migoyugo.",
-      demo: null
-    },
-    {
       title: "Basic Gameplay",
-      message: "migoyugo is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing ions on empty cells.",
+      message: "<span style=\"color: red; font-weight: bold;\">migoyugo</span> is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing ions on empty cells.",
       demo: "board"
     },
     {
@@ -3321,7 +3316,7 @@ const App: React.FC = () => {
     },
     {
       title: "Ready to Play!",
-      message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Vectors or block your opponent?<br>Will you go for a Nexus or fill the board and see who ends up with the most Nodes?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing migoyugo!",
+      message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Vectors or block your opponent?<br>Will you go for a Nexus or fill the board and see who ends up with the most Nodes?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing <span style=\"color: red; font-weight: bold;\">migoyugo</span>!",
       demo: null
     }
   ];
@@ -4311,11 +4306,12 @@ const App: React.FC = () => {
       {showRules && (
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowRules(false)} />
-          <div className="notification rules-popup" style={{ display: 'block' }}>
-            <h2>migoyugo Game Rules</h2>
+          <div className="notification rules-popup" style={{ display: 'block', position: 'relative' }}>
+            <button onClick={() => setShowRules(false)} style={{ position: 'absolute', top: 10, right: 10, fontSize: 24, background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontWeight: 'bold', zIndex: 2 }}>×</button>
+            <h2><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> Game Rules</h2>
             <div className="rules-content">
               <h3>Objective</h3>
-              <p>migoyugo is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Ions") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
+              <p><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Ions") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
               
               <h3>Gameplay</h3>
               <p>Players take turns placing Ions (white or black) on an 8×8 board. The goal is to form "Vectors" (unbroken lines of exactly 4 Ions of the same color) horizontally, vertically, or diagonally. Players cannot form lines longer than 4 Ions of the same color. When a Vector is formed, the last Ion placed becomes a "Node" (marked with a red indicator) that stays on the board permanently. All other Ions in the Vector are removed from the board (except for existing Nodes).</p>
@@ -4332,6 +4328,7 @@ const App: React.FC = () => {
               <h3>Winning the Game</h3>
               <p>The main objective is to form a "Nexus" (a Vector of 4 Nodes) to win the game. If no player can form a Nexus and no more legal moves are possible, the player with the most Nodes wins. If both players have the same number of Nodes, the game is a draw.</p>
             </div>
+            <button onClick={() => setShowRules(false)} style={{ position: 'absolute', bottom: 10, right: 10, fontSize: 24, background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontWeight: 'bold', zIndex: 2 }}>×</button>
           </div>
         </>
       )}
