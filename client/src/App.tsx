@@ -1921,6 +1921,10 @@ const App: React.FC = () => {
   // Tutorial animation ref
   const animationRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Animation state for ion placement and removal
+  const [newlyPlacedIons, setNewlyPlacedIons] = useState<Set<string>>(new Set());
+  const [fadingIons, setFadingIons] = useState<Set<string>>(new Set());
+
   // Load settings from localStorage on component mount
   useEffect(() => {
     setCurrentTheme('classic'); // Always force classic theme
@@ -2327,15 +2331,38 @@ const App: React.FC = () => {
           playSound('ion'); // Regular ion placement
         }
 
-        setGameState(prev => ({
-          ...prev,
-          board: moveData.board,
-          currentPlayer: moveData.currentPlayer,
-          scores: moveData.scores,
-          lastMove: { row: moveData.row, col: moveData.col, player: moveData.player },
-          gameStatus: moveData.gameOver ? 'finished' : 'active',
-          nexusLine: moveData.nexus || null
-        }));
+        // Trigger animations for online moves
+        setGameState(prev => {
+          // Calculate removed ions by comparing old and new boards
+          if (moveData.vectors > 0) {
+            const removedCells: {row: number, col: number}[] = [];
+            for (let row = 0; row < 8; row++) {
+              for (let col = 0; col < 8; col++) {
+                // If there was an ion here before but not now (except the new placement)
+                if (prev.board[row][col] && !moveData.board[row][col] && 
+                    !(row === moveData.row && col === moveData.col)) {
+                  removedCells.push({row, col});
+                }
+              }
+            }
+            if (removedCells.length > 0) {
+              addFadeOutAnimation(removedCells);
+            }
+          }
+          
+          // Trigger bounce-in animation for newly placed ion
+          addNewIonAnimation(moveData.row, moveData.col);
+
+          return {
+            ...prev,
+            board: moveData.board,
+            currentPlayer: moveData.currentPlayer,
+            scores: moveData.scores,
+            lastMove: { row: moveData.row, col: moveData.col, player: moveData.player },
+            gameStatus: moveData.gameOver ? 'finished' : 'active',
+            nexusLine: moveData.nexus || null
+          };
+        });
 
         // Add to move history
         setMoveHistory(prev => [
@@ -2806,7 +2833,15 @@ const App: React.FC = () => {
     
     // Check for vectors
     const vectors = checkForVectors(newBoard, row, col, currentPlayer);
-    const { nodeType } = processVectors(newBoard, vectors, row, col);
+    const { nodeType, removedCells } = processVectors(newBoard, vectors, row, col);
+    
+    // Trigger fade-out animation for removed ions
+    if (removedCells.length > 0) {
+      addFadeOutAnimation(removedCells);
+    }
+    
+    // Trigger bounce-in animation for newly placed ion
+    addNewIonAnimation(row, col);
     
     // If vectors were formed, make this cell a node
     if (nodeType) {
@@ -3256,6 +3291,10 @@ const App: React.FC = () => {
       const totalSeconds = minutesPerPlayer * 60;
       setTimers({ white: totalSeconds, black: totalSeconds });
     }
+    
+    // Clear any active animations
+    setNewlyPlacedIons(new Set());
+    setFadingIons(new Set());
   };
 
   const getNotation = (col: number, row: number): string => {
@@ -3347,6 +3386,10 @@ const App: React.FC = () => {
     
     setOriginalGameState({ ...gameState });
     setIsReviewMode(true);
+    
+    // Clear any active animations
+    setNewlyPlacedIons(new Set());
+    setFadingIons(new Set());
     
     // Start at the last move (final position) instead of move 0
     const finalMoveIndex = moveHistory.length;
@@ -3507,11 +3550,50 @@ const App: React.FC = () => {
     }
   }, [isReviewMode, holdScrollInterval]);
 
+  // Helper functions for animation management
+  const addNewIonAnimation = (row: number, col: number) => {
+    // Don't animate in review mode
+    if (isReviewMode) return;
+    
+    const cellKey = `${row}-${col}`;
+    setNewlyPlacedIons(prev => new Set([...Array.from(prev), cellKey]));
+    
+    // Remove the animation class after 200ms (duration of bounce-in animation)
+    setTimeout(() => {
+      setNewlyPlacedIons(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(cellKey);
+        return newSet;
+      });
+    }, 200);
+  };
+
+  const addFadeOutAnimation = (cellsToFade: {row: number, col: number}[]) => {
+    // Don't animate in review mode
+    if (isReviewMode) return;
+    
+    const cellKeys = cellsToFade.map(({row, col}) => `${row}-${col}`);
+    setFadingIons(prev => new Set([...Array.from(prev), ...cellKeys]));
+    
+    // Remove the animation class after 200ms (duration of fade-out animation)
+    setTimeout(() => {
+      setFadingIons(prev => {
+        const newSet = new Set(prev);
+        cellKeys.forEach(key => newSet.delete(key));
+        return newSet;
+      });
+    }, 200);
+  };
+
   const renderCell = (row: number, col: number) => {
     const cell = gameState.board[row][col];
+    const cellKey = `${row}-${col}`;
     // Only highlight the current last move
     const isLastMove = gameState.lastMove?.row === row && gameState.lastMove?.col === col;
     const isNexusCell = gameState.nexusLine?.some(pos => pos.row === row && pos.col === col) || false;
+    const isNewlyPlaced = newlyPlacedIons.has(cellKey);
+    const isFading = fadingIons.has(cellKey);
+    
     return (
       <div
         key={`${row}-${col}`}
@@ -3523,12 +3605,12 @@ const App: React.FC = () => {
         {row === 7 && <div className="cell-col-label">{String.fromCharCode(97 + col)}</div>}
         {cell && (
           <>
-            {/* Always render the ion (colored piece) */}
-            <div className={`ion ${cell.color}`} />
-            {/* If it's a node, also render the node indicator on top (no animation to avoid transform conflicts) */}
+            {/* Always render the ion (colored piece) with animation classes */}
+            <div className={`ion ${cell.color}${isNewlyPlaced ? ' new-ion' : ''}${isFading ? ' fade-out' : ''}`} />
+            {/* If it's a node, also render the node indicator on top */}
             {cell.isNode && (
               <div 
-                className={`node ${cell.nodeType || 'standard'}`}
+                className={`node ${cell.nodeType || 'standard'}${isNewlyPlaced ? ' new-ion' : ''}`}
                 title={`Node type: ${cell.nodeType || 'standard'}`}
               />
             )}
