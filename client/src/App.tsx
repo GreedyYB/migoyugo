@@ -134,7 +134,7 @@ const processVectors = (board: (Cell | null)[][], vectors: any[], row: number, c
   
   const removedCells: {row: number, col: number}[] = [];
   
-  // Remove ions from vectors (except nodes and the new placement)
+        // Remove dots from vectors (except nodes and the new placement)
   vectors.forEach(vector => {
     vector.forEach((cell: {row: number, col: number}) => {
       if (!(cell.row === row && cell.col === col) && 
@@ -680,9 +680,9 @@ const minimax = (
 // Global transposition table instance
 const globalTransTable = new TranspositionTable();
 
-// Check for "adjacent nodes + ion sacrifice" threat pattern (the tactic user discovered)
+  // Check for "adjacent nodes + dot sacrifice" threat pattern (the tactic user discovered)
 const checkAdjacentNodeThreat = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black'): boolean => {
-  // This detects the pattern: Node-Node-Empty-Ion where Ion can sacrifice to create double threat
+      // This detects the pattern: Node-Node-Empty-Dot where Dot can sacrifice to create double threat
   const directions = [
     [-1, 0], [1, 0],   // vertical
     [0, -1], [0, 1],   // horizontal  
@@ -691,8 +691,8 @@ const checkAdjacentNodeThreat = (board: (Cell | null)[][], row: number, col: num
   ];
   
   for (const [dr, dc] of directions) {
-    // Check if placing ion here creates the dangerous pattern
-    // Pattern: [Node][Node][Empty][Ion-position][Empty] or [Empty][Ion-position][Empty][Node][Node]
+          // Check if placing dot here creates the dangerous pattern
+      // Pattern: [Node][Node][Empty][Dot-position][Empty] or [Empty][Dot-position][Empty][Node][Node]
     
     // Look in one direction for: Node-Node-Empty sequence
     let r = row + dr;
@@ -711,7 +711,7 @@ const checkAdjacentNodeThreat = (board: (Cell | null)[][], row: number, col: num
         if (r >= 0 && r < 8 && c >= 0 && c < 8 && 
             board[r][c]?.color === playerColor && board[r][c]?.isNode) {
           
-          // Found pattern: [Ion][Empty][Node][Node] - this creates double threat
+          // Found pattern: [Dot][Empty][Node][Node] - this creates double threat
           return true;
         }
       }
@@ -732,7 +732,7 @@ const checkAdjacentNodeThreat = (board: (Cell | null)[][], row: number, col: num
         if (r >= 0 && r < 8 && c >= 0 && c < 8 && 
             board[r][c]?.color === playerColor && board[r][c]?.isNode) {
           
-          // Found pattern: [Node][Node][Empty][Ion] - this creates double threat
+          // Found pattern: [Node][Node][Empty][Dot] - this creates double threat
           return true;
         }
       }
@@ -817,7 +817,7 @@ const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): nu
           }
         }
         
-        // NEW: Check for "adjacent nodes + ion sacrifice" threat pattern
+        // NEW: Check for "adjacent nodes + dot sacrifice" threat pattern
         const adjacentNodeThreat = checkAdjacentNodeThreat(board, r, c, opponentColor);
         if (adjacentNodeThreat) {
           score += 1800; // High priority - this creates double threats
@@ -942,6 +942,172 @@ const evaluateAI4Move = (board: (Cell | null)[][], row: number, col: number): nu
   return score;
 };
 
+// ===== TACTICAL PATTERN DETECTION FOR AI-3 =====
+
+// Helper function to check if a cell is "empty" (no node present, even if ion exists)
+const isEmptyCell = (board: (Cell | null)[][], row: number, col: number): boolean => {
+  return !board[row][col] || !board[row][col]?.isNode;
+};
+
+// Helper function to get connected pieces in a direction
+const getConnectedPieces = (board: (Cell | null)[][], startRow: number, startCol: number, 
+                           direction: [number, number], color: 'white' | 'black'): {row: number, col: number, isNode: boolean}[] => {
+  const [dr, dc] = direction;
+  const pieces: {row: number, col: number, isNode: boolean}[] = [];
+  let emptyGaps = 0;
+  
+  let r = startRow;
+  let c = startCol;
+  
+  while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+    const cell = board[r][c];
+    
+    if (cell && cell.color === color) {
+      pieces.push({row: r, col: c, isNode: cell.isNode || false});
+      emptyGaps = 0; // Reset gap counter when we find a piece
+    } else if (!cell) {
+      emptyGaps++;
+      if (emptyGaps > 2) break; // Stop if more than 2 consecutive empty cells
+    } else {
+      // Opponent piece blocks the line
+      break;
+    }
+    
+    r += dr;
+    c += dc;
+  }
+  
+  return pieces;
+};
+
+// 1. THREE NODE THREAT: Detect if opponent has 3 connected nodes with 1 empty gap
+const detectThreeNodeThreat = (board: (Cell | null)[][], opponentColor: 'white' | 'black'): {row: number, col: number}[] => {
+  const threats: {row: number, col: number}[] = [];
+  const directions = [[-1, 0], [0, 1], [1, 1], [1, 0]]; // All 4 main directions
+  
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      for (const [dr, dc] of directions) {
+        // Check for pattern: Node-Node-Empty-Node or Node-Empty-Node-Node or Empty-Node-Node-Node
+        const positions = [];
+        for (let i = 0; i < 4; i++) {
+          const r = row + i * dr;
+          const c = col + i * dc;
+          if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            positions.push({row: r, col: c, cell: board[r][c]});
+          }
+        }
+        
+        if (positions.length === 4) {
+          const nodes = positions.filter(p => p.cell?.color === opponentColor && p.cell?.isNode);
+          const empties = positions.filter(p => isEmptyCell(board, p.row, p.col));
+          
+          // Check if we have exactly 3 nodes and 1 empty in the line
+          if (nodes.length === 3 && empties.length === 1) {
+            threats.push({row: empties[0].row, col: empties[0].col});
+          }
+        }
+      }
+    }
+  }
+  
+  return threats;
+};
+
+// 2. NEXUS FORK: Detect if opponent can create double threat by placing node in center
+const detectNexusFork = (board: (Cell | null)[][], opponentColor: 'white' | 'black'): {row: number, col: number}[] => {
+  const forkThreats: {row: number, col: number}[] = [];
+  const directions = [[-1, 0], [0, 1], [1, 1], [1, 0]];
+  
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (!isEmptyCell(board, row, col)) continue;
+      
+      for (const [dr, dc] of directions) {
+        // Check for pattern: Node-Empty-Node-Empty-[THIS CELL]-Empty-Node
+        // This would create two threats if opponent places node here
+        
+        let nodesOnLeft = 0;
+        let nodesOnRight = 0;
+        
+        // Check left side (2 positions)
+        for (let i = 1; i <= 2; i++) {
+          const r = row - i * dr;
+          const c = col - i * dc;
+          if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            const cell = board[r][c];
+            if (cell?.color === opponentColor && cell?.isNode) {
+              nodesOnLeft++;
+            }
+          }
+        }
+        
+        // Check right side (2 positions)
+        for (let i = 1; i <= 2; i++) {
+          const r = row + i * dr;
+          const c = col + i * dc;
+          if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            const cell = board[r][c];
+            if (cell?.color === opponentColor && cell?.isNode) {
+              nodesOnRight++;
+            }
+          }
+        }
+        
+        // If placing a node here would connect with nodes on both sides
+        // and create 3+ connected nodes, it's a fork threat
+        if (nodesOnLeft >= 1 && nodesOnRight >= 1 && (nodesOnLeft + nodesOnRight >= 2)) {
+          forkThreats.push({row, col});
+        }
+      }
+    }
+  }
+  
+  return forkThreats;
+};
+
+// 3. VECTOR TRAP: Check if forming vector removes defending ions
+const detectVectorTrap = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black'): boolean => {
+  const opponentColor = playerColor === 'white' ? 'black' : 'white';
+  
+  // Simulate placing the piece and forming vectors
+  const testBoard = board.map(r => [...r]);
+  testBoard[row][col] = { color: playerColor, isNode: false };
+  
+  const vectors = checkForVectors(testBoard, row, col, playerColor);
+  
+  if (vectors.length === 0) return false; // No vector formed, no trap
+  
+  // For each vector, check what ions would be removed
+  for (const vector of vectors) {
+    for (const pos of vector) {
+      if (pos.row === row && pos.col === col) continue; // Skip the new piece
+      
+      // This ion would be removed - check if it was defending anything critical
+      const ionRow = pos.row;
+      const ionCol = pos.col;
+      
+      // Temporarily remove this ion and check for new threats
+      const boardWithoutIon = testBoard.map(r => [...r]);
+      boardWithoutIon[ionRow][ionCol] = null;
+      
+      // Check if removing this ion exposes us to Three Node Threat
+      const threeNodeThreats = detectThreeNodeThreat(boardWithoutIon, opponentColor);
+      if (threeNodeThreats.some(threat => threat.row === ionRow && threat.col === ionCol)) {
+        return true; // This is a trap!
+      }
+      
+      // Check if removing this ion exposes us to Nexus Fork
+      const nexusForksExposed = detectNexusFork(boardWithoutIon, opponentColor);
+      if (nexusForksExposed.some(fork => fork.row === ionRow && fork.col === ionCol)) {
+        return true; // This is a trap!
+      }
+    }
+  }
+  
+  return false;
+};
+
 // Simple AI logic
 // AI Helper Functions
 const evaluateMove = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black', difficulty: 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'): number => {
@@ -963,6 +1129,26 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
   const vectors = checkForVectors(testBoard, row, col, playerColor);
   if (vectors.length > 0) {
     score += 1000 * vectors.length; // Massive bonus for forming vectors
+  }
+  
+  // ENHANCED PRIORITY 2: Advanced Threat Detection for AI-3
+  if (difficulty === 'ai-3') {
+    // Check for Three Node Threats (MUST BLOCK)
+    const threeNodeThreats = detectThreeNodeThreat(board, opponentColor);
+    if (threeNodeThreats.some(threat => threat.row === row && threat.col === col)) {
+      score += 15000; // CRITICAL: Must block three node threat immediately
+    }
+    
+    // Check for Nexus Forks (MUST BLOCK)
+    const nexusForks = detectNexusFork(board, opponentColor);
+    if (nexusForks.some(fork => fork.row === row && fork.col === col)) {
+      score += 12000; // CRITICAL: Must block nexus fork
+    }
+    
+    // Check for Vector Trap (MUST AVOID)
+    if (detectVectorTrap(board, row, col, playerColor)) {
+      score -= 20000; // CRITICAL: Avoid vector traps at all costs
+    }
   }
   
   // PRIORITY 2: Block Opponent Threats (prevent opponent from winning)
@@ -1052,28 +1238,63 @@ const getAIMove = (
     }
     const topMoves = validMoves.slice(0, Math.min(5, validMoves.length));
     return topMoves[Math.floor(Math.random() * topMoves.length)];
-  } else {
-    validMoves.sort((a, b) => b.score - a.score);
+  } else { // AI-3 Enhanced Logic
+    // EMERGENCY BLOCKING: Check for critical threats first
+    const opponentColor = 'white';
+    
+    // 1. Check for Three Node Threats - MUST BLOCK IMMEDIATELY
+    const threeNodeThreats = detectThreeNodeThreat(board, opponentColor);
+    for (const threat of threeNodeThreats) {
+      if (isValidMove(board, threat.row, threat.col, 'black')) {
+        console.log(`AI-3: EMERGENCY! Blocking three node threat at ${threat.row},${threat.col}`);
+        return threat;
+      }
+    }
+    
+    // 2. Check for Nexus Forks - MUST BLOCK IMMEDIATELY
+    const nexusForks = detectNexusFork(board, opponentColor);
+    for (const fork of nexusForks) {
+      if (isValidMove(board, fork.row, fork.col, 'black')) {
+        console.log(`AI-3: EMERGENCY! Blocking nexus fork at ${fork.row},${fork.col}`);
+        return fork;
+      }
+    }
+    
+    // 3. Filter out Vector Traps from consideration
+    const safeValidMoves = validMoves.filter(move => !detectVectorTrap(board, move.row, move.col, 'black'));
+    const movesToConsider = safeValidMoves.length > 0 ? safeValidMoves : validMoves; // Fallback if all moves are traps
+    
+    if (safeValidMoves.length < validMoves.length) {
+      console.log(`AI-3: Avoided ${validMoves.length - safeValidMoves.length} vector trap(s)`);
+    }
+    
+    // Continue with regular AI-3 logic using safe moves
+    movesToConsider.sort((a, b) => b.score - a.score);
     const totalMoves = board.flat().filter(cell => cell !== null).length;
+    
     if (totalMoves <= 2) {
       const centerMoves = [
         { row: 3, col: 3 }, { row: 4, col: 4 }, { row: 3, col: 4 }, { row: 4, col: 3 }
       ];
       for (const center of centerMoves) {
-        if (isValidMove(board, center.row, center.col, 'black')) {
+        if (isValidMove(board, center.row, center.col, 'black') && 
+            !detectVectorTrap(board, center.row, center.col, 'black')) {
           return center;
         }
       }
     }
-    const criticalMoves = validMoves.filter(move => move.score >= 9000);
+    
+    const criticalMoves = movesToConsider.filter(move => move.score >= 9000);
     if (criticalMoves.length > 0) {
       return criticalMoves[0];
     }
-    const winningMoves = validMoves.filter(move => move.score >= 1000);
+    
+    const winningMoves = movesToConsider.filter(move => move.score >= 1000);
     if (winningMoves.length > 0) {
       return winningMoves[0];
     }
-    const topMoves = validMoves.slice(0, Math.min(5, validMoves.length));
+    
+    const topMoves = movesToConsider.slice(0, Math.min(5, movesToConsider.length));
     for (const move of topMoves) {
       const centerDistance = Math.abs(3.5 - move.row) + Math.abs(3.5 - move.col);
       const centerBonus = Math.max(0, 6 - centerDistance) * 2;
@@ -1103,10 +1324,10 @@ const getApiUrl = () => {
 };
 
 // Tutorial animation helper functions
-const createTutorialIon = (color: string): HTMLElement => {
-  const ion = document.createElement('div');
-  ion.className = `tutorial-demo-ion ${color}`;
-  ion.style.cssText = `
+const createTutorialDot = (color: string): HTMLElement => {
+  const dot = document.createElement('div');
+  dot.className = `tutorial-demo-dot ${color}`;
+  dot.style.cssText = `
     width: 24px;
     height: 24px;
     border-radius: 50%;
@@ -1116,7 +1337,7 @@ const createTutorialIon = (color: string): HTMLElement => {
       : 'background: #2c3e50; border: 2px solid #1a252f; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);'
     }
   `;
-  return ion;
+  return dot;
 };
 
 const addTutorialStyles = () => {
@@ -1256,7 +1477,7 @@ const setupBoardDemo = (container: HTMLElement, animationRef: React.MutableRefOb
   let currentMove = 0;
   
   const createAnimatedIon = (color: string) => {
-    const ion = createTutorialIon(color);
+    const ion = createTutorialDot(color);
     ion.classList.add('ion-appear');
     return ion;
   };
@@ -1316,7 +1537,7 @@ const setupVectorDemo = (container: HTMLElement, animationRef: React.MutableRefO
   };
 
   const createAnimatedIon = (color: string) => {
-    const ion = createTutorialIon(color);
+    const ion = createTutorialDot(color);
     ion.classList.add('ion-appear');
     return ion;
   };
@@ -1328,7 +1549,7 @@ const setupVectorDemo = (container: HTMLElement, animationRef: React.MutableRefO
 
   const startSequence = () => {
     const sequence = () => {
-      if (step < 6) { // Place first three pairs of ions
+      if (step < 6) { // Place first three pairs of dots
         const isWhite = step % 2 === 0;
         const cellIndex = Math.floor(step / 2);
         const ion = createAnimatedIon(isWhite ? 'white' : 'black');
@@ -1361,7 +1582,7 @@ const setupVectorDemo = (container: HTMLElement, animationRef: React.MutableRefO
         step++;
         // Wait 3 seconds before fading
         animationRef.current = setTimeout(() => {
-          // Fade out both ions and highlighting together
+          // Fade out both dots and highlighting together
           Array.from(board.children).forEach(cell => {
             const ion = (cell as HTMLElement).querySelector('.tutorial-demo-ion');
             if (ion) ion.classList.add('ion-fade');
@@ -1421,7 +1642,7 @@ const setupNodeDemo = (container: HTMLElement, animationRef: React.MutableRefObj
   };
 
   const createAnimatedIon = (color: string, isNode = false) => {
-    const ion = createTutorialIon(color);
+    const ion = createTutorialDot(color);
     if (isNode) {
       ion.classList.add('node');
     }
@@ -1463,7 +1684,7 @@ const setupNodeDemo = (container: HTMLElement, animationRef: React.MutableRefObj
             
             // Wait 3 seconds, then fade everything
             animationRef.current = setTimeout(() => {
-              // Fade out all remaining ions (black ions and node)
+              // Fade out all remaining dots (black dots and node)
               Array.from(board.children).forEach(cell => {
                 const ion = (cell as HTMLElement).querySelector('.tutorial-demo-ion');
                 if (ion) {
@@ -1528,7 +1749,7 @@ const setupLongLineDemo = (container: HTMLElement, animationRef: React.MutableRe
   };
 
   const createAnimatedIon = (color: string) => {
-    const ion = createTutorialIon(color);
+    const ion = createTutorialDot(color);
     ion.classList.add('ion-appear');
     return ion;
   };
@@ -1580,7 +1801,7 @@ const setupLongLineDemo = (container: HTMLElement, animationRef: React.MutableRe
                 invalidCell.style.backgroundColor = '#d1e6f9';
                 invalidCell.style.boxShadow = 'none';
                 
-                // Fade ions
+                // Fade dots
                 Array.from(board.children).forEach(cell => {
                   const ion = (cell as HTMLElement).querySelector('.tutorial-demo-ion');
                   if (ion) {
@@ -1640,7 +1861,7 @@ const setupNexusDemo = (container: HTMLElement, animationRef: React.MutableRefOb
   };
   
   const createNodeWithAnimation = (color: string) => {
-    const ion = createTutorialIon(color);
+    const ion = createTutorialDot(color);
     ion.classList.add('node');
     ion.classList.add('node-appear');
     return ion;
@@ -1922,8 +2143,8 @@ const App: React.FC = () => {
   const animationRef = useRef<NodeJS.Timeout | null>(null);
 
   // Animation state for ion placement and removal
-  const [newlyPlacedIons, setNewlyPlacedIons] = useState<Set<string>>(new Set());
-  const [fadingIons, setFadingIons] = useState<Set<string>>(new Set());
+  const [newlyPlacedDots, setNewlyPlacedDots] = useState<Set<string>>(new Set());
+  const [fadingDots, setFadingDots] = useState<Set<string>>(new Set());
 
   // Load settings from localStorage on component mount
   useEffect(() => {
@@ -2044,7 +2265,7 @@ const App: React.FC = () => {
   };
 
   // Sound function
-  const playSound = (soundName: 'ion' | 'vector' | 'nexus') => {
+  const playSound = (soundName: 'dot' | 'vector' | 'nexus') => {
     // Check if sound is enabled before playing
     if (!soundEnabled) {
       return;
@@ -2328,12 +2549,12 @@ const App: React.FC = () => {
         } else if (moveData.vectors > 0) {
           playSound('vector'); // Vector formed
         } else {
-          playSound('ion'); // Regular ion placement
+          playSound('dot'); // Regular dot placement
         }
 
         // Trigger animations for online moves
         setGameState(prev => {
-          // Calculate removed ions by comparing old and new boards
+          // Calculate removed dots by comparing old and new boards
           if (moveData.vectors > 0) {
             const removedCells: {row: number, col: number}[] = [];
             for (let row = 0; row < 8; row++) {
@@ -2350,8 +2571,8 @@ const App: React.FC = () => {
             }
           }
           
-          // Trigger bounce-in animation for newly placed ion
-          addNewIonAnimation(moveData.row, moveData.col);
+          // Trigger bounce-in animation for newly placed dot
+          addNewDotAnimation(moveData.row, moveData.col);
 
           return {
             ...prev,
@@ -2835,13 +3056,13 @@ const App: React.FC = () => {
     const vectors = checkForVectors(newBoard, row, col, currentPlayer);
     const { nodeType, removedCells } = processVectors(newBoard, vectors, row, col);
     
-    // Trigger fade-out animation for removed ions
+            // Trigger fade-out animation for removed dots
     if (removedCells.length > 0) {
       addFadeOutAnimation(removedCells);
     }
     
-    // Trigger bounce-in animation for newly placed ion
-    addNewIonAnimation(row, col);
+    // Trigger bounce-in animation for newly placed dot
+    addNewDotAnimation(row, col);
     
     // If vectors were formed, make this cell a node
     if (nodeType) {
@@ -2867,7 +3088,7 @@ const App: React.FC = () => {
     } else if (nodeType) {
       playSound('vector'); // Vector sound if no nexus
     } else {
-      playSound('ion'); // Regular ion placement
+      playSound('dot'); // Regular dot placement
     }
     
     if (!nexus) {
@@ -3293,8 +3514,8 @@ const App: React.FC = () => {
     }
     
     // Clear any active animations
-    setNewlyPlacedIons(new Set());
-    setFadingIons(new Set());
+    setNewlyPlacedDots(new Set());
+    setFadingDots(new Set());
   };
 
   const getNotation = (col: number, row: number): string => {
@@ -3307,22 +3528,22 @@ const App: React.FC = () => {
   const tutorialSteps = [
     {
       title: "Basic Gameplay",
-      message: "<span style=\"color: red; font-weight: bold;\">migoyugo</span> is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing ions on empty cells.",
+      message: "<span style=\"color: red; font-weight: bold;\">migoyugo</span> is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing dots on empty cells.",
       demo: "board"
     },
     {
       title: "Building Vectors",
-      message: "Your first tactical step is to create <b>Vectors</b>:<br>Vectors are lines of exactly 4 ions of your color,<br>horizontal, vertical, or diagonal.",
+      message: "Your first tactical step is to create <b>Vectors</b>:<br>Vectors are lines of exactly 4 dots of your color,<br>horizontal, vertical, or diagonal.",
       demo: "vector"
     },
     {
       title: "Nodes",
-      message: "When a Vector is formed, the last ion placed becomes a <b>Node</b> (with a red mark) and remains on the board while all other (non-<b>Node</b>) ions in the Vector are removed.",
+      message: "When a Vector is formed, the last dot placed becomes a <b>Node</b> (with a red mark) and remains on the board while all other (non-<b>Node</b>) dots in the Vector are removed.",
       demo: "node"
     },
     {
       title: "No Long Lines",
-      message: "You cannot place an ion that would create a line longer than 4 ions of your color.",
+      message: "You cannot place a dot that would create a line longer than 4 dots of your color.",
       demo: "long-line"
     },
     {
@@ -3388,8 +3609,8 @@ const App: React.FC = () => {
     setIsReviewMode(true);
     
     // Clear any active animations
-    setNewlyPlacedIons(new Set());
-    setFadingIons(new Set());
+    setNewlyPlacedDots(new Set());
+    setFadingDots(new Set());
     
     // Start at the last move (final position) instead of move 0
     const finalMoveIndex = moveHistory.length;
@@ -3551,16 +3772,16 @@ const App: React.FC = () => {
   }, [isReviewMode, holdScrollInterval]);
 
   // Helper functions for animation management
-  const addNewIonAnimation = (row: number, col: number) => {
+  const addNewDotAnimation = (row: number, col: number) => {
     // Don't animate in review mode
     if (isReviewMode) return;
     
     const cellKey = `${row}-${col}`;
-    setNewlyPlacedIons(prev => new Set([...Array.from(prev), cellKey]));
+    setNewlyPlacedDots(prev => new Set([...Array.from(prev), cellKey]));
     
     // Remove the animation class after 200ms (duration of bounce-in animation)
     setTimeout(() => {
-      setNewlyPlacedIons(prev => {
+      setNewlyPlacedDots(prev => {
         const newSet = new Set(prev);
         newSet.delete(cellKey);
         return newSet;
@@ -3573,11 +3794,11 @@ const App: React.FC = () => {
     if (isReviewMode) return;
     
     const cellKeys = cellsToFade.map(({row, col}) => `${row}-${col}`);
-    setFadingIons(prev => new Set([...Array.from(prev), ...cellKeys]));
+    setFadingDots(prev => new Set([...Array.from(prev), ...cellKeys]));
     
     // Remove the animation class after 200ms (duration of fade-out animation)
     setTimeout(() => {
-      setFadingIons(prev => {
+      setFadingDots(prev => {
         const newSet = new Set(prev);
         cellKeys.forEach(key => newSet.delete(key));
         return newSet;
@@ -3591,8 +3812,8 @@ const App: React.FC = () => {
     // Only highlight the current last move
     const isLastMove = gameState.lastMove?.row === row && gameState.lastMove?.col === col;
     const isNexusCell = gameState.nexusLine?.some(pos => pos.row === row && pos.col === col) || false;
-    const isNewlyPlaced = newlyPlacedIons.has(cellKey);
-    const isFading = fadingIons.has(cellKey);
+    const isNewlyPlaced = newlyPlacedDots.has(cellKey);
+    const isFading = fadingDots.has(cellKey);
     
     return (
       <div
@@ -3605,8 +3826,8 @@ const App: React.FC = () => {
         {row === 7 && <div className="cell-col-label">{String.fromCharCode(97 + col)}</div>}
         {cell && (
           <>
-            {/* Always render the ion (colored piece) with animation classes */}
-            <div className={`ion ${cell.color}${isNewlyPlaced ? ' new-ion' : ''}${isFading ? ' fade-out' : ''}`} />
+            {/* Always render the dot (colored piece) with animation classes */}
+            <div className={`dot ${cell.color}${isNewlyPlaced ? ' new-dot' : ''}${isFading ? ' fade-out' : ''}`} />
             {/* If it's a node, also render the node indicator on top */}
             {cell.isNode && (
               <div 
@@ -4397,10 +4618,10 @@ const App: React.FC = () => {
             
             <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10 }}>
               <h3>Objective</h3>
-              <p><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Ions") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
+              <p><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Dots") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
               
               <h3>Gameplay</h3>
-              <p>Players take turns placing Ions (white or black) on an 8×8 board. The goal is to form "Vectors" (unbroken lines of exactly 4 Ions of the same color) horizontally, vertically, or diagonally. Players cannot form lines longer than 4 Ions of the same color. When a Vector is formed, the last Ion placed becomes a "Node" (marked with a red indicator) that stays on the board permanently. All other Ions in the Vector are removed from the board (except for existing Nodes).</p>
+              <p>Players take turns placing Dots (white or black) on an 8×8 board. The goal is to form "Vectors" (unbroken lines of exactly 4 Dots of the same color) horizontally, vertically, or diagonally. Players cannot form lines longer than 4 Dots of the same color. When a Vector is formed, the last Dot placed becomes a "Node" (marked with a red indicator) that stays on the board permanently. All other Dots in the Vector are removed from the board (except for existing Nodes).</p>
               
               <h3>Node Values</h3>
               <p>Creating multiple Vectors simultaneously creates more valuable Nodes:</p>
