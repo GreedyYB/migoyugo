@@ -1037,10 +1037,10 @@ input:checked + .slider:before {
 }
 
 @keyframes bounce-in {
-    0% { transform: scale(0); }
-    80% { transform: scale(1.02); }
-    90% { transform: scale(0.98); }
-    100% { transform: scale(1); }
+    0% { transform: translate(-50%, -50%) scale(0); }
+    80% { transform: translate(-50%, -50%) scale(1.02); }
+    90% { transform: translate(-50%, -50%) scale(0.98); }
+    100% { transform: translate(-50%, -50%) scale(1); }
 }
 
 @media (max-width: 1200px) {
