@@ -309,8 +309,8 @@ h1 {
 /* Override any other cell styles for nexus cells */
 /* This rule is no longer needed as updateBoard handles the logic */
 
-/* Ensure ions and nodes appear above the glow */
-.ion, .node {
+/* Ensure dots and nodes appear above the glow */
+.dot, .node {
     position: relative;
     z-index: 2;
 }
@@ -332,50 +332,53 @@ h1 {
     background-color: #d1e6f9;
 }
 
-.ion {
+.dot {
     width: 70%;
     height: 70%;
     border-radius: 50%;
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     transition: all 0.3s ease;
 }
 
-.ion.white {
+.dot.white {
     background: var(--white-ion);
     border: 2px solid #95a5a6;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.ion.black {
+.dot.black {
     background: var(--black-ion);
     border: 2px solid #1a252f;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.ion.shrink {
-    transform: scale(0.1);
+.dot.shrink {
+    transform: translate(-50%, -50%) scale(0.1);
     opacity: 0;
     transition: all 1s ease;
 }
 
-/* Add fade-out animation for vector ions */
-.ion.fade-out {
-    animation: fadeOutIon 0.2s ease forwards;
+/* Add fade-out animation for vector dots */
+.dot.fade-out {
+    animation: fadeOutDot 0.2s ease forwards;
 }
 
-@keyframes fadeOutIon {
+@keyframes fadeOutDot {
     0% {
-        transform: scale(1);
+        transform: translate(-50%, -50%) scale(1);
         opacity: 1;
     }
     100% {
-        transform: scale(0.2);
+        transform: translate(-50%, -50%) scale(0.2);
         opacity: 0;
     }
 }
 
 /* Add specific animation timing for review mode */
-.review-mode .ion.shrink {
+.review-mode .dot.shrink {
     transition: all 0.2s ease;
 }
 
@@ -1028,7 +1031,7 @@ input:checked + .slider:before {
     background-color: #d1e6f9; /* Use exact hex code for your cell color */
 }
 
-.ion.new-ion {
+.dot.new-dot {
     animation: bounce-in 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     animation-fill-mode: both;
 }
@@ -1450,15 +1453,15 @@ input:checked + .slider:before {
     border-radius: 3px;
 }
 
-.review-mode .ion {
+.review-mode .dot {
     transition: none;
 }
 
-.review-mode .ion.new-ion {
+.review-mode .dot.new-dot {
     animation: none;
 }
 
-.review-mode .ion.shrink {
+.review-mode .dot.shrink {
     transform: none;
     opacity: 1;
     transition: none;
@@ -1581,7 +1584,7 @@ input:checked + .slider:before {
     }
 }
 
-.tutorial-demo-ion {
+.tutorial-demo-dot {
     position: absolute;
     width: 70%;
     height: 70%;
@@ -1591,25 +1594,25 @@ input:checked + .slider:before {
     transition: all 0.3s ease;
 }
 
-.tutorial-demo-ion.white {
+.tutorial-demo-dot.white {
     background: #ecf0f1;
     border: 2px solid #2c3e50;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.tutorial-demo-ion.black {
+.tutorial-demo-dot.black {
     background: #2c3e50;
     border: 2px solid #1a252f;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.tutorial-demo-ion.shrink {
+.tutorial-demo-dot.shrink {
     transform: scale(0);
     opacity: 0;
     transition: all 0.5s ease;
 }
 
-.tutorial-demo-ion.node::after {
+.tutorial-demo-dot.node::after {
     content: '';
     position: absolute;
     top: 50%;
@@ -1672,7 +1675,7 @@ input:checked + .slider:before {
     }
 }
 
-.game-ion {
+.game-dot {
     position: absolute;
     width: 70%;
     height: 70%;
@@ -1682,13 +1685,13 @@ input:checked + .slider:before {
     transition: all 0.3s ease;
 }
 
-.game-ion.white {
+.game-dot.white {
     background: #ecf0f1;
     border: 2px solid #2c3e50;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.game-ion.black {
+.game-dot.black {
     background: #2c3e50;
     border: 2px solid #1a252f;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
@@ -2131,7 +2134,7 @@ input:checked + .slider:before {
 }
 
 /* Add specific styling for black pieces in dark mode */
-[data-theme="dark"] .ion.black {
+[data-theme="dark"] .dot.black {
     border: 2px solid #666666;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
