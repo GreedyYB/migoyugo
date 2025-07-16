@@ -1066,6 +1066,79 @@ const detectNexusFork = (board: (Cell | null)[][], opponentColor: 'white' | 'bla
   return forkThreats;
 };
 
+// 2b. VECTOR-TO-FORK THREAT: Detect if opponent can create fork by first forming vector
+const detectVectorToForkThreat = (board: (Cell | null)[][], opponentColor: 'white' | 'black'): {row: number, col: number}[] => {
+  const vectorToForkThreats: {row: number, col: number}[] = [];
+  const directions = [[-1, 0], [0, 1], [1, 1], [1, 0]];
+  
+  // For each empty cell, check if opponent placing there creates a vector that leads to fork
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (!isEmptyCell(board, row, col)) continue;
+      
+      // Simulate opponent placing a piece here
+      const testBoard = board.map(r => [...r]);
+      testBoard[row][col] = { color: opponentColor, isNode: false };
+      
+      // Check if this creates any vectors
+      const vectors = checkForVectors(testBoard, row, col, opponentColor);
+      
+      if (vectors.length > 0) {
+        // Simulate the vector formation (piece becomes node, others removed)
+        const postVectorBoard = testBoard.map(r => [...r]);
+        
+        // Process each vector
+        for (const vector of vectors) {
+          // The placed piece becomes a node
+          postVectorBoard[row][col] = { color: opponentColor, isNode: true, nodeType: 'standard' };
+          
+          // Remove other pieces in the vector (except the new node)
+          for (const pos of vector) {
+            if (pos.row !== row || pos.col !== col) {
+              postVectorBoard[pos.row][pos.col] = null;
+            }
+          }
+        }
+        
+        // Now check if this results in a nexus fork situation
+        // Look for 2+ connected nodes with empty cells on both ends
+        for (const [dr, dc] of directions) {
+          const line = [];
+          
+          // Build line in this direction starting from the new node
+          for (let i = -3; i <= 3; i++) {
+            const r = row + i * dr;
+            const c = col + i * dc;
+            if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+              line.push({
+                row: r, 
+                col: c, 
+                cell: postVectorBoard[r][c],
+                isEmpty: isEmptyCell(postVectorBoard, r, c)
+              });
+            }
+          }
+          
+          // Look for patterns like: Empty-Node-Node-Empty or Empty-Node-Node-Node-Empty
+          for (let start = 0; start < line.length - 3; start++) {
+            const segment = line.slice(start, start + 4);
+            const nodes = segment.filter(p => p.cell?.color === opponentColor && p.cell?.isNode);
+            const empties = segment.filter(p => p.isEmpty);
+            
+            // If we have 2+ nodes with empties on both ends, it's a fork threat
+            if (nodes.length >= 2 && segment[0].isEmpty && segment[segment.length - 1].isEmpty) {
+              vectorToForkThreats.push({row, col});
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return vectorToForkThreats;
+};
+
 // 3. VECTOR TRAP: Check if forming vector removes defending ions
 const detectVectorTrap = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black'): boolean => {
   const opponentColor = playerColor === 'white' ? 'black' : 'white';
@@ -1143,6 +1216,12 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
     const nexusForks = detectNexusFork(board, opponentColor);
     if (nexusForks.some(fork => fork.row === row && fork.col === col)) {
       score += 12000; // CRITICAL: Must block nexus fork
+    }
+    
+    // Check for Vector-to-Fork Threats (MUST BLOCK) - NEW!
+    const vectorToForkThreats = detectVectorToForkThreat(board, opponentColor);
+    if (vectorToForkThreats.some(threat => threat.row === row && threat.col === col)) {
+      score += 13000; // CRITICAL: Must block vector-to-fork setup
     }
     
     // Check for Vector Trap (MUST AVOID)
@@ -1257,6 +1336,15 @@ const getAIMove = (
       if (isValidMove(board, fork.row, fork.col, 'black')) {
         console.log(`AI-3: EMERGENCY! Blocking nexus fork at ${fork.row},${fork.col}`);
         return fork;
+      }
+    }
+    
+    // 2b. Check for Vector-to-Fork Threats - MUST BLOCK IMMEDIATELY
+    const vectorToForkThreats = detectVectorToForkThreat(board, opponentColor);
+    for (const threat of vectorToForkThreats) {
+      if (isValidMove(board, threat.row, threat.col, 'black')) {
+        console.log(`AI-3: EMERGENCY! Blocking vector-to-fork threat at ${threat.row},${threat.col}`);
+        return threat;
       }
     }
     
