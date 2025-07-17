@@ -3616,32 +3616,32 @@ const App: React.FC = () => {
   const tutorialSteps = [
     {
       title: "Basic Gameplay",
-      message: "<span style=\"color: red; font-weight: bold;\">migoyugo</span> is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing dots on empty cells.",
+      message: "<span style=\"color: red; font-weight: bold;\">migoyugo</span> is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing chips on empty cells.",
       demo: "board"
     },
     {
-      title: "Building Vectors",
-      message: "Your first tactical step is to create <b>Vectors</b>:<br>Vectors are lines of exactly 4 dots of your color,<br>horizontal, vertical, or diagonal.",
+      title: "Building Chains",
+      message: "Your first tactical step is to create <b>Chains</b>:<br>Chains are lines of exactly 4 chips of your color,<br>horizontal, vertical, or diagonal.",
       demo: "vector"
     },
     {
-      title: "Nodes",
-      message: "When a Vector is formed, the last dot placed becomes a <b>Node</b> (with a red mark) and remains on the board while all other (non-<b>Node</b>) dots in the Vector are removed.",
+      title: "Links",
+      message: "When a Chain is formed, the last chip placed becomes a <b>Link</b> (with a red mark) and remains on the board while all other (non-<b>Link</b>) chips in the Chain are removed.",
       demo: "node"
     },
     {
       title: "No Long Lines",
-      message: "You cannot place a dot that would create a line longer than 4 dots of your color.",
+      message: "You cannot place a chip that would create a line longer than 4 chips of your color.",
       demo: "long-line"
     },
     {
       title: "The Winning Goal",
-      message: "Win by forming a <b>Nexus</b>:<br>A <b>Nexus</b> is a line of 4 Nodes of one color!",
+      message: "Win by forming a <b>Lock</b>:<br>A <b>Lock</b> is a line of 4 Links of one color!",
       demo: "nexus"
     },
     {
       title: "Alternative Win",
-      message: "<b>No legal moves:</b><br>If at any time either player is unable to play a legal move, the game ends and the player with the most Nodes wins.<br><br><b>Timer expiry:</b><br>If players have chosen to play using a timer, the game will end immediately if one player runs out of time, and the opponent will be awarded the win.<br><br><b>Resignation:</b><br>A player may choose to resign a game at any point and this will award the win to their opponent.",
+      message: "<b>No legal moves:</b><br>If at any time either player is unable to play a legal move, the game ends and the player with the most Links wins.<br><br><b>Timer expiry:</b><br>If players have chosen to play using a timer, the game will end immediately if one player runs out of time, and the opponent will be awarded the win.<br><br><b>Resignation:</b><br>A player may choose to resign a game at any point and this will award the win to their opponent.",
       demo: null
     },
     {
@@ -3664,7 +3664,7 @@ const App: React.FC = () => {
     },
     {
       title: "Ready to Play!",
-      message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Vectors or block your opponent?<br>Will you go for a Nexus or fill the board and see who ends up with the most Nodes?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing <span style=\"color: red; font-weight: bold;\">migoyugo</span>!",
+      message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Chains or block your opponent?<br>Will you go for a Lock or fill the board and see who ends up with the most Links?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing <span style=\"color: red; font-weight: bold;\">migoyugo</span>!",
       demo: null
     }
   ];
@@ -4398,7 +4398,7 @@ const App: React.FC = () => {
                     }
                   })()}
                 </span>
-                <span>Nodes: <span id="white-score">{gameState.scores.white}</span></span>
+                <span>Links: <span id="white-score">{gameState.scores.white}</span></span>
               </div>
               {timerEnabled && (
                 <div className="player-timer" id="white-timer">
@@ -4437,7 +4437,7 @@ const App: React.FC = () => {
                   }
                 })()}
               </span>
-              <span>Nodes: <span id="black-score">{gameState.scores.black}</span></span>
+                              <span>Links: <span id="black-score">{gameState.scores.black}</span></span>
             </div>
             {timerEnabled && (
               <div className="player-timer" id="black-timer">
@@ -4706,22 +4706,22 @@ const App: React.FC = () => {
             
             <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10 }}>
               <h3>Objective</h3>
-              <p><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Dots") and forming special patterns to create "Nodes" and ultimately a "Nexus" to win.</p>
+              <p><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Chips") and forming special patterns to create "Links" and ultimately a "Lock" to win.</p>
               
               <h3>Gameplay</h3>
-              <p>Players take turns placing Dots (white or black) on an 8×8 board. The goal is to form "Vectors" (unbroken lines of exactly 4 Dots of the same color) horizontally, vertically, or diagonally. Players cannot form lines longer than 4 Dots of the same color. When a Vector is formed, the last Dot placed becomes a "Node" (marked with a red indicator) that stays on the board permanently. All other Dots in the Vector are removed from the board (except for existing Nodes).</p>
+              <p>Players take turns placing Chips (white or black) on an 8×8 board. The goal is to form "Chains" (unbroken lines of exactly 4 Chips of the same color) horizontally, vertically, or diagonally. Players cannot form lines longer than 4 Chips of the same color. When a Chain is formed, the last Chip placed becomes a "Link" (marked with a red indicator) that stays on the board permanently. All other Chips in the Chain are removed from the board (except for existing Links).</p>
               
-              <h3>Node Values</h3>
-              <p>Creating multiple Vectors simultaneously creates more valuable Nodes:</p>
+              <h3>Link Values</h3>
+              <p>Creating multiple Chains simultaneously creates more valuable Links:</p>
               <ul>
-                <li>1 Vector = Standard Node (red dot)</li>
-                <li>2 Vectors at once = Double Node (red horizontal oval)</li>
-                <li>3 Vectors at once = Triple Node (red triangle)</li>
-                <li>4 Vectors at once = Quadruple Node (red diamond)</li>
+                <li>1 Chain = Standard Link (red dot)</li>
+                <li>2 Chains at once = Double Link (red horizontal oval)</li>
+                <li>3 Chains at once = Triple Link (red triangle)</li>
+                <li>4 Chains at once = Quadruple Link (red diamond)</li>
               </ul>
               
               <h3>Winning the Game</h3>
-              <p>The main objective is to form a "Nexus" (a Vector of 4 Nodes) to win the game. If no player can form a Nexus and no more legal moves are possible, the player with the most Nodes wins. If both players have the same number of Nodes, the game is a draw.</p>
+              <p>The main objective is to form a "Lock" (a Chain of 4 Links) to win the game. If no player can form a Lock and no more legal moves are possible, the player with the most Links wins. If both players have the same number of Links, the game is a draw.</p>
             </div>
 
             <div className="notification-buttons">
@@ -4765,7 +4765,7 @@ const App: React.FC = () => {
                   <h4 style={{ marginBottom: '10px', fontSize: '1rem' }}>Custom Colors</h4>
                   
                   <div className="color-option">
-                    <label>White Ion Color:</label>
+                    <label>White Chip Color:</label>
                     <input
                       type="color"
                       value={customColors.whiteIon}
@@ -4774,7 +4774,7 @@ const App: React.FC = () => {
                   </div>
                   
                   <div className="color-option">
-                    <label>Black Ion Color:</label>
+                    <label>Black Chip Color:</label>
                     <input
                       type="color"
                       value={customColors.blackIon}
@@ -4783,7 +4783,7 @@ const App: React.FC = () => {
                   </div>
                   
                   <div className="color-option">
-                    <label>Node Color:</label>
+                    <label>Link Color:</label>
                     <input
                       type="color"
                       value={customColors.nodeColor}

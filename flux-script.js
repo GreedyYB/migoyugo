@@ -256,11 +256,11 @@ function endGame(message) {
 function showRules() {
     alert(`migoyugo Game Rules:
 
-1. Players take turns placing pieces (ions) on the 8x8 board
+1. Players take turns placing pieces (chips) on the 8x8 board
 2. White always goes first
-3. Form vectors (lines of exactly 4 pieces) to create nodes
-4. When you form a vector, the last piece becomes a node and other pieces in the vector are removed
-5. Win by forming a nexus (4 nodes in a line) or having the most nodes when the board is full
+3. Form chains (lines of exactly 4 pieces) to create links
+4. When you form a chain, the last piece becomes a link and other pieces in the chain are removed
+5. Win by forming a lock (4 links in a line) or having the most links when the board is full
 
 Controls:
 - Click Start to begin
