@@ -2353,7 +2353,7 @@ const App: React.FC = () => {
   };
 
   // Sound function
-  const playSound = (soundName: 'dot' | 'vector' | 'nexus') => {
+  const playSound = (soundName: 'chip' | 'vector' | 'nexus') => {
     // Check if sound is enabled before playing
     if (!soundEnabled) {
       return;
@@ -2361,7 +2361,12 @@ const App: React.FC = () => {
     
     try {
       const audio = new Audio(`/sounds/${soundName}.mp3`);
-      audio.volume = 0.3; // Set to 30% volume
+      // Set volume based on sound type
+      if (soundName === 'nexus') {
+        audio.volume = 0.24; // Reduced nexus/lock volume by 20% (from 30% to 24%)
+      } else {
+        audio.volume = 0.3; // Standard volume for chip and vector sounds
+      }
       audio.play().catch(e => console.log('Sound play failed:', e));
     } catch (e) {
       console.log('Sound loading failed:', e);
@@ -2637,7 +2642,7 @@ const App: React.FC = () => {
         } else if (moveData.vectors > 0) {
           playSound('vector'); // Vector formed
         } else {
-          playSound('dot'); // Regular dot placement
+          playSound('chip'); // Regular chip placement
         }
 
         // Trigger animations for online moves
@@ -3176,7 +3181,7 @@ const App: React.FC = () => {
     } else if (nodeType) {
       playSound('vector'); // Vector sound if no nexus
     } else {
-      playSound('dot'); // Regular dot placement
+      playSound('chip'); // Regular chip placement
     }
     
     if (!nexus) {
