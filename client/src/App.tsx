@@ -2364,7 +2364,7 @@ const App: React.FC = () => {
       const audio = new Audio(`/sounds/${soundName}.mp3`);
       // Set volume based on sound type
       if (soundName === 'nexus') {
-        audio.volume = 0.24; // Reduced nexus/lock volume by 20% (from 30% to 24%)
+        audio.volume = 0.168; // Reduced nexus/lock volume by additional 30% (from 24% to 16.8%)
       } else {
         audio.volume = 0.3; // Standard volume for chip and vector sounds
       }
