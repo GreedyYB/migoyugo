@@ -980,6 +980,50 @@ const getConnectedPieces = (board: (Cell | null)[][], startRow: number, startCol
   return pieces;
 };
 
+// CRITICAL: Detect immediate winning moves for the AI (3 links in a row with empty space)
+const detectImmediateWin = (board: (Cell | null)[][], playerColor: 'white' | 'black'): {row: number, col: number}[] => {
+  const winningMoves: {row: number, col: number}[] = [];
+  const directions = [[-1, 0], [0, 1], [1, 1], [1, 0]]; // All 4 main directions
+  
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      for (const [dr, dc] of directions) {
+        // Check for pattern: Link-Link-Empty-Link or Link-Empty-Link-Link or Empty-Link-Link-Link
+        const positions = [];
+        for (let i = 0; i < 4; i++) {
+          const r = row + i * dr;
+          const c = col + i * dc;
+          if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            positions.push({row: r, col: c, cell: board[r][c]});
+          }
+        }
+        
+        if (positions.length === 4) {
+          const nodes = positions.filter(p => p.cell?.color === playerColor && p.cell?.isNode);
+          const empties = positions.filter(p => isEmptyCell(board, p.row, p.col));
+          
+          // Check if we have exactly 3 nodes and 1 empty in the line
+          if (nodes.length === 3 && empties.length === 1) {
+            // Verify this empty position can create a nexus (4 in a row)
+            const emptyPos = empties[0];
+            if (isValidMove(board, emptyPos.row, emptyPos.col, playerColor)) {
+              // Test if placing a node here would create a nexus
+              const testBoard = board.map(r => [...r]);
+              testBoard[emptyPos.row][emptyPos.col] = { color: playerColor, isNode: true, nodeType: 'standard' };
+              const nexus = checkForNexus(testBoard, emptyPos.row, emptyPos.col, playerColor);
+              if (nexus) {
+                winningMoves.push({row: emptyPos.row, col: emptyPos.col});
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return winningMoves;
+};
+
 // 1. THREE NODE THREAT: Detect if opponent has 3 connected nodes with 1 empty gap
 const detectThreeNodeThreat = (board: (Cell | null)[][], opponentColor: 'white' | 'black'): {row: number, col: number}[] => {
   const threats: {row: number, col: number}[] = [];
@@ -1196,6 +1240,15 @@ const evaluateMove = (board: (Cell | null)[][], row: number, col: number, player
   
   // Create a copy of the board with the move played
   const testBoard = board.map(r => [...r]);
+  
+  // ABSOLUTE PRIORITY 0: Immediate Nexus Win (check if this move wins the game)
+  testBoard[row][col] = { color: playerColor, isNode: true, nodeType: 'standard' };
+  const immediateNexus = checkForNexus(testBoard, row, col, playerColor);
+  if (immediateNexus) {
+    score += 100000; // MASSIVE BONUS - ALWAYS TAKE WINNING MOVES!
+  }
+  
+  // Reset the test board for other checks
   testBoard[row][col] = { color: playerColor, isNode: false };
   
   // PRIORITY 1: Vector Formation (immediate win condition)
@@ -1318,7 +1371,14 @@ const getAIMove = (
     const topMoves = validMoves.slice(0, Math.min(5, validMoves.length));
     return topMoves[Math.floor(Math.random() * topMoves.length)];
   } else { // AI-3 Enhanced Logic
-    // EMERGENCY BLOCKING: Check for critical threats first
+    // ABSOLUTE PRIORITY: Check for immediate wins FIRST - nothing is more important!
+    const immediateWins = detectImmediateWin(board, 'black');
+    if (immediateWins.length > 0) {
+      console.log(`AI-3: IMMEDIATE WIN! Playing winning move at ${immediateWins[0].row},${immediateWins[0].col}`);
+      return immediateWins[0];
+    }
+    
+    // EMERGENCY BLOCKING: Check for critical threats second
     const opponentColor = 'white';
     
     // 1. Check for Three Node Threats - MUST BLOCK IMMEDIATELY
@@ -1370,6 +1430,13 @@ const getAIMove = (
           return center;
         }
       }
+    }
+    
+    // Check for immediate winning moves (100000+ score)
+    const immediateWinMoves = movesToConsider.filter(move => move.score >= 50000);
+    if (immediateWinMoves.length > 0) {
+      console.log(`AI-3: Found immediate win via scoring system at ${immediateWinMoves[0].row},${immediateWinMoves[0].col}`);
+      return immediateWinMoves[0];
     }
     
     const criticalMoves = movesToConsider.filter(move => move.score >= 9000);
