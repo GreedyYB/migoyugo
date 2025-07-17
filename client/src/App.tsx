@@ -4705,23 +4705,72 @@ const App: React.FC = () => {
             <h2><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> Game Rules</h2>
             
             <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10 }}>
-              <h3>Objective</h3>
-              <p><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> is a strategic board game played on an 8x8 grid between two players: White and Black. It involves placing pieces (called "Chips") and forming special patterns to create "Links" and ultimately a "Lock" to win.</p>
+              <h3>Overview</h3>
+              <p>Migoyugo is a two-player strategic board game played on an 8×8 grid. Players take turns placing their Chips in an effort to create Chains, which transform into Links. The ultimate goal is to form a Lock and win the game.</p>
+              
+              <h3>Setup</h3>
+              <p><strong>Board:</strong> 8×8 square grid</p>
+              <p><strong>Players:</strong> Two — White and Black (White always goes first)</p>
               
               <h3>Gameplay</h3>
-              <p>Players take turns placing Chips (white or black) on an 8×8 board. The goal is to form "Chains" (unbroken lines of exactly 4 Chips of the same color) horizontally, vertically, or diagonally. Players cannot form lines longer than 4 Chips of the same color. When a Chain is formed, the last Chip placed becomes a "Link" (marked with a red indicator) that stays on the board permanently. All other Chips in the Chain are removed from the board (except for existing Links).</p>
-              
-              <h3>Link Values</h3>
-              <p>Creating multiple Chains simultaneously creates more valuable Links:</p>
+              <h4>Placing Chips</h4>
               <ul>
-                <li>1 Chain = Standard Link (red dot)</li>
-                <li>2 Chains at once = Double Link (red horizontal oval)</li>
-                <li>3 Chains at once = Triple Link (red triangle)</li>
-                <li>4 Chains at once = Quadruple Link (red diamond)</li>
+                <li>Players take turns placing a single Chip (of their color) on any empty space.</li>
+                <li>An unbroken line (horizontal, vertical, or diagonal) of exactly 4 Chips of the same color makes a Chain.</li>
+                <li>Lines longer than 4 of your own color are not allowed.</li>
               </ul>
               
+              <h4>Forming a Chain</h4>
+              <p>When a player creates a Chain:</p>
+              <ul>
+                <li>The last Chip placed becomes a Link (marked with a red indicator).</li>
+                <li>All non-Link Chips in the Chain are removed from the board.</li>
+              </ul>
+              
+              <h3>Link Types</h3>
+              <p>A Link can never be moved or removed from the board.</p>
+              <p>Links are marked differently depending on how many Chains are formed in a single move:</p>
+              <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #ddd' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Chains Formed</th>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Link Type</th>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Marker Symbol</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>1</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Standard Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Red Dot</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>2</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Double Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Red Horizontal Oval</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>3</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Triple Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Red Triangle</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>4</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Quadruple Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Red Diamond</td>
+                  </tr>
+                </tbody>
+              </table>
+              
               <h3>Winning the Game</h3>
-              <p>The main objective is to form a "Lock" (a Chain of 4 Links) to win the game. If no player can form a Lock and no more legal moves are possible, the player with the most Links wins. If both players have the same number of Links, the game is a draw.</p>
+              <p>The primary win condition is to create a <strong>Lock</strong> — a chain of 4 Links of the same color in a straight line (horizontal, vertical, or diagonal).</p>
+              <p>If the board fills up or no more legal moves are possible for either player at any point in the game:</p>
+              <ul>
+                <li>The player with the most Links wins.</li>
+                <li>If both players have the same number of Links, the game is a draw.</li>
+                <li>If a player resigns during a game, the opponent will be awarded the win.</li>
+                <li>If using a clock, a player will win the game if their opponent's clock expires.</li>
+              </ul>
             </div>
 
             <div className="notification-buttons">
