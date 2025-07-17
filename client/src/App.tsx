@@ -4704,65 +4704,98 @@ const App: React.FC = () => {
           <div className="notification settings-dialog" style={{ display: 'block' }}>
             <h2><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> Game Rules</h2>
             
-            <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10, textAlign: 'left' }}>
-              <h3>Overview</h3>
+                        <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10, textAlign: 'left' }}>
+              <h3 style={{ color: 'red', marginLeft: '20px' }}>Overview</h3>
               <p>Migoyugo is a two-player strategic board game played on an 8×8 grid. Players take turns placing their Chips in an effort to create Chains, which transform into Links. The ultimate goal is to form a Lock and win the game.</p>
               
-              <h3>Setup</h3>
+              <h3 style={{ color: 'red', marginLeft: '40px' }}>Setup</h3>
               <p><strong>Board:</strong> 8×8 square grid</p>
               <p><strong>Players:</strong> Two — White and Black (White always goes first)</p>
               
-              <h3>Gameplay</h3>
-              <h4>Placing Chips</h4>
+              <h3 style={{ color: 'red', marginLeft: '60px' }}>Gameplay</h3>
+              <h4 style={{ color: 'red', marginLeft: '80px' }}>Placing Chips</h4>
               <ul>
                 <li>Players take turns placing a single Chip (of their color) on any empty space.</li>
                 <li>An unbroken line (horizontal, vertical, or diagonal) of exactly 4 Chips of the same color makes a Chain.</li>
                 <li>Lines longer than 4 of your own color are not allowed.</li>
               </ul>
               
-              <h4>Forming a Chain</h4>
+              <h4 style={{ color: 'red', marginLeft: '80px' }}>Forming a Chain</h4>
               <p>When a player creates a Chain:</p>
               <ul>
                 <li>The last Chip placed becomes a Link (marked with a red indicator).</li>
                 <li>All non-Link Chips in the Chain are removed from the board.</li>
               </ul>
               
-              <h3>Link Types</h3>
+              <h3 style={{ color: 'red', marginLeft: '100px' }}>Link Types</h3>
               <p>A Link can never be moved or removed from the board.</p>
               <p>Links are marked differently depending on how many Chains are formed in a single move:</p>
-                             <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0', textAlign: 'left' }}>
-                 <thead>
-                   <tr style={{ borderBottom: '2px solid #ddd' }}>
-                     <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Chains Formed</th>
-                     <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Link Type</th>
-                     <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Marker Symbol</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   <tr>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>1</td>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Standard Link</td>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Red Dot</td>
-                   </tr>
-                   <tr>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>2</td>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Double Link</td>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Red Horizontal Oval</td>
-                   </tr>
-                   <tr>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>3</td>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Triple Link</td>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Red Triangle</td>
-                   </tr>
-                   <tr>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>4</td>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Quadruple Link</td>
-                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Red Diamond</td>
-                   </tr>
-                 </tbody>
-               </table>
+              <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #ddd' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Chains Formed</th>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Link Type</th>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Marker Symbol</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>1</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Standard Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
+                      <div style={{ 
+                        width: '12px', 
+                        height: '12px', 
+                        borderRadius: '50%', 
+                        backgroundColor: '#e74c3c', 
+                        display: 'inline-block' 
+                      }}></div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>2</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Double Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
+                      <div style={{ 
+                        width: '20px', 
+                        height: '10px', 
+                        borderRadius: '10px', 
+                        backgroundColor: '#e74c3c', 
+                        display: 'inline-block' 
+                      }}></div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>3</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Triple Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
+                      <div style={{ 
+                        width: '0', 
+                        height: '0', 
+                        borderLeft: '6px solid transparent',
+                        borderRight: '6px solid transparent',
+                        borderBottom: '12px solid #e74c3c',
+                        display: 'inline-block' 
+                      }}></div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>4</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Quadruple Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
+                      <div style={{ 
+                        width: '12px', 
+                        height: '12px', 
+                        backgroundColor: '#e74c3c', 
+                        transform: 'rotate(45deg)',
+                        display: 'inline-block' 
+                      }}></div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
               
-              <h3>Winning the Game</h3>
+              <h3 style={{ color: 'red', marginLeft: '120px' }}>Winning the Game</h3>
               <p>The primary win condition is to create a <strong>Lock</strong> — a chain of 4 Links of the same color in a straight line (horizontal, vertical, or diagonal).</p>
               <p>If the board fills up or no more legal moves are possible for either player at any point in the game:</p>
               <ul>
