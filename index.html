@@ -164,6 +164,107 @@
       color: #94a3b8;
     }
 
+    /* Rules Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      margin: 5% auto;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+      color: #e2e8f0;
+      text-align: center;
+      border-bottom: 2px solid #3b82f6;
+      padding-bottom: 1rem;
+    }
+
+    .modal-content h3 {
+      color: #f87171;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .modal-content h4 {
+      color: #f87171;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-content p, .modal-content li {
+      color: #cbd5e1;
+      line-height: 1.6;
+      text-align: left;
+    }
+
+    .modal-content ul {
+      padding-left: 1.5rem;
+    }
+
+    .modal-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .modal-content td {
+      padding: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      text-align: left;
+      color: #cbd5e1;
+    }
+
+    .close {
+      color: #94a3b8;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .close:hover {
+      color: #e2e8f0;
+    }
+
+    .close-button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 0.8rem 2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 2rem;
+      transition: background 0.3s ease;
+    }
+
+    .close-button:hover {
+      background: #2563eb;
+    }
+
     @media (max-width: 768px) {
       .features {
         grid-template-columns: 1fr;
@@ -180,6 +281,13 @@
       
       .stats {
         gap: 1rem;
+      }
+
+      .modal-content {
+        margin: 2% auto;
+        width: 95%;
+        max-height: 90vh;
+        padding: 1.5rem;
       }
     }
 
@@ -238,13 +346,117 @@
 
   <div class="buttons">
     <a href="https://migoyugo-online.vercel.app/" target="_blank">🎮 Play Now</a>
-    <a href="#" class="secondary" onclick="alert('Rules page coming soon!')">📖 How to Play</a>
-    <a href="https://github.com/GreedyYB/migoyugo" target="_blank" class="secondary">⭐ View Source</a>
+    <a href="#" class="secondary" onclick="openRules()">📖 How to Play</a>
+  </div>
+
+  <!-- Rules Modal -->
+  <div id="rulesModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeRules()">&times;</span>
+      <h2><span style="color: red; font-weight: bold;">migoyugo</span> Game Rules</h2>
+      
+      <h3>Overview</h3>
+      <p>Migoyugo is a two-player strategic board game played on an 8×8 grid. Players take turns placing their Chips in an effort to create Chains, which transform into Links. The ultimate goal is to form a Lock and win the game.</p>
+      
+      <h3>Setup</h3>
+      <p><strong>Board:</strong> 8×8 square grid</p>
+      <p><strong>Players:</strong> Two — White and Black (White always goes first)</p>
+      
+      <h3>Gameplay</h3>
+      <h4>Placing Chips</h4>
+      <ul>
+        <li>Players take turns placing a single Chip (of their color) on any empty space.</li>
+        <li>An unbroken line (horizontal, vertical, or diagonal) of exactly 4 Chips of the same color makes a Chain.</li>
+        <li>Lines longer than 4 of your own color are not allowed.</li>
+      </ul>
+      
+      <h4>Forming a Chain</h4>
+      <p>When a player creates a Chain:</p>
+      <ul>
+        <li>The last Chip placed becomes a Link (marked with a red indicator).</li>
+        <li>All non-Link Chips in the Chain are removed from the board.</li>
+      </ul>
+      
+      <h3>Link Types</h3>
+      <p>A Link can never be moved or removed from the board.</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <td style="padding: 8px; border-bottom: 2px solid #3b82f6; font-weight: bold;">Chains Formed</td>
+            <td style="padding: 8px; border-bottom: 2px solid #3b82f6; font-weight: bold;">Link Type</td>
+            <td style="padding: 8px; border-bottom: 2px solid #3b82f6; font-weight: bold;">Visual Indicator</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">1</td>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">Single Link</td>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <div style="width: 12px; height: 12px; backgroundColor: #e74c3c; borderRadius: 50%; display: inline-block;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">2</td>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">Double Link</td>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <div style="width: 12px; height: 12px; backgroundColor: #e74c3c; display: inline-block;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">3</td>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">Triple Link</td>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 12px solid #e74c3c; display: inline-block;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">4</td>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">Quadruple Link</td>
+            <td style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <div style="width: 12px; height: 12px; backgroundColor: #e74c3c; transform: rotate(45deg); display: inline-block;"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <h3>Winning the Game</h3>
+      <p>The primary win condition is to create a <strong>Lock</strong> — a chain of 4 Links of the same color in a straight line (horizontal, vertical, or diagonal).</p>
+      <p>If the board fills up or no more legal moves are possible for either player at any point in the game:</p>
+      <ul>
+        <li>The player with the most Links wins.</li>
+        <li>If both players have the same number of Links, the game is a draw.</li>
+        <li>If a player resigns during a game, the opponent will be awarded the win.</li>
+        <li>If using a clock, a player will win the game if their opponent's clock expires.</li>
+      </ul>
+
+      <div style="text-align: center;">
+        <button class="close-button" onclick="closeRules()">Close</button>
+      </div>
+    </div>
   </div>
 
   <footer>
     <p>&copy; 2025 MIGOYUGO. All rights reserved.</p>
     <p>Built with strategic passion for tactical gaming enthusiasts.</p>
   </footer>
+
+  <script>
+    function openRules() {
+      document.getElementById('rulesModal').style.display = 'block';
+    }
+
+    function closeRules() {
+      document.getElementById('rulesModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+      const modal = document.getElementById('rulesModal');
+      if (event.target == modal) {
+        modal.style.display = 'none';
+      }
+    }
+  </script>
 </body>
 </html> 
