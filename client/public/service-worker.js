@@ -11,7 +11,7 @@ const urlsToCache = [
   '/favicon.ico',
   '/logo192.png',
   '/logo512.png',
-  '/sounds/ion.mp3',
+  '/sounds/chip.mp3',
   '/sounds/vector.mp3',
   '/sounds/nexus.mp3'
 ];

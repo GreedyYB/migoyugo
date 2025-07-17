@@ -2356,6 +2356,7 @@ const App: React.FC = () => {
   const playSound = (soundName: 'chip' | 'vector' | 'nexus') => {
     // Check if sound is enabled before playing
     if (!soundEnabled) {
+      console.log(`Sound disabled - ${soundName} not played`);
       return;
     }
     
@@ -2367,9 +2368,10 @@ const App: React.FC = () => {
       } else {
         audio.volume = 0.3; // Standard volume for chip and vector sounds
       }
-      audio.play().catch(e => console.log('Sound play failed:', e));
+      console.log(`Playing sound: ${soundName}.mp3 at volume ${audio.volume}`);
+      audio.play().catch(e => console.log(`Sound play failed for ${soundName}:`, e));
     } catch (e) {
-      console.log('Sound loading failed:', e);
+      console.log(`Sound loading failed for ${soundName}:`, e);
     }
   };
 
