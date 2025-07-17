@@ -4730,37 +4730,37 @@ const App: React.FC = () => {
               <h3>Link Types</h3>
               <p>A Link can never be moved or removed from the board.</p>
               <p>Links are marked differently depending on how many Chains are formed in a single move:</p>
-              <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #ddd' }}>
-                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Chains Formed</th>
-                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Link Type</th>
-                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Marker Symbol</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>1</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Standard Link</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Red Dot</td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>2</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Double Link</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Red Horizontal Oval</td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>3</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Triple Link</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Red Triangle</td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>4</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Quadruple Link</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Red Diamond</td>
-                  </tr>
-                </tbody>
-              </table>
+                             <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0', textAlign: 'left' }}>
+                 <thead>
+                   <tr style={{ borderBottom: '2px solid #ddd' }}>
+                     <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Chains Formed</th>
+                     <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Link Type</th>
+                     <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Marker Symbol</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   <tr>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>1</td>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Standard Link</td>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Red Dot</td>
+                   </tr>
+                   <tr>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>2</td>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Double Link</td>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Red Horizontal Oval</td>
+                   </tr>
+                   <tr>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>3</td>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Triple Link</td>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Red Triangle</td>
+                   </tr>
+                   <tr>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>4</td>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Quadruple Link</td>
+                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Red Diamond</td>
+                   </tr>
+                 </tbody>
+               </table>
               
               <h3>Winning the Game</h3>
               <p>The primary win condition is to create a <strong>Lock</strong> — a chain of 4 Links of the same color in a straight line (horizontal, vertical, or diagonal).</p>
