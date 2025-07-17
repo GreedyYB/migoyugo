@@ -4704,7 +4704,7 @@ const App: React.FC = () => {
           <div className="notification settings-dialog" style={{ display: 'block' }}>
             <h2><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> Game Rules</h2>
             
-            <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10 }}>
+            <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10, textAlign: 'left' }}>
               <h3>Overview</h3>
               <p>Migoyugo is a two-player strategic board game played on an 8×8 grid. Players take turns placing their Chips in an effort to create Chains, which transform into Links. The ultimate goal is to form a Lock and win the game.</p>
               
