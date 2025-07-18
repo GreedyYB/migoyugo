@@ -2769,7 +2769,7 @@ const App: React.FC = () => {
           if (moveData.winner === 'draw') {
             message = 'Game ended in a draw!';
           } else if (moveData.nexus) {
-            message = `${moveData.winner} wins by Nexus!`;
+            message = `${moveData.winner} wins with a Lock!`;
           } else {
             message = `${moveData.winner} wins by node count!`;
           }
@@ -3290,7 +3290,7 @@ const App: React.FC = () => {
       if (winner === 'draw') {
         message = 'Game ended in a draw!';
       } else if (nexus) {
-        message = `${winner} wins by Nexus!`;
+        message = `${winner} wins with a Lock!`;
       } else {
         message = `${winner} wins by node count!`;
       }
