@@ -398,8 +398,8 @@ h1 {
 }
 
 .node.double {
-    width: 18.75%;
-    height: 18.75%;
+    width: 30%;
+    height: 15%;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
