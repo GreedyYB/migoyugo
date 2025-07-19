@@ -403,27 +403,6 @@ h1 {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: transparent;
-    position: relative;
-}
-
-.node.double::before,
-.node.double::after {
-    content: '';
-    position: absolute;
-    width: 50%;
-    height: 100%;
-    background-color: var(--node-color);
-    border-radius: 50%;
-    top: 0;
-}
-
-.node.double::before {
-    left: 0;
-}
-
-.node.double::after {
-    right: 0;
 }
 
 .node.triple {
