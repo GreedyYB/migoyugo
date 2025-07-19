@@ -398,8 +398,8 @@ h1 {
 }
 
 .node.double {
-    width: 30%;
-    height: 15%;
+    width: 18.75%;
+    height: 18.75%;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -411,20 +411,19 @@ h1 {
 .node.double::after {
     content: '';
     position: absolute;
-    width: 8px;
-    height: 8px;
+    width: 50%;
+    height: 100%;
     background-color: var(--node-color);
     border-radius: 50%;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0;
 }
 
 .node.double::before {
-    left: 2px;
+    left: 0;
 }
 
 .node.double::after {
-    right: 2px;
+    right: 0;
 }
 
 .node.triple {
