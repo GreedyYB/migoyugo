@@ -4780,7 +4780,7 @@ const App: React.FC = () => {
             
                         <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10, textAlign: 'left' }}>
               <h3 style={{ color: 'red' }}>Overview</h3>
-              <ul>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
                 <li>Migoyugo is a two-player strategic board game played on an 8×8 grid</li>
                 <li>Players take turns placing their Chips to create Chains</li>
                 <li>Chains transform into Links</li>
@@ -4788,34 +4788,34 @@ const App: React.FC = () => {
               </ul>
               
               <h3 style={{ color: 'red' }}>Setup</h3>
-              <ul>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
                 <li><strong>Board:</strong> 8×8 square grid</li>
                 <li><strong>Players:</strong> Two — White and Black (White always goes first)</li>
               </ul>
               
               <h3 style={{ color: 'red' }}>Gameplay</h3>
-              <h4 style={{ color: 'red' }}>Placing Chips</h4>
-              <ul>
+              <h4 style={{ color: 'red', marginTop: '15px' }}>Placing Chips</h4>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '20px' }}>
                 <li>Players take turns placing a single Chip (of their color) on any empty space</li>
                 <li>An unbroken line (horizontal, vertical, or diagonal) of exactly 4 Chips of the same color makes a Chain</li>
                 <li>Lines longer than 4 of your own color are not allowed</li>
               </ul>
               
               <h4 style={{ color: 'red' }}>Forming a Chain</h4>
-              <ul>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
                 <li>When a player creates a Chain:</li>
-                <ul>
+                <ul style={{ listStyleType: 'circle', paddingLeft: '20px', marginTop: '10px' }}>
                   <li>The last Chip placed becomes a Link (marked with a red indicator)</li>
                   <li>All non-Link Chips in the Chain are removed from the board</li>
                 </ul>
               </ul>
               
               <h3 style={{ color: 'red' }}>Link Types</h3>
-              <ul>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '20px' }}>
                 <li>A Link can never be moved or removed from the board</li>
                 <li>Links are marked differently depending on how many Chains are formed in a single move:</li>
               </ul>
-              <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0', textAlign: 'left' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0 30px 0', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #ddd' }}>
                     <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Chains Formed</th>
@@ -4880,16 +4880,16 @@ const App: React.FC = () => {
               </table>
               
               <h3 style={{ color: 'red' }}>Winning the Game</h3>
-              <ul>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '20px' }}>
                 <li>Primary win condition: Create a <strong>Lock</strong>
-                  <ul>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '20px', marginTop: '10px' }}>
                     <li>A Lock is a chain of 4 Links of the same color in a straight line (horizontal, vertical, or diagonal)</li>
                   </ul>
                 </li>
                 <li>Alternative win conditions:
-                  <ul>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '20px', marginTop: '10px' }}>
                     <li>If the board fills up or no legal moves are possible:
-                      <ul>
+                      <ul style={{ listStyleType: 'square', paddingLeft: '20px', marginTop: '10px' }}>
                         <li>The player with the most Links wins</li>
                         <li>Equal number of Links results in a draw</li>
                       </ul>
