@@ -4780,30 +4780,41 @@ const App: React.FC = () => {
             
                         <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10, textAlign: 'left' }}>
               <h3 style={{ color: 'red' }}>Overview</h3>
-              <p>Migoyugo is a two-player strategic board game played on an 8×8 grid. Players take turns placing their Chips in an effort to create Chains, which transform into Links. The ultimate goal is to form a Lock and win the game.</p>
+              <ul>
+                <li>Migoyugo is a two-player strategic board game played on an 8×8 grid</li>
+                <li>Players take turns placing their Chips to create Chains</li>
+                <li>Chains transform into Links</li>
+                <li>The ultimate goal is to form a Lock and win the game</li>
+              </ul>
               
               <h3 style={{ color: 'red' }}>Setup</h3>
-              <p><strong>Board:</strong> 8×8 square grid</p>
-              <p><strong>Players:</strong> Two — White and Black (White always goes first)</p>
+              <ul>
+                <li><strong>Board:</strong> 8×8 square grid</li>
+                <li><strong>Players:</strong> Two — White and Black (White always goes first)</li>
+              </ul>
               
               <h3 style={{ color: 'red' }}>Gameplay</h3>
               <h4 style={{ color: 'red' }}>Placing Chips</h4>
               <ul>
-                <li>Players take turns placing a single Chip (of their color) on any empty space.</li>
-                <li>An unbroken line (horizontal, vertical, or diagonal) of exactly 4 Chips of the same color makes a Chain.</li>
-                <li>Lines longer than 4 of your own color are not allowed.</li>
+                <li>Players take turns placing a single Chip (of their color) on any empty space</li>
+                <li>An unbroken line (horizontal, vertical, or diagonal) of exactly 4 Chips of the same color makes a Chain</li>
+                <li>Lines longer than 4 of your own color are not allowed</li>
               </ul>
               
               <h4 style={{ color: 'red' }}>Forming a Chain</h4>
-              <p>When a player creates a Chain:</p>
               <ul>
-                <li>The last Chip placed becomes a Link (marked with a red indicator).</li>
-                <li>All non-Link Chips in the Chain are removed from the board.</li>
+                <li>When a player creates a Chain:</li>
+                <ul>
+                  <li>The last Chip placed becomes a Link (marked with a red indicator)</li>
+                  <li>All non-Link Chips in the Chain are removed from the board</li>
+                </ul>
               </ul>
               
               <h3 style={{ color: 'red' }}>Link Types</h3>
-              <p>A Link can never be moved or removed from the board.</p>
-              <p>Links are marked differently depending on how many Chains are formed in a single move:</p>
+              <ul>
+                <li>A Link can never be moved or removed from the board</li>
+                <li>Links are marked differently depending on how many Chains are formed in a single move:</li>
+              </ul>
               <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #ddd' }}>
@@ -4831,10 +4842,10 @@ const App: React.FC = () => {
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Double Link</td>
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
                       <div style={{ 
-                        width: '20px', 
-                        height: '10px', 
-                        borderRadius: '10px', 
+                        width: '12px', 
+                        height: '12px', 
                         backgroundColor: '#e74c3c', 
+                        borderRadius: '2px',
                         display: 'inline-block' 
                       }}></div>
                     </td>
@@ -4844,11 +4855,10 @@ const App: React.FC = () => {
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Triple Link</td>
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
                       <div style={{ 
-                        width: '0', 
-                        height: '0', 
-                        borderLeft: '6px solid transparent',
-                        borderRight: '6px solid transparent',
-                        borderBottom: '12px solid #e74c3c',
+                        width: '12px', 
+                        height: '12px', 
+                        backgroundColor: '#e74c3c', 
+                        clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
                         display: 'inline-block' 
                       }}></div>
                     </td>
@@ -4870,13 +4880,24 @@ const App: React.FC = () => {
               </table>
               
               <h3 style={{ color: 'red' }}>Winning the Game</h3>
-              <p>The primary win condition is to create a <strong>Lock</strong> — a chain of 4 Links of the same color in a straight line (horizontal, vertical, or diagonal).</p>
-              <p>If the board fills up or no more legal moves are possible for either player at any point in the game:</p>
               <ul>
-                <li>The player with the most Links wins.</li>
-                <li>If both players have the same number of Links, the game is a draw.</li>
-                <li>If a player resigns during a game, the opponent will be awarded the win.</li>
-                <li>If using a clock, a player will win the game if their opponent's clock expires.</li>
+                <li>Primary win condition: Create a <strong>Lock</strong>
+                  <ul>
+                    <li>A Lock is a chain of 4 Links of the same color in a straight line (horizontal, vertical, or diagonal)</li>
+                  </ul>
+                </li>
+                <li>Alternative win conditions:
+                  <ul>
+                    <li>If the board fills up or no legal moves are possible:
+                      <ul>
+                        <li>The player with the most Links wins</li>
+                        <li>Equal number of Links results in a draw</li>
+                      </ul>
+                    </li>
+                    <li>If a player resigns, their opponent wins</li>
+                    <li>If using a clock, a player wins if their opponent's clock expires</li>
+                  </ul>
+                </li>
               </ul>
             </div>
 
