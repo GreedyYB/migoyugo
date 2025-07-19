@@ -4842,12 +4842,32 @@ const App: React.FC = () => {
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Double Link</td>
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
                       <div style={{ 
-                        width: '12px', 
-                        height: '12px', 
-                        backgroundColor: '#e74c3c', 
-                        borderRadius: '2px',
+                        width: '16px', 
+                        height: '8px', 
+                        position: 'relative',
                         display: 'inline-block' 
-                      }}></div>
+                      }}>
+                        <div style={{ 
+                          width: '6px', 
+                          height: '6px', 
+                          backgroundColor: '#e74c3c', 
+                          borderRadius: '50%',
+                          position: 'absolute',
+                          left: '0px',
+                          top: '50%',
+                          transform: 'translateY(-50%)'
+                        }}></div>
+                        <div style={{ 
+                          width: '6px', 
+                          height: '6px', 
+                          backgroundColor: '#e74c3c', 
+                          borderRadius: '50%',
+                          position: 'absolute',
+                          right: '0px',
+                          top: '50%',
+                          transform: 'translateY(-50%)'
+                        }}></div>
+                      </div>
                     </td>
                   </tr>
                   <tr>
