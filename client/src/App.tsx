@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
 import './migoyugo-styles.css';
@@ -412,6 +414,26 @@ const evaluatePosition = (board: (Cell | null)[][], playerColor: 'white' | 'blac
   // 5. Tactical patterns
   score += evaluateTactical(board, playerColor);
   
+  // 6. Chain-building bias: reward longer chains of own color
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const cell = board[row][col];
+      if (cell && cell.color === playerColor) {
+        // Check in all 4 directions for chains
+        const directions = [[1,0],[0,1],[1,1],[1,-1]];
+        for (const [dr,dc] of directions) {
+          let length = 1;
+          let r = row + dr, c = col + dc;
+          while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c]?.color === playerColor) {
+            length++;
+            r += dr; c += dc;
+          }
+          if (length >= 2) score += length * 12; // reward longer chains
+        }
+      }
+    }
+  }
+  
   return score;
 };
 
@@ -601,7 +623,7 @@ const minimax = (
   playerColor: 'white' | 'black',
   transTable: TranspositionTable
 ): {score: number, bestMove: {row: number, col: number} | null} => {
-  
+  console.log('minimax: starting at depth', depth);
   // Generate position hash for transposition table
   const positionHash = JSON.stringify(board);
   const ttEntry = transTable.get(positionHash);
@@ -1370,106 +1392,73 @@ const getAIMove = (
     }
     const topMoves = validMoves.slice(0, Math.min(5, validMoves.length));
     return topMoves[Math.floor(Math.random() * topMoves.length)];
-  } else { // AI-3 Enhanced Logic
-    // ABSOLUTE PRIORITY: Check for immediate wins FIRST - nothing is more important!
-    const immediateWins = detectImmediateWin(board, 'black');
-    if (immediateWins.length > 0) {
-      console.log(`AI-3: IMMEDIATE WIN! Playing winning move at ${immediateWins[0].row},${immediateWins[0].col}`);
-      return immediateWins[0];
-    }
-    
-    // EMERGENCY BLOCKING: Check for critical threats second
-    const opponentColor = 'white';
-    
-    // 1. Check for Three Node Threats - MUST BLOCK IMMEDIATELY
-    const threeNodeThreats = detectThreeNodeThreat(board, opponentColor);
-    for (const threat of threeNodeThreats) {
-      if (isValidMove(board, threat.row, threat.col, 'black')) {
-        console.log(`AI-3: EMERGENCY! Blocking three node threat at ${threat.row},${threat.col}`);
-        return threat;
-      }
-    }
-    
-    // 2. Check for Nexus Forks - MUST BLOCK IMMEDIATELY
-    const nexusForks = detectNexusFork(board, opponentColor);
-    for (const fork of nexusForks) {
-      if (isValidMove(board, fork.row, fork.col, 'black')) {
-        console.log(`AI-3: EMERGENCY! Blocking nexus fork at ${fork.row},${fork.col}`);
-        return fork;
-      }
-    }
-    
-    // 2b. Check for Vector-to-Fork Threats - MUST BLOCK IMMEDIATELY
-    const vectorToForkThreats = detectVectorToForkThreat(board, opponentColor);
-    for (const threat of vectorToForkThreats) {
-      if (isValidMove(board, threat.row, threat.col, 'black')) {
-        console.log(`AI-3: EMERGENCY! Blocking vector-to-fork threat at ${threat.row},${threat.col}`);
-        return threat;
-      }
-    }
-    
-    // 3. Filter out Vector Traps from consideration
-    const safeValidMoves = validMoves.filter(move => !detectVectorTrap(board, move.row, move.col, 'black'));
-    const movesToConsider = safeValidMoves.length > 0 ? safeValidMoves : validMoves; // Fallback if all moves are traps
-    
-    if (safeValidMoves.length < validMoves.length) {
-      console.log(`AI-3: Avoided ${validMoves.length - safeValidMoves.length} vector trap(s)`);
-    }
-    
-    // Continue with regular AI-3 logic using safe moves
-    movesToConsider.sort((a, b) => b.score - a.score);
-    const totalMoves = board.flat().filter(cell => cell !== null).length;
-    
-    if (totalMoves <= 2) {
-      const centerMoves = [
-        { row: 3, col: 3 }, { row: 4, col: 4 }, { row: 3, col: 4 }, { row: 4, col: 3 }
-      ];
-      for (const center of centerMoves) {
-        if (isValidMove(board, center.row, center.col, 'black') && 
-            !detectVectorTrap(board, center.row, center.col, 'black')) {
-          return center;
-        }
-      }
-    }
-    
-    // Check for immediate winning moves (100000+ score)
-    const immediateWinMoves = movesToConsider.filter(move => move.score >= 50000);
-    if (immediateWinMoves.length > 0) {
-      console.log(`AI-3: Found immediate win via scoring system at ${immediateWinMoves[0].row},${immediateWinMoves[0].col}`);
-      return immediateWinMoves[0];
-    }
-    
-    const criticalMoves = movesToConsider.filter(move => move.score >= 9000);
-    if (criticalMoves.length > 0) {
-      return criticalMoves[0];
-    }
-    
-    const winningMoves = movesToConsider.filter(move => move.score >= 1000);
-    if (winningMoves.length > 0) {
-      return winningMoves[0];
-    }
-    
-    const topMoves = movesToConsider.slice(0, Math.min(5, movesToConsider.length));
-    for (const move of topMoves) {
-      const centerDistance = Math.abs(3.5 - move.row) + Math.abs(3.5 - move.col);
-      const centerBonus = Math.max(0, 6 - centerDistance) * 2;
-      let connectivityBonus = 0;
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          if (dr === 0 && dc === 0) continue;
-          const nr = move.row + dr;
-          const nc = move.col + dc;
-          if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && board[nr][nc]?.color === 'black') {
-            connectivityBonus += 3;
-          }
-        }
-      }
-      move.score += centerBonus + connectivityBonus;
-    }
-    topMoves.sort((a, b) => b.score - a.score);
-    return topMoves[0];
+  } else { // AI-3 now uses MCTS
+    return mcts(board, 'black', 200, 8);
   }
 };
+
+// --- MCTS for AI-3 ---
+function mcts(
+  board: (Cell | null)[][],
+  playerColor: 'white' | 'black',
+  iterations: number = 200,
+  rolloutDepth: number = 8
+): { row: number; col: number } | null {
+  const validMoves = getAllValidMoves(board, playerColor);
+  if (validMoves.length === 0) return null;
+  const moveStats = validMoves.map(move => ({
+    move,
+    wins: 0,
+    playouts: 0
+  }));
+
+  for (let i = 0; i < iterations; i++) {
+    const moveIdx = Math.floor(Math.random() * validMoves.length);
+    const { row, col } = validMoves[moveIdx];
+    let simBoard = makeMove(board, row, col, playerColor);
+    let simPlayer: 'white' | 'black' = playerColor === 'white' ? 'black' : 'white';
+    let winner: 'white' | 'black' | 'draw' | null = null;
+    let depth = 0;
+    let lastMove = { row, col, player: playerColor };
+    while (depth < rolloutDepth) {
+      const moves = getAllValidMoves(simBoard, simPlayer);
+      if (moves.length === 0) {
+        // Node count tiebreak
+        const whiteNodes = countNodes(simBoard, 'white');
+        const blackNodes = countNodes(simBoard, 'black');
+        if (whiteNodes > blackNodes) winner = 'white';
+        else if (blackNodes > whiteNodes) winner = 'black';
+        else winner = 'draw';
+        break;
+      }
+      // Pick best move by evaluateMove (greedy rollout)
+      let bestScore = -Infinity;
+      let best = moves[0];
+      for (const m of moves) {
+        const score = evaluateMove(simBoard, m.row, m.col, simPlayer, 'ai-3');
+        if (score > bestScore) {
+          bestScore = score;
+          best = m;
+        }
+      }
+      simBoard = makeMove(simBoard, best.row, best.col, simPlayer);
+      lastMove = { row: best.row, col: best.col, player: simPlayer };
+      // Check for nexus win
+      if (checkForNexus(simBoard, best.row, best.col, simPlayer)) {
+        winner = simPlayer;
+        break;
+      }
+      simPlayer = simPlayer === 'white' ? 'black' : 'white';
+      depth++;
+    }
+    // Score for black (AI)
+    if (winner === 'black') moveStats[moveIdx].wins++;
+    moveStats[moveIdx].playouts++;
+  }
+  // Pick move with highest win rate
+  moveStats.sort((a, b) => (b.wins / b.playouts) - (a.wins / a.playouts));
+  return moveStats[0].move;
+}
 
 // Helper function to get API URL
 const getApiUrl = () => {
@@ -2239,7 +2228,7 @@ const App: React.FC = () => {
   const [activeTimer, setActiveTimer] = useState<'white' | 'black' | null>(null);
 
   // Game mode state
-  const [gameMode, setGameMode] = useState<'local' | 'ai-1' | 'ai-2' | 'ai-3' | 'online'>('local');
+  const [gameMode, setGameMode] = useState<'local' | 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4' | 'online'>('local');
   const [waitingForAI, setWaitingForAI] = useState(false);
 
   // Notification state
@@ -2700,6 +2689,22 @@ const App: React.FC = () => {
       });
 
       newSocket.on('timerUpdate', (data) => {
+        // Validate timer sync - check if we missed any updates
+        if (data.timestamp) {
+          const timeDiff = Date.now() - data.timestamp;
+          // If more than 3 seconds difference, request sync
+          if (timeDiff > 3000) {
+            console.log('Timer sync issue detected, requesting sync...');
+            newSocket.emit('requestTimerSync', { gameId });
+            return;
+          }
+        }
+        
+        setTimers(data.timers);
+        setActiveTimer(data.activeTimer);
+      });
+
+      newSocket.on('timerSync', (data) => {
         setTimers(data.timers);
         setActiveTimer(data.activeTimer);
       });
@@ -2761,6 +2766,14 @@ const App: React.FC = () => {
 
         // Update timers from server
         if (moveData.timers) {
+          // Validate timer sync for move updates too
+          if (moveData.timestamp) {
+            const timeDiff = Date.now() - moveData.timestamp;
+            if (timeDiff > 3000) {
+              console.log('Move timer sync issue detected, requesting sync...');
+              newSocket.emit('requestTimerSync', { gameId });
+            }
+          }
           setTimers(moveData.timers);
         }
 
@@ -3044,6 +3057,8 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [timerEnabled, isGameStarted, gameState.gameStatus, activeTimer, gameMode]);
 
+
+
   const showToast = useCallback((message: string, duration: number = 4000) => {
     setToast(message);
     setTimeout(() => setToast(''), duration);
@@ -3055,6 +3070,14 @@ const App: React.FC = () => {
       setActiveTimer(gameState.currentPlayer);
     }
   }, [isGameStarted, gameState.currentPlayer, gameState.gameStatus, timerEnabled]);
+
+  // Request timer sync when reconnecting to online game
+  useEffect(() => {
+    if (socket && gameId && gameMode === 'online' && isGameStarted) {
+      // Request current timer state when reconnecting
+      socket.emit('requestTimerSync', { gameId });
+    }
+  }, [socket, gameId, gameMode, isGameStarted]);
 
   // Authentication handlers
   const handleLogin = async (email: string, password: string) => {
@@ -3320,10 +3343,17 @@ const App: React.FC = () => {
 
   // AI move logic with human-like thinking time
   useEffect(() => {
+    console.log('AI-4 effect check:', {
+      isGameStarted,
+      gameStatus: gameState.gameStatus,
+      gameMode,
+      playerColor,
+      currentPlayer: gameState.currentPlayer,
+    });
     if (
       isGameStarted &&
       gameState.gameStatus === 'active' &&
-      (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') &&
+      (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') &&
       playerColor &&
       gameState.currentPlayer !== playerColor
     ) {
@@ -3335,14 +3365,26 @@ const App: React.FC = () => {
       } else if (gameMode === 'ai-2') {
         minThinkTime = 1500;
         maxThinkTime = 2500;
-      } else {
+      } else if (gameMode === 'ai-3') {
         minThinkTime = 2000;
         maxThinkTime = 4000;
+      } else {
+        minThinkTime = 2500;
+        maxThinkTime = 5000;
       }
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
       console.log(`${gameMode.toUpperCase()} thinking for ${thinkTime}ms...`);
       const timeout = setTimeout(() => {
-        const aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3');
+        let aiMove;
+        if (gameMode === 'ai-4') {
+          // Count total pieces on the board
+          const totalPieces = gameState.board.flat().filter(cell => cell !== null).length;
+          // Use depth 3 for first 8 moves, then depth 2
+          const maxDepth = totalPieces < 8 ? 3 : 2;
+          aiMove = iterativeDeepeningMinimax(gameState.board, 3000, 'black', globalTransTable, maxDepth);
+        } else {
+          aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3');
+        }
         if (aiMove) {
           console.log(`${gameMode.toUpperCase()} selected move:`, aiMove);
           makeLocalMove(aiMove.row, aiMove.col);
@@ -3408,7 +3450,7 @@ const App: React.FC = () => {
       console.log('Matchmaking modal should now be visible');
     } else {
       // Local game start
-      if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') {
+      if (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') {
         startAIGame();
         return;
       }
@@ -4155,25 +4197,28 @@ const App: React.FC = () => {
 
   // When starting a new AI game, determine playerColor based on playerColorChoice
   const startAIGame = () => {
+    // Defensive: default to 'white' if playerColorChoice is null/undefined
     let chosenColor: 'white' | 'black';
     if (playerColorChoice === 'random') {
       chosenColor = Math.random() < 0.5 ? 'white' : 'black';
-    } else {
+    } else if (playerColorChoice === 'white' || playerColorChoice === 'black') {
       chosenColor = playerColorChoice;
+    } else {
+      chosenColor = 'white'; // fallback default
     }
     setPlayerColor(chosenColor);
 
-    // Initialize the game state with the selected color as the starting player
+    // Initialize the game state - White always goes first
     const newBoard = Array(8).fill(null).map(() => Array(8).fill(null));
     setGameState({
       board: newBoard,
-      currentPlayer: chosenColor,
+      currentPlayer: 'white',
       scores: { white: 0, black: 0 },
       gameStatus: 'active',
       lastMove: null,
       players: {
-        white: 'White',
-        black: `CORE ${gameMode.toUpperCase()}`
+        white: chosenColor === 'white' ? 'White' : `CORE ${gameMode.toUpperCase()}`,
+        black: chosenColor === 'black' ? 'White' : `CORE ${gameMode.toUpperCase()}`
       },
       nexusLine: null
     });
@@ -4321,6 +4366,25 @@ const App: React.FC = () => {
         if (checkForNexus(testBoard, r, c, oppColor)) score -= 9500;
       }
     }
+    // 6. Chain-building bias: reward longer chains of own color
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        const cell = board[row][col];
+        if (cell && cell.color === playerColor) {
+          // Check in all 4 directions for chains
+          const directions = [[1,0],[0,1],[1,1],[1,-1]];
+          for (const [dr,dc] of directions) {
+            let length = 1;
+            let r = row + dr, c = col + dc;
+            while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c]?.color === playerColor) {
+              length++;
+              r += dr; c += dc;
+            }
+            if (length >= 2) score += length * 12; // reward longer chains
+          }
+        }
+      }
+    }
     return score;
   }
 
@@ -4403,6 +4467,29 @@ const App: React.FC = () => {
       return topMoves[0];
     }
   };
+
+  // Add this helper function near the minimax definition or in the AI-4 section:
+  function iterativeDeepeningMinimax(
+    board: (Cell | null)[][],
+    maxTimeMs: number,
+    playerColor: 'white' | 'black',
+    transTable: TranspositionTable,
+    maxDepth: number = 3 // Add a default max depth cap
+  ): { row: number; col: number } | null {
+    const start = Date.now();
+    let bestMove: { row: number; col: number } | null = null;
+    let depth = 1;
+    while (depth <= maxDepth) { // Only go up to maxDepth
+      const now = Date.now();
+      if (now - start > maxTimeMs) break;
+      const result = minimax(board, depth, -Infinity, Infinity, true, playerColor, transTable);
+      if (result.bestMove) {
+        bestMove = result.bestMove;
+      }
+      depth++;
+    }
+    return bestMove;
+  }
 
   return (
     <div className="App">
@@ -4577,6 +4664,7 @@ const App: React.FC = () => {
                     <option value="ai-1">CORE AI-1</option>
                     <option value="ai-2">CORE AI-2</option>
                     <option value="ai-3">CORE AI-3</option>
+                    <option value="ai-4">CORE AI-4</option>
                     <option value="online">Online Multiplayer</option>
                   </select>
                 </div>
@@ -4844,30 +4932,10 @@ const App: React.FC = () => {
                       <div style={{ 
                         width: '16px', 
                         height: '8px', 
-                        position: 'relative',
+                        backgroundColor: '#e74c3c', 
+                        borderRadius: '50%',
                         display: 'inline-block' 
-                      }}>
-                        <div style={{ 
-                          width: '6px', 
-                          height: '6px', 
-                          backgroundColor: '#e74c3c', 
-                          borderRadius: '50%',
-                          position: 'absolute',
-                          left: '0px',
-                          top: '50%',
-                          transform: 'translateY(-50%)'
-                        }}></div>
-                        <div style={{ 
-                          width: '6px', 
-                          height: '6px', 
-                          backgroundColor: '#e74c3c', 
-                          borderRadius: '50%',
-                          position: 'absolute',
-                          right: '0px',
-                          top: '50%',
-                          transform: 'translateY(-50%)'
-                        }}></div>
-                      </div>
+                      }}></div>
                     </td>
                   </tr>
                   <tr>
@@ -5595,9 +5663,54 @@ const App: React.FC = () => {
                 <option value="ai-1">CORE AI-1</option>
                 <option value="ai-2">CORE AI-2</option>
                 <option value="ai-3">CORE AI-3</option>
+                <option value="ai-4">CORE AI-4</option>
                 <option value="online">Online Multiplayer</option>
               </select>
             </div>
+
+            {/* Color selection for AI games */}
+            {(gameMode.startsWith('ai-')) && (
+              <div className="option-row" style={{ marginBottom: '20px', justifyContent: 'center' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '16px', marginRight: '12px' }}>Play as:</span>
+                <div style={{ display: 'inline-flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className={`color-choice-btn${playerColorChoice === 'white' ? ' selected' : ''}`}
+                    aria-label="Play as White"
+                    onClick={() => setPlayerColorChoice('white')}
+                    style={{ 
+                      padding: '8px 12px', 
+                      borderRadius: '6px', 
+                      border: '2px solid #ccc', 
+                      background: playerColorChoice === 'white' ? '#ecf0f1' : 'white', 
+                      fontWeight: playerColorChoice === 'white' ? 'bold' : 'normal',
+                      fontSize: '16px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ⚪
+                  </button>
+                  <button
+                    type="button"
+                    className={`color-choice-btn${playerColorChoice === 'black' ? ' selected' : ''}`}
+                    aria-label="Play as Black"
+                    onClick={() => setPlayerColorChoice('black')}
+                    style={{ 
+                      padding: '8px 12px', 
+                      borderRadius: '6px', 
+                      border: '2px solid #ccc', 
+                      background: playerColorChoice === 'black' ? '#2c3e50' : 'white', 
+                      color: playerColorChoice === 'black' ? 'white' : '#2c3e50', 
+                      fontWeight: playerColorChoice === 'black' ? 'bold' : 'normal',
+                      fontSize: '16px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ⚫
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Timer toggle */}
             <div className="option-row" style={{ marginBottom: '15px' }}>
@@ -6112,4 +6225,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

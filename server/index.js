@@ -918,7 +918,8 @@ function startServerTimer(gameId) {
     // Broadcast timer update to all players
     io.to(gameId).emit('timerUpdate', {
       timers: game.timers,
-      activeTimer: currentPlayer
+      activeTimer: currentPlayer,
+      timestamp: Date.now()
     });
     
     // Check for timeout
@@ -1036,7 +1037,8 @@ io.on('connection', (socket) => {
             black: playerName
           }
         },
-        timers: gameState.timers
+        timers: gameState.timers,
+        timestamp: Date.now()
       });
       
       socket.emit('gameStart', {
@@ -1053,7 +1055,8 @@ io.on('connection', (socket) => {
             black: playerName
           }
         },
-        timers: gameState.timers
+        timers: gameState.timers,
+        timestamp: Date.now()
       });
       
       // Start server-side timer
@@ -1147,7 +1150,8 @@ io.on('connection', (socket) => {
       gameOver,
       winner,
       nexus,
-      timers: game.timers
+      timers: game.timers,
+      timestamp: Date.now()
     };
     
     io.to(gameId).emit('moveUpdate', moveData);
@@ -1158,6 +1162,20 @@ io.on('connection', (socket) => {
     if (index !== -1) {
       waitingPlayers.splice(index, 1);
     }
+  });
+
+  socket.on('requestTimerSync', ({ gameId }) => {
+    const game = games.get(gameId);
+    if (!game) return;
+    
+    console.log(`Timer sync requested for game ${gameId}`);
+    
+    // Send current timer state with timestamp
+    socket.emit('timerSync', {
+      timers: game.timers,
+      activeTimer: game.currentPlayer,
+      timestamp: Date.now()
+    });
   });
 
   socket.on('resign', ({ gameId }) => {
