@@ -1028,6 +1028,50 @@ for (const [gameId, game] of games.entries()) {
     
     console.log(`Player ${playerName} looking for match with timer:`, standardTimer);
     
+    // Check if this user has a disconnected game first
+    for (const [gameId, game] of games.entries()) {
+      if (game.gameStatus === 'active' && game.disconnectedPlayer) {
+        const disconnectedPlayerData = game.players[game.disconnectedPlayer];
+        
+        if (disconnectedPlayerData.userId === userId && userId !== null) {
+          console.log(`User ${playerName} reconnecting to existing game ${gameId} via findMatch`);
+          
+          const disconnectedColor = game.disconnectedPlayer;
+          const opponentColor = disconnectedColor === 'white' ? 'black' : 'white';
+          
+          // Reconnect to existing game
+          game.players[disconnectedColor].socket = socket;
+          game.players[disconnectedColor].id = socket.id;
+          
+          socket.join(gameId);
+          socket.emit('gameStart', {
+            gameId,
+            playerColor: disconnectedColor,
+            opponentName: game.players[opponentColor].name,
+            timerSettings: game.timerSettings,
+            gameState: {
+              board: game.board,
+              currentPlayer: game.currentPlayer,
+              scores: game.scores,
+              players: {
+                white: game.players.white.name,
+                black: game.players.black.name
+              }
+            },
+            timers: game.timers,
+            timestamp: Date.now()
+          });
+          
+          // Notify opponent of reconnection
+          game.players[opponentColor].socket.emit('opponentReconnected');
+          
+          // Clear disconnect flag
+          delete game.disconnectedPlayer;
+          return; // Exit the findMatch handler
+        }
+      }
+    }
+    
     if (waitingPlayers.length > 0) {
       // Match with waiting player
       const opponent = waitingPlayers.shift();
