@@ -20,6 +20,7 @@ interface GameState {
   players: { white: string; black: string };
   nexusLine?: { row: number; col: number }[] | null;
 }
+} catch (error) {
 
 interface MoveHistoryEntry {
   row: number;
@@ -2601,7 +2602,6 @@ const [opponentDisconnected, setOpponentDisconnected] = useState(false);
           }
         } catch (error) {
           // Connection error, keep token but don't authenticate yet
-          localStorage.removeItem('authToken');
         }
       }
     };
