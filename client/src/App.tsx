@@ -2254,6 +2254,7 @@ const App: React.FC = () => {
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
   const [opponentName, setOpponentName] = useState<string>('');
+const [opponentDisconnected, setOpponentDisconnected] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(true);
   const [minutesPerPlayer, setMinutesPerPlayer] = useState(10);
   const [incrementSeconds, setIncrementSeconds] = useState(0);
@@ -2652,6 +2653,7 @@ const App: React.FC = () => {
         setGameId(data.gameId);
         setPlayerColor(data.playerColor);
         setOpponentName(data.opponentName);
+setOpponentDisconnected(false);
         setGameState(prev => ({
           ...prev,
           ...data.gameState,
@@ -2830,18 +2832,15 @@ const App: React.FC = () => {
         }, 1000);
       });
 
-      newSocket.on('opponentDisconnected', () => {
-        setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
-        // Add 1 second delay for players to see the final position
-        setTimeout(() => {
-        setNotification({
-          title: 'Opponent Disconnected',
-          message: 'Your opponent has disconnected from the game.',
-          show: true
-        });
-        }, 1000);
-        setActiveTimer(null);
-      });
+      newSocket.on('opponentDisconnected', (data) => {
+  console.log('Opponent disconnected:', data);
+  setOpponentDisconnected(true);
+});
+
+newSocket.on('opponentReconnected', () => {
+  console.log('Opponent reconnected');
+  setOpponentDisconnected(false);
+});
 
       // Debug: Listen for all socket events
       newSocket.onAny((event, ...args) => {
@@ -2895,6 +2894,7 @@ const App: React.FC = () => {
         setGameId(data.gameId);
         setPlayerColor(data.playerColor);
         setOpponentName(data.opponentName);
+setOpponentDisconnected(false);
         setGameState(prev => ({
           ...prev,
           ...data.gameState,
@@ -4541,31 +4541,44 @@ const App: React.FC = () => {
               <div className={`player ${gameState.currentPlayer === 'white' ? 'active' : ''}`} id="player-white">
                 <div className="player-color white"></div>
                 <span>
-                  {(() => {
-                    if (!isGameStarted) {
-                      return 'White';
-                    } else if (gameMode === 'online' && playerColor) {
-                      // Multiplayer game - show actual usernames without color labels
-                      const whiteName = playerColor === 'white' ? 
-                        (authState.user?.username || 'Guest') : 
-                        opponentName;
-                      return whiteName;
-                    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
-                      // AI game with authenticated user - show username for white (human player)
-                      return authState.user?.username;
-                    } else {
-                      // Local human vs human or unauthenticated - use gameState players
-                      return gameState.players.white;
-                    }
-                  })()}
-                </span>
+  {(() => {
+    if (!isGameStarted) {
+      return 'White';
+    } else if (gameMode === 'online' && playerColor) {
+      // Multiplayer game - show actual usernames without color labels
+      const whiteName = playerColor === 'white' ? 
+        (authState.user?.username || 'Guest') : 
+        opponentName;
+      const isOpponent = playerColor !== 'white';
+      const showDisconnected = isOpponent && opponentDisconnected;
+      return (
+        <span style={{ color: showDisconnected ? '#dc3545' : 'inherit' }}>
+          {whiteName}
+          {showDisconnected && <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 'bold' }}>DISCONNECTED</span>}
+        </span>
+      );
+    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
+      // AI game with authenticated user - show username for white (human player)
+      return authState.user?.username;
+    } else {
+      // Local human vs human or unauthenticated - use gameState players
+      return gameState.players.white;
+    }
+  })()}
+</span>
                 <span>Links: <span id="white-score">{gameState.scores.white}</span></span>
               </div>
               {timerEnabled && (
-                <div className="player-timer" id="white-timer">
-                  {formatTime(timers.white)}
-                </div>
-              )}
+  <div 
+    className="player-timer" 
+    id="white-timer"
+    style={{ 
+      color: (gameMode === 'online' && playerColor !== 'white' && opponentDisconnected) ? '#dc3545' : 'inherit' 
+    }}
+  >
+    {formatTime(timers.white)}
+  </div>
+)}
           </div>
 
           {/* Game board */}
@@ -4580,31 +4593,44 @@ const App: React.FC = () => {
             <div className={`player ${gameState.currentPlayer === 'black' ? 'active' : ''}`} id="player-black">
               <div className="player-color black"></div>
               <span>
-                {(() => {
-                  if (!isGameStarted) {
-                    return 'Black';
-                  } else if (gameMode === 'online' && playerColor) {
-                    // Multiplayer game - show actual usernames without color labels
-                    const blackName = playerColor === 'black' ? 
-                      (authState.user?.username || 'Guest') : 
-                      opponentName;
-                    return blackName;
-                  } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
-                    // AI game - black is always the AI, show AI name without color label
-                    return gameState.players.black;
-                  } else {
-                    // Local human vs human or unauthenticated - use gameState players
-                    return gameState.players.black;
-                  }
-                })()}
-              </span>
+  {(() => {
+    if (!isGameStarted) {
+      return 'Black';
+    } else if (gameMode === 'online' && playerColor) {
+      // Multiplayer game - show actual usernames without color labels
+      const blackName = playerColor === 'black' ? 
+        (authState.user?.username || 'Guest') : 
+        opponentName;
+      const isOpponent = playerColor !== 'black';
+      const showDisconnected = isOpponent && opponentDisconnected;
+      return (
+        <span style={{ color: showDisconnected ? '#dc3545' : 'inherit' }}>
+          {blackName}
+          {showDisconnected && <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 'bold' }}>DISCONNECTED</span>}
+        </span>
+      );
+    } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
+      // AI game - black is always the AI, show AI name without color label
+      return gameState.players.black;
+    } else {
+      // Local human vs human or unauthenticated - use gameState players
+      return gameState.players.black;
+    }
+  })()}
+</span>
                               <span>Links: <span id="black-score">{gameState.scores.black}</span></span>
             </div>
             {timerEnabled && (
-              <div className="player-timer" id="black-timer">
-                {formatTime(timers.black)}
-              </div>
-            )}
+  <div 
+    className="player-timer" 
+    id="black-timer"
+    style={{ 
+      color: (gameMode === 'online' && playerColor !== 'black' && opponentDisconnected) ? '#dc3545' : 'inherit' 
+    }}
+  >
+    {formatTime(timers.black)}
+  </div>
+)}
           </div>
         </div>
 
