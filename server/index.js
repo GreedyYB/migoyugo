@@ -1701,12 +1701,18 @@ io.on('connection', (socket) => {
     for (const [gameId, game] of games.entries()) {
       if (game.players.white.id === socket.id || game.players.black.id === socket.id) {
         if (game.gameStatus === 'active') {
-          const remainingPlayer = game.players.white.id === socket.id ? 
-            game.players.black.socket : game.players.white.socket;
-          
-          stopServerTimer(gameId);
-          remainingPlayer.emit('opponentDisconnected');
-        }
+  const disconnectedPlayerColor = game.players.white.id === socket.id ? 'white' : 'black';
+  const remainingPlayer = game.players.white.id === socket.id ?
+    game.players.black.socket : game.players.white.socket;
+
+  // Track disconnect but keep timer running
+  game.disconnectedPlayer = disconnectedPlayerColor;
+  console.log(`Player ${disconnectedPlayerColor} disconnected from game ${gameId}`);
+  
+  remainingPlayer.emit('opponentDisconnected', { 
+    disconnectedPlayer: disconnectedPlayerColor 
+  });
+}
         
         // Clean up associated room if game came from a room
         if (game.roomCode) {
