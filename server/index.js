@@ -978,6 +978,44 @@ io.on('connection', (socket) => {
   
   console.log(`${playerName} connected ${authData.isGuest ? '(guest)' : '(authenticated)'}`);
 
+// Check for reconnection to existing game
+for (const [gameId, game] of games.entries()) {
+  if (game.gameStatus === 'active' && game.disconnectedPlayer) {
+    const disconnectedPlayerData = game.players[game.disconnectedPlayer];
+    
+    // Check if this is the same user reconnecting (by userId or socket characteristics)
+    if (disconnectedPlayerData.userId === userId && userId !== null) {
+      // Authenticated user reconnecting
+      console.log(`Authenticated user ${playerName} reconnected to game ${gameId}`);
+      
+      const disconnectedColor = game.disconnectedPlayer;
+      const opponentColor = disconnectedColor === 'white' ? 'black' : 'white';
+      
+      game.players[disconnectedColor].socket = socket;
+      game.players[disconnectedColor].id = socket.id;
+      
+      socket.join(gameId);
+      socket.emit('gameReconnected', {
+        gameId,
+        playerColor: disconnectedColor,
+        gameState: {
+          board: game.board,
+          currentPlayer: game.currentPlayer,
+          scores: game.scores
+        },
+        timers: game.timers
+      });
+      
+      // Notify opponent of reconnection
+      game.players[opponentColor].socket.emit('opponentReconnected');
+      
+      // Clear disconnect flag LAST
+      delete game.disconnectedPlayer;
+      break;
+    }
+  }
+}
+
   socket.on('findMatch', (timerSettings) => {
     const playerId = socket.id;
     
