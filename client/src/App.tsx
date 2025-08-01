@@ -4577,14 +4577,7 @@ setOpponentDisconnected(false);
       const whiteName = playerColor === 'white' ? 
         (authState.user?.username || 'Guest') : 
         opponentName;
-      const isOpponent = playerColor !== 'white';
-      const showDisconnected = isOpponent && opponentDisconnected;
-      return (
-        <span style={{ color: showDisconnected ? '#dc3545' : 'inherit' }}>
-          {whiteName}
-          {showDisconnected && <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 'bold' }}>DISCONNECTED</span>}
-        </span>
-      );
+      return whiteName;
     } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
       // AI game with authenticated user - show username for white (human player)
       return authState.user?.username;
@@ -4597,13 +4590,7 @@ setOpponentDisconnected(false);
                 <span>Links: <span id="white-score">{gameState.scores.white}</span></span>
               </div>
               {timerEnabled && (
-  <div 
-    className="player-timer" 
-    id="white-timer"
-    style={{ 
-      color: (gameMode === 'online' && playerColor !== 'white' && opponentDisconnected) ? '#dc3545' : 'inherit' 
-    }}
-  >
+  <div className="player-timer" id="white-timer">
     {formatTime(timers.white)}
   </div>
 )}
@@ -4611,8 +4598,43 @@ setOpponentDisconnected(false);
 
           {/* Game board */}
           <div className="board-with-labels">
-            <div>
+            <div style={{ position: 'relative' }}>
               {renderBoard()}
+              
+              {/* Disconnect Modal */}
+              {gameMode === 'online' && opponentDisconnected && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '0',
+                  right: '0',
+                  transform: 'translateY(-50%)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  border: '2px solid #dc3545',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  margin: '0 10px',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                  zIndex: 1000
+                }}>
+                  <div style={{
+                    color: '#dc3545',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    marginBottom: '10px'
+                  }}>
+                    Your opponent has disconnected
+                  </div>
+                  <div style={{
+                    color: '#333',
+                    fontSize: '14px',
+                    lineHeight: '1.4'
+                  }}>
+                    Their timer will continue to count down until they return, or time out.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -4629,14 +4651,7 @@ setOpponentDisconnected(false);
       const blackName = playerColor === 'black' ? 
         (authState.user?.username || 'Guest') : 
         opponentName;
-      const isOpponent = playerColor !== 'black';
-      const showDisconnected = isOpponent && opponentDisconnected;
-      return (
-        <span style={{ color: showDisconnected ? '#dc3545' : 'inherit' }}>
-          {blackName}
-          {showDisconnected && <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 'bold' }}>DISCONNECTED</span>}
-        </span>
-      );
+      return blackName;
     } else if ((gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3') && authState.isAuthenticated) {
       // AI game - black is always the AI, show AI name without color label
       return gameState.players.black;
@@ -4649,13 +4664,7 @@ setOpponentDisconnected(false);
                               <span>Links: <span id="black-score">{gameState.scores.black}</span></span>
             </div>
             {timerEnabled && (
-  <div 
-    className="player-timer" 
-    id="black-timer"
-    style={{ 
-      color: (gameMode === 'online' && playerColor !== 'black' && opponentDisconnected) ? '#dc3545' : 'inherit' 
-    }}
-  >
+  <div className="player-timer" id="black-timer">
     {formatTime(timers.black)}
   </div>
 )}
