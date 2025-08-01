@@ -998,6 +998,7 @@ for (const [gameId, game] of games.entries()) {
       socket.emit('gameReconnected', {
         gameId,
         playerColor: disconnectedColor,
+        opponentName: game.players[opponentColor].name,
         gameState: {
           board: game.board,
           currentPlayer: game.currentPlayer,
