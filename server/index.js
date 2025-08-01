@@ -978,44 +978,6 @@ io.on('connection', (socket) => {
   
   console.log(`${playerName} connected ${authData.isGuest ? '(guest)' : '(authenticated)'}`);
 
-// Check for reconnection to existing game
-for (const [gameId, game] of games.entries()) {
-  if (game.gameStatus === 'active' && game.disconnectedPlayer) {
-    const disconnectedPlayerData = game.players[game.disconnectedPlayer];
-    
-    // Check if this is the same user reconnecting (by userId or socket characteristics)
-    if (disconnectedPlayerData.userId === userId && userId !== null) {
-      // Authenticated user reconnecting
-      console.log(`Authenticated user ${playerName} reconnected to game ${gameId}`);
-      
-      const disconnectedColor = game.disconnectedPlayer;
-      const opponentColor = disconnectedColor === 'white' ? 'black' : 'white';
-      
-      game.players[disconnectedColor].socket = socket;
-      game.players[disconnectedColor].id = socket.id;
-      
-      socket.join(gameId);
-      socket.emit('gameReconnected', {
-        gameId,
-        playerColor: disconnectedColor,
-        opponentName: game.players[opponentColor].name,
-        gameState: {
-          board: game.board,
-          currentPlayer: game.currentPlayer,
-          scores: game.scores
-        },
-        timers: game.timers
-      });
-      
-      // Notify opponent of reconnection
-      game.players[opponentColor].socket.emit('opponentReconnected');
-      
-      // Clear disconnect flag LAST
-      delete game.disconnectedPlayer;
-      break;
-    }
-  }
-}
 
   socket.on('findMatch', (timerSettings) => {
     const playerId = socket.id;
@@ -1029,50 +991,7 @@ for (const [gameId, game] of games.entries()) {
     
     console.log(`Player ${playerName} looking for match with timer:`, standardTimer);
     
-    // Check if this user has a disconnected game first
-    for (const [gameId, game] of games.entries()) {
-      if (game.gameStatus === 'active' && game.disconnectedPlayer) {
-        const disconnectedPlayerData = game.players[game.disconnectedPlayer];
-        
-        if (disconnectedPlayerData.userId === userId && userId !== null) {
-          console.log(`User ${playerName} reconnecting to existing game ${gameId} via findMatch`);
-          
-          const disconnectedColor = game.disconnectedPlayer;
-          const opponentColor = disconnectedColor === 'white' ? 'black' : 'white';
-          
-          // Reconnect to existing game
-          game.players[disconnectedColor].socket = socket;
-          game.players[disconnectedColor].id = socket.id;
-          
-          socket.join(gameId);
-          socket.emit('gameStart', {
-            gameId,
-            playerColor: disconnectedColor,
-            opponentName: game.players[opponentColor].name,
-            timerSettings: game.timerSettings,
-            gameState: {
-              board: game.board,
-              currentPlayer: game.currentPlayer,
-              scores: game.scores,
-              players: {
-                white: game.players.white.name,
-                black: game.players.black.name
-              }
-            },
-            timers: game.timers,
-            timestamp: Date.now()
-          });
-          
-          // Notify opponent of reconnection
-          game.players[opponentColor].socket.emit('opponentReconnected');
-          
-          // Clear disconnect flag
-          delete game.disconnectedPlayer;
-          return; // Exit the findMatch handler
-        }
-      }
-    }
-    
+
     if (waitingPlayers.length > 0) {
       // Match with waiting player
       const opponent = waitingPlayers.shift();
@@ -1783,36 +1702,32 @@ for (const [gameId, game] of games.entries()) {
     // Handle game disconnection
     for (const [gameId, game] of games.entries()) {
       if (game.players.white.id === socket.id || game.players.black.id === socket.id) {
-        if (game.gameStatus === 'active') {
-  const disconnectedPlayerColor = game.players.white.id === socket.id ? 'white' : 'black';
-  const remainingPlayer = game.players.white.id === socket.id ?
-    game.players.black.socket : game.players.white.socket;
-
-  // Track disconnect but keep timer running
-  game.disconnectedPlayer = disconnectedPlayerColor;
-  console.log(`Player ${disconnectedPlayerColor} disconnected from game ${gameId}`);
-  
-  remainingPlayer.emit('opponentDisconnected', { 
-    disconnectedPlayer: disconnectedPlayerColor 
-  });
-  
-  // Clean up associated room if game came from a room
-  if (game.roomCode) {
-    rooms.delete(game.roomCode);
-    console.log(`Cleaned up room ${game.roomCode} after game ${gameId} ended`);
-  }
-  
-  // DO NOT delete the game - keep it alive for reconnection
-  console.log(`Game ${gameId} kept alive for potential reconnection`);
-} else {
-  // Only delete finished games
-  if (game.roomCode) {
-    rooms.delete(game.roomCode);
-    console.log(`Cleaned up room ${game.roomCode} after game ${gameId} ended`);
-  }
-  games.delete(gameId);
-  console.log(`Deleted finished game ${gameId}`);
-}
+        const disconnectedPlayerColor = game.players.white.id === socket.id ? 'white' : 'black';
+        const winner = disconnectedPlayerColor === 'white' ? 'black' : 'white';
+        
+        // Stop the game timer
+        stopServerTimer(gameId);
+        
+        // End the game - disconnection = instant loss
+        game.gameStatus = 'finished';
+        const remainingPlayer = game.players.white.id === socket.id ?
+          game.players.black.socket : game.players.white.socket;
+          
+        remainingPlayer.emit('gameEnd', {
+          winner,
+          reason: 'disconnection'
+        });
+        
+        console.log(`Game ${gameId} ended - ${disconnectedPlayerColor} disconnected, ${winner} wins`);
+        
+        // Clean up associated room if game came from a room
+        if (game.roomCode) {
+          rooms.delete(game.roomCode);
+          console.log(`Cleaned up room ${game.roomCode} after game ${gameId} ended`);
+        }
+        
+        // Delete the game immediately
+        games.delete(gameId);
         break;
       }
     }
