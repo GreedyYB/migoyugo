@@ -2849,7 +2849,7 @@ newSocket.on('gameReconnected', (data) => {
   console.log('Reconnected to existing game:', data);
   
   // Set up the game state similar to gameStart
-  setCurrentGameId(data.gameId);
+  setGameId(data.gameId);
   setPlayerColor(data.playerColor);
   setGameState(data.gameState.board);
   setCurrentPlayer(data.gameState.currentPlayer);
