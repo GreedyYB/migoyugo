@@ -2595,6 +2595,10 @@ const [opponentDisconnected, setOpponentDisconnected] = useState(false);
               user: data.user,
               isGuest: false
             });
+            
+            // Check if user has an active game to reconnect to
+            // This will trigger socket connection and potential reconnection
+            setGameMode('online');
           } else {
             // Token is invalid, remove it
             localStorage.removeItem('authToken');
@@ -2839,6 +2843,27 @@ setOpponentDisconnected(false);
 newSocket.on('opponentReconnected', () => {
   console.log('Opponent reconnected');
   setOpponentDisconnected(false);
+});
+
+newSocket.on('gameReconnected', (data) => {
+  console.log('Reconnected to existing game:', data);
+  
+  // Set up the game state similar to gameStart
+  setCurrentGameId(data.gameId);
+  setPlayerColor(data.playerColor);
+  setGameState(data.gameState.board);
+  setCurrentPlayer(data.gameState.currentPlayer);
+  setScores(data.gameState.scores);
+  setTimers(data.timers);
+  setOpponentDisconnected(false);
+  
+  // Set game mode and hide menus
+  setGameMode('online');
+  setShowMainMenu(false);
+  setSearchingForMatch(false);
+  setWaitingForOpponent(false);
+  
+  console.log('Game reconnection complete');
 });
 
       // Debug: Listen for all socket events
