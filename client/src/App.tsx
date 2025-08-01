@@ -2851,11 +2851,16 @@ newSocket.on('gameReconnected', (data) => {
   // Set up the game state similar to gameStart
   setGameId(data.gameId);
   setPlayerColor(data.playerColor);
-  setGameState(data.gameState.board);
-  setCurrentPlayer(data.gameState.currentPlayer);
-  setScores(data.gameState.scores);
+  setOpponentName(data.opponentName);
+  setGameState(prev => ({
+    ...prev,
+    ...data.gameState,
+    gameStatus: 'active'
+  }));
   setTimers(data.timers);
+  setActiveTimer(data.gameState.currentPlayer);
   setOpponentDisconnected(false);
+  setIsGameStarted(true);
   
   // Set game mode and hide menus
   setGameMode('online');
