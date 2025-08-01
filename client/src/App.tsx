@@ -2864,9 +2864,8 @@ newSocket.on('gameReconnected', (data) => {
   
   // Set game mode and hide menus
   setGameMode('online');
-  setShowMainMenu(false);
-  setSearchingForMatch(false);
-  setWaitingForOpponent(false);
+  setShowMatchmaking(false);
+  setIsSearchingMatch(false);
   
   console.log('Game reconnection complete');
 });
