@@ -1794,15 +1794,24 @@ for (const [gameId, game] of games.entries()) {
   remainingPlayer.emit('opponentDisconnected', { 
     disconnectedPlayer: disconnectedPlayerColor 
   });
+  
+  // Clean up associated room if game came from a room
+  if (game.roomCode) {
+    rooms.delete(game.roomCode);
+    console.log(`Cleaned up room ${game.roomCode} after game ${gameId} ended`);
+  }
+  
+  // DO NOT delete the game - keep it alive for reconnection
+  console.log(`Game ${gameId} kept alive for potential reconnection`);
+} else {
+  // Only delete finished games
+  if (game.roomCode) {
+    rooms.delete(game.roomCode);
+    console.log(`Cleaned up room ${game.roomCode} after game ${gameId} ended`);
+  }
+  games.delete(gameId);
+  console.log(`Deleted finished game ${gameId}`);
 }
-        
-        // Clean up associated room if game came from a room
-        if (game.roomCode) {
-          rooms.delete(game.roomCode);
-          console.log(`Cleaned up room ${game.roomCode} after game ${gameId} ended`);
-        }
-        
-        games.delete(gameId);
         break;
       }
     }
