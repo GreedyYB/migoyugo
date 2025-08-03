@@ -542,6 +542,11 @@ h1 {
     font-family: monospace;
     background: white;
     transition: height 0.3s ease;
+    /* Allow text selection for game log content */
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 
 /* When in review mode, add padding to make room for controls */
@@ -550,39 +555,15 @@ h1 {
     padding-bottom: 85px; /* Adjusted for smaller controls */
 }
 
-/* Review section styles - positioned at bottom of container */
-#review-section {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -25px;
-    margin-top: 60px;
-    background: rgba(255, 255, 255, 0.97);
-    border-top: 1px solid #ccc;
-    box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.1);
-    padding: 4px;
-    z-index: 20;
-    transition: transform 0.2s ease;
-    width: 236px;
-    box-sizing: border-box;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: center;
-}
-
-/* Scrollbar styles */
-.game-log::-webkit-scrollbar {
-    width: 8px;
-}
-
-.game-log::-webkit-scrollbar-thumb {
-    background-color: #bbb;
-    border-radius: 4px;
-}
-
+/* Allow text selection for move history content */
 .log-entry {
     margin-bottom: 5px;
     display: flex;
+    /* Allow text selection for move entries */
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 
 .log-entry.highlighted {
@@ -595,12 +576,22 @@ h1 {
     font-weight: bold;
     text-align: right; /* Right-align the numbers */
     padding-right: 8px; /* Consistent padding after the period */
+    /* Allow text selection for move numbers */
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 
 .white-move, .black-move {
     width: 40%; /* Keep these the same */
     display: flex;
     padding-left: 5px; /* Add a consistent left padding */
+    /* Allow text selection for move coordinates */
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 
 .white-move.highlighted, .black-move.highlighted {
@@ -612,6 +603,11 @@ h1 {
     color: var(--node-color);
     margin-left: 3px;
     font-weight: bold;
+    /* Allow text selection for node indicators */
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 
 .review-controls {
@@ -2943,4 +2939,34 @@ html, body {
         margin: 0 !important;
         flex-shrink: 1 !important;
     }
+}
+
+/* Review section styles - positioned at bottom of container */
+#review-section {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -25px;
+    margin-top: 60px;
+    background: rgba(255, 255, 255, 0.97);
+    border-top: 1px solid #ccc;
+    box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.1);
+    padding: 4px;
+    z-index: 20;
+    transition: transform 0.2s ease;
+    width: 236px;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+/* Scrollbar styles */
+.game-log::-webkit-scrollbar {
+    width: 8px;
+}
+
+.game-log::-webkit-scrollbar-thumb {
+    background-color: #bbb;
+    border-radius: 4px;
 }
