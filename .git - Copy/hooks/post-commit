@@ -1,0 +1,4 @@
+#!/bin/sh
+# Auto-push to GitHub after commit
+echo "Auto-pushing to GitHub..."
+git push origin master 
