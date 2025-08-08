@@ -4727,6 +4727,7 @@ setOpponentDisconnected(false);
                     <option value="ai-1">CORE AI-1</option>
                     <option value="ai-2">CORE AI-2</option>
                     <option value="ai-3">CORE AI-3</option>
+                     <option value="ai-4">CORE AI-4</option>
                     <option value="online">Online Multiplayer</option>
                   </select>
                 </div>
@@ -5725,6 +5726,7 @@ setOpponentDisconnected(false);
                 <option value="ai-1">CORE AI-1</option>
                 <option value="ai-2">CORE AI-2</option>
                 <option value="ai-3">CORE AI-3</option>
+                 <option value="ai-4">CORE AI-4</option>
                 <option value="online">Online Multiplayer</option>
               </select>
             </div>
