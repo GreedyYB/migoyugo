@@ -638,10 +638,11 @@ const minimax = (
     }
   }
   
-  // Base case
+  // Base case -> use quiescence search to resolve tactical volatility
   if (depth === 0) {
-    const score = evaluatePosition(board, playerColor);
-    return {score, bestMove: null};
+    const currentColorAtNode = isMaximizing ? playerColor : (playerColor === 'white' ? 'black' : 'white');
+    const q = quiescence(board, alpha, beta, currentColorAtNode, playerColor, isMaximizing, 0, 4);
+    return {score: q.score, bestMove: null};
   }
   
   const currentColor = isMaximizing ? playerColor : (playerColor === 'white' ? 'black' : 'white');
@@ -702,6 +703,97 @@ const minimax = (
 // Global transposition table instance
 const globalTransTable = new TranspositionTable();
 
+// --- Quiescence Search & Tactical Move Generation for AI-4 ---
+function quiescence(
+  board: (Cell | null)[][],
+  alpha: number,
+  beta: number,
+  currentTurnColor: 'white' | 'black',
+  evalColor: 'white' | 'black',
+  isMaximizing: boolean,
+  qDepth: number,
+  maxQDepth: number
+): { score: number } {
+  // Stand-pat evaluation
+  const standPat = evaluatePosition(board, evalColor);
+
+  if (isMaximizing) {
+    if (standPat >= beta) return { score: standPat };
+    if (standPat > alpha) alpha = standPat;
+  } else {
+    if (standPat <= alpha) return { score: standPat };
+    if (standPat < beta) beta = standPat;
+  }
+
+  if (qDepth >= maxQDepth) return { score: standPat };
+
+  const tacticalMoves = getTacticalMoves(board, currentTurnColor);
+  if (tacticalMoves.length === 0) return { score: standPat };
+
+  let best = standPat;
+  for (const move of tacticalMoves) {
+    const newBoard = makeMove(board, move.row, move.col, currentTurnColor);
+    const nextColor: 'white' | 'black' = currentTurnColor === 'white' ? 'black' : 'white';
+    const child = quiescence(newBoard, alpha, beta, nextColor, evalColor, !isMaximizing, qDepth + 1, maxQDepth);
+
+    if (isMaximizing) {
+      if (child.score > best) best = child.score;
+      if (best > alpha) alpha = best;
+    } else {
+      if (child.score < best) best = child.score;
+      if (best < beta) beta = best;
+    }
+    if (beta <= alpha) break;
+  }
+  return { score: best };
+}
+
+function getTacticalMoves(
+  board: (Cell | null)[][],
+  playerColor: 'white' | 'black'
+): { row: number; col: number }[] {
+  const opponentColor: 'white' | 'black' = playerColor === 'white' ? 'black' : 'white';
+  const all = getAllValidMoves(board, playerColor);
+  const result: { row: number; col: number }[] = [];
+
+  // Precompute opponent immediate Igo threats to allow blocking
+  const opponentThreatSquares = new Set<string>();
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (!isValidMove(board, r, c, opponentColor)) continue;
+      const oppBoard = board.map(row => [...row]);
+      oppBoard[r][c] = { color: opponentColor, isNode: true, nodeType: 'standard' };
+      if (checkForNexus(oppBoard, r, c, opponentColor)) {
+        opponentThreatSquares.add(`${r},${c}`);
+      }
+    }
+  }
+
+  for (const move of all) {
+    const testBoard = board.map(r => [...r]);
+    // 1) Creating unbroken line of 4 (vectors) is tactical
+    testBoard[move.row][move.col] = { color: playerColor, isNode: false };
+    const vecs = checkForVectors(testBoard, move.row, move.col, playerColor);
+    if (vecs.length > 0) {
+      result.push(move);
+      continue;
+    }
+
+    // 2) Immediate Igo (nexus) by making this cell a node
+    testBoard[move.row][move.col] = { color: playerColor, isNode: true, nodeType: 'standard' };
+    if (checkForNexus(testBoard, move.row, move.col, playerColor)) {
+      result.push(move);
+      continue;
+    }
+
+    // 3) Blocks opponent immediate Igo (if opponent could win by playing here)
+    if (opponentThreatSquares.has(`${move.row},${move.col}`)) {
+      result.push(move);
+      continue;
+    }
+  }
+  return result;
+}
   // Check for "adjacent nodes + dot sacrifice" threat pattern (the tactic user discovered)
 const checkAdjacentNodeThreat = (board: (Cell | null)[][], row: number, col: number, playerColor: 'white' | 'black'): boolean => {
       // This detects the pattern: Node-Node-Empty-Dot where Dot can sacrifice to create double threat
