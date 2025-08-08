@@ -4394,6 +4394,27 @@ setOpponentDisconnected(false);
         if (checkForNexus(testBoard, r, c, oppColor)) score -= 9500;
       }
     }
+
+    // Integrate AI-3 tactical detectors (threat awareness)
+    try {
+      // Opponent immediate/critical threats (heavily penalize)
+      const oppThreeNode = typeof detectThreeNodeThreat === 'function' ? detectThreeNodeThreat(board, oppColor) : [];
+      const oppForks = typeof detectNexusFork === 'function' ? detectNexusFork(board, oppColor) : [];
+      const oppVectorToFork = typeof detectVectorToForkThreat === 'function' ? detectVectorToForkThreat(board, oppColor) : [];
+      score -= 15000 * (oppThreeNode?.length || 0);
+      score -= 12000 * (oppForks?.length || 0);
+      score -= 13000 * (oppVectorToFork?.length || 0);
+
+      // Our own tactical chances (reward)
+      const ownThreeNode = typeof detectThreeNodeThreat === 'function' ? detectThreeNodeThreat(board, playerColor) : [];
+      const ownForks = typeof detectNexusFork === 'function' ? detectNexusFork(board, playerColor) : [];
+      const ownVectorToFork = typeof detectVectorToForkThreat === 'function' ? detectVectorToForkThreat(board, playerColor) : [];
+      score += 5000 * (ownThreeNode?.length || 0);
+      score += 4000 * (ownForks?.length || 0);
+      score += 3500 * (ownVectorToFork?.length || 0);
+    } catch {
+      // If any detector is unavailable, skip without breaking evaluation
+    }
     // 6. Chain-building bias: reward longer chains of own color
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
