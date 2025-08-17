@@ -2312,6 +2312,11 @@ const App: React.FC = () => {
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [currentReviewMove, setCurrentReviewMove] = useState(0);
   const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
+
+  // Self-play (AI vs AI) harness state
+  const [selfPlayEnabled, setSelfPlayEnabled] = useState(false);
+  const [whiteEngine, setWhiteEngine] = useState<'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'>('ai-3');
+  const [blackEngine, setBlackEngine] = useState<'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'>('ai-4');
   const [boardHistory, setBoardHistory] = useState<(Cell | null)[][][]>([]);
   const [holdScrollInterval, setHoldScrollInterval] = useState<NodeJS.Timeout | null>(null);
 
@@ -3470,22 +3475,31 @@ setOpponentDisconnected(false);
       playerColor,
       currentPlayer: gameState.currentPlayer,
     });
-    if (
-      isGameStarted &&
+    const aiTurnInStandardMode = isGameStarted &&
       gameState.gameStatus === 'active' &&
       (gameMode === 'ai-1' || gameMode === 'ai-2' || gameMode === 'ai-3' || gameMode === 'ai-4') &&
       playerColor &&
-      gameState.currentPlayer !== playerColor
-    ) {
+      gameState.currentPlayer !== playerColor;
+
+    const aiTurnInSelfPlay = isGameStarted &&
+      gameState.gameStatus === 'active' &&
+      selfPlayEnabled &&
+      (gameState.currentPlayer === 'white' || gameState.currentPlayer === 'black');
+
+    if (aiTurnInStandardMode || aiTurnInSelfPlay) {
       // AI's turn
       let minThinkTime, maxThinkTime;
-      if (gameMode === 'ai-1') {
+      const currentEngine = selfPlayEnabled
+        ? (gameState.currentPlayer === 'white' ? whiteEngine : blackEngine)
+        : (gameMode as 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4');
+
+      if (currentEngine === 'ai-1') {
         minThinkTime = 1000;
         maxThinkTime = 2000;
-      } else if (gameMode === 'ai-2') {
+      } else if (currentEngine === 'ai-2') {
         minThinkTime = 1500;
         maxThinkTime = 2500;
-      } else if (gameMode === 'ai-3') {
+      } else if (currentEngine === 'ai-3') {
         minThinkTime = 2000;
         maxThinkTime = 4000;
       } else {
@@ -3493,26 +3507,26 @@ setOpponentDisconnected(false);
         maxThinkTime = 5000;
       }
       const thinkTime = Math.floor(Math.random() * (maxThinkTime - minThinkTime + 1)) + minThinkTime;
-      console.log(`${gameMode.toUpperCase()} thinking for ${thinkTime}ms...`);
+      console.log(`${currentEngine.toUpperCase()} thinking for ${thinkTime}ms...`);
       const timeout = setTimeout(() => {
         let aiMove;
-        if (gameMode === 'ai-4') {
+        if (currentEngine === 'ai-4') {
           // Count total pieces on the board
           const totalPieces = gameState.board.flat().filter(cell => cell !== null).length;
           // Use depth 3 for first 8 moves, then depth 2
           const maxDepth = totalPieces < 8 ? 3 : 2;
           aiMove = iterativeDeepeningMinimax(gameState.board, 3000, 'black', globalTransTable, maxDepth);
         } else {
-          aiMove = getAIMove(gameState.board, gameMode as 'ai-1' | 'ai-2' | 'ai-3');
+          aiMove = getAIMove(gameState.board, currentEngine as 'ai-1' | 'ai-2' | 'ai-3');
         }
         if (aiMove) {
-          console.log(`${gameMode.toUpperCase()} selected move:`, aiMove);
+          console.log(`${currentEngine.toUpperCase()} selected move:`, aiMove);
           makeLocalMove(aiMove.row, aiMove.col);
         }
       }, thinkTime);
       return () => clearTimeout(timeout);
     }
-  }, [gameState.currentPlayer, gameState.gameStatus, isGameStarted, gameMode, gameState.board, makeLocalMove, playerColor]);
+  }, [gameState.currentPlayer, gameState.gameStatus, isGameStarted, gameMode, gameState.board, makeLocalMove, playerColor, selfPlayEnabled, whiteEngine, blackEngine]);
 
   const handleCellClick = (row: number, col: number) => {
     if (!isGameStarted || gameState.gameStatus !== 'active' || isReviewMode) return;
@@ -4840,10 +4854,44 @@ setOpponentDisconnected(false);
                     <option value="ai-1">CORE AI-1</option>
                     <option value="ai-2">CORE AI-2</option>
                     <option value="ai-3">CORE AI-3</option>
-                     <option value="ai-4">CORE AI-4</option>
                     <option value="online">Online Multiplayer</option>
                   </select>
                 </div>
+
+                {/* Self-Play (AI vs AI) controls - developer/testing only */}
+                <div className="option-row" style={{ marginTop: 8 }}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={selfPlayEnabled}
+                      onChange={(e) => setSelfPlayEnabled(e.target.checked)}
+                      style={{ marginRight: 8 }}
+                    />
+                    Self-Play (AI vs AI)
+                  </label>
+                </div>
+                {selfPlayEnabled && (
+                  <div className="option-row" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+                    <div>
+                      <label style={{ marginRight: 6 }}>White:</label>
+                      <select value={whiteEngine} onChange={(e) => setWhiteEngine(e.target.value as any)}>
+                        <option value="ai-1">AI-1</option>
+                        <option value="ai-2">AI-2</option>
+                        <option value="ai-3">AI-3</option>
+                        <option value="ai-4">AI-4</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ marginRight: 6 }}>Black:</label>
+                      <select value={blackEngine} onChange={(e) => setBlackEngine(e.target.value as any)}>
+                        <option value="ai-1">AI-1</option>
+                        <option value="ai-2">AI-2</option>
+                        <option value="ai-3">AI-3</option>
+                        <option value="ai-4">AI-4</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
 
                 {/* Color selection segmented control for AI games */}
                 {(gameMode.startsWith('ai-')) && (
