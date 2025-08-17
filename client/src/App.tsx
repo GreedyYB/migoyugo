@@ -2313,10 +2313,7 @@ const App: React.FC = () => {
   const [currentReviewMove, setCurrentReviewMove] = useState(0);
   const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
 
-  // Self-play (AI vs AI) harness state
-  const [selfPlayEnabled, setSelfPlayEnabled] = useState(false);
-  const [whiteEngine, setWhiteEngine] = useState<'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'>('ai-3');
-  const [blackEngine, setBlackEngine] = useState<'ai-1' | 'ai-2' | 'ai-3' | 'ai-4'>('ai-4');
+
   const [boardHistory, setBoardHistory] = useState<(Cell | null)[][][]>([]);
   const [holdScrollInterval, setHoldScrollInterval] = useState<NodeJS.Timeout | null>(null);
 
@@ -3481,17 +3478,12 @@ setOpponentDisconnected(false);
       playerColor &&
       gameState.currentPlayer !== playerColor;
 
-    const aiTurnInSelfPlay = isGameStarted &&
-      gameState.gameStatus === 'active' &&
-      selfPlayEnabled &&
-      (gameState.currentPlayer === 'white' || gameState.currentPlayer === 'black');
+    const aiTurnInSelfPlay = false;
 
     if (aiTurnInStandardMode || aiTurnInSelfPlay) {
       // AI's turn
       let minThinkTime, maxThinkTime;
-      const currentEngine = selfPlayEnabled
-        ? (gameState.currentPlayer === 'white' ? whiteEngine : blackEngine)
-        : (gameMode as 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4');
+      const currentEngine = gameMode as 'ai-1' | 'ai-2' | 'ai-3' | 'ai-4';
 
       if (currentEngine === 'ai-1') {
         minThinkTime = 1000;
@@ -3526,7 +3518,7 @@ setOpponentDisconnected(false);
       }, thinkTime);
       return () => clearTimeout(timeout);
     }
-  }, [gameState.currentPlayer, gameState.gameStatus, isGameStarted, gameMode, gameState.board, makeLocalMove, playerColor, selfPlayEnabled, whiteEngine, blackEngine]);
+  }, [gameState.currentPlayer, gameState.gameStatus, isGameStarted, gameMode, gameState.board, makeLocalMove, playerColor]);
 
   const handleCellClick = (row: number, col: number) => {
     if (!isGameStarted || gameState.gameStatus !== 'active' || isReviewMode) return;
@@ -4858,40 +4850,8 @@ setOpponentDisconnected(false);
                   </select>
                 </div>
 
-                {/* Self-Play (AI vs AI) controls - developer/testing only */}
-                <div className="option-row" style={{ marginTop: 8 }}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={selfPlayEnabled}
-                      onChange={(e) => setSelfPlayEnabled(e.target.checked)}
-                      style={{ marginRight: 8 }}
-                    />
-                    Self-Play (AI vs AI)
-                  </label>
-                </div>
-                {selfPlayEnabled && (
-                  <div className="option-row" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
-                    <div>
-                      <label style={{ marginRight: 6 }}>White:</label>
-                      <select value={whiteEngine} onChange={(e) => setWhiteEngine(e.target.value as any)}>
-                        <option value="ai-1">AI-1</option>
-                        <option value="ai-2">AI-2</option>
-                        <option value="ai-3">AI-3</option>
-                        <option value="ai-4">AI-4</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ marginRight: 6 }}>Black:</label>
-                      <select value={blackEngine} onChange={(e) => setBlackEngine(e.target.value as any)}>
-                        <option value="ai-1">AI-1</option>
-                        <option value="ai-2">AI-2</option>
-                        <option value="ai-3">AI-3</option>
-                        <option value="ai-4">AI-4</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
+
+
 
                 {/* Color selection segmented control for AI games */}
                 {(gameMode.startsWith('ai-')) && (
