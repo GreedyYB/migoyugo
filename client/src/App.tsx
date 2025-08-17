@@ -5048,32 +5048,33 @@ setOpponentDisconnected(false);
         <>
           <div className="overlay" style={{ display: 'block' }} onClick={() => setShowRules(false)} />
           <div className="notification settings-dialog" style={{ display: 'block' }}>
-            <h2><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> Game Rules</h2>
+            <h2><span style={{color: 'red', fontWeight: 'bold'}}>Migoyugo</span> Game Rules</h2>
             
+            <br />
                         <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10, textAlign: 'left' }}>
               <h3 style={{ color: 'red' }}>The Game</h3>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
-                <li>migoyugo is a board game for two players</li>
+                <li><strong>Migoyugo</strong> is a board game for two players</li>
                 <li>it is an abstract strategy game that features complete information and no reliance on luck or chance</li>
               </ul>
               
               <h3 style={{ color: 'red' }}>The Board</h3>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
-                <li>The migoyugo board is an 8 X 8 grid of 64 squares, all of the same color</li>
+                <li>The Migoyugo board is an 8 X 8 grid of 64 squares, all of the same color</li>
                 <li>The board is made up of eight rows (1-8 from bottom to top) and eight columns (A-H from left to right)</li>
               </ul>
               
               <h3 style={{ color: 'red' }}>The Migo</h3>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
-                <li>White always moves first by placing a piece, called a Migo, on any open square on the board</li>
+                <li>White always moves first by placing a piece, called a <strong>Migo</strong>, on any open square on the board</li>
                 <li>Players take turns placing Migos, alternating white and black</li>
                 <li>A player may place a Migo on any open square on the board, unless it will create a line longer than 4 pieces of their own colour</li>
               </ul>
               
               <h3 style={{ color: 'red' }}>The Yugo</h3>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
-                <li>When you form an unbroken line (horizontal, vertical or diagonal) of exactly 4 pieces of your own color, the last Migo placed in this line becomes a Yugo, represented by a red mark in the center</li>
-                <li>When a Yugo is created all Migos in the line are removed, leaving behind only the Yugo created and any other Yugos in that line</li>
+                <li>When you form an unbroken line (horizontal, vertical or diagonal) of exactly 4 pieces of your own color, the last Migo placed in this line becomes a <strong>Yugo</strong>, represented by a red mark in the center</li>
+                <li>When a Yugo is created, all Migos in the line are removed, leaving behind only the Yugo created and any other Yugos in that line</li>
                 <li>Yugos can never be moved or removed from the board</li>
               </ul>
               
@@ -5153,7 +5154,7 @@ setOpponentDisconnected(false);
               <h3 style={{ color: 'red' }}>Winning</h3>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '20px' }}>
                 <li>Form an unbroken line (horizontal, vertical or diagonal) of exactly 4 Yugos of your own color and you win instantly with an Igo</li>
-                <li>If no Igo can be made and no legal moves are available to either player at any time, the game ends with a Wego, and the player with the most Yugos is declared the winner. If both players have the same number of Yugos, the game is drawn</li>
+                <li>If no Igo can be made and no legal moves are available to either player at any time, the game ends with a <strong>Wego</strong>, and the player with the most Yugos is declared the winner. If both players have the same number of Yugos, the game is drawn</li>
                 <li>If a player resigns, the opponent is declared the winner</li>
                 <li>If the players compete using a clock, a player is declared the winner if the opponent's clock runs out of time</li>
               </ul>
