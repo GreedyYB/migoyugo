@@ -5051,54 +5051,48 @@ setOpponentDisconnected(false);
             <h2><span style={{color: 'red', fontWeight: 'bold'}}>migoyugo</span> Game Rules</h2>
             
                         <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 10, textAlign: 'left' }}>
-              <h3 style={{ color: 'red' }}>Overview</h3>
+              <h3 style={{ color: 'red' }}>The Game</h3>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
-                <li>Migoyugo is a two-player strategic board game played on an 8×8 grid</li>
-                <li>Players take turns placing their Chips to create Chains</li>
-                <li>Chains transform into Links</li>
-                <li>The ultimate goal is to form a Lock and win the game</li>
+                <li>migoyugo is a board game for two players</li>
+                <li>it is an abstract strategy game that features complete information and no reliance on luck or chance</li>
               </ul>
               
-              <h3 style={{ color: 'red' }}>Setup</h3>
+              <h3 style={{ color: 'red' }}>The Board</h3>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
-                <li><strong>Board:</strong> 8×8 square grid</li>
-                <li><strong>Players:</strong> Two — White and Black (White always goes first)</li>
+                <li>The migoyugo board is an 8 X 8 grid of 64 squares, all of the same color</li>
+                <li>The board is made up of eight rows (1-8 from bottom to top) and eight columns (A-H from left to right)</li>
               </ul>
               
-              <h3 style={{ color: 'red' }}>Gameplay</h3>
-              <h4 style={{ color: 'red', marginTop: '15px' }}>Placing Chips</h4>
+              <h3 style={{ color: 'red' }}>The Migo</h3>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
+                <li>White always moves first by placing a piece, called a Migo, on any open square on the board</li>
+                <li>Players take turns placing Migos, alternating white and black</li>
+                <li>A player may place a Migo on any open square on the board, unless it will create a line longer than 4 pieces of their own colour</li>
+              </ul>
+              
+              <h3 style={{ color: 'red' }}>The Yugo</h3>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
+                <li>When you form an unbroken line (horizontal, vertical or diagonal) of exactly 4 pieces of your own color, the last Migo placed in this line becomes a Yugo, represented by a red mark in the center</li>
+                <li>When a Yugo is created all Migos in the line are removed, leaving behind only the Yugo created and any other Yugos in that line</li>
+                <li>Yugos can never be moved or removed from the board</li>
+              </ul>
+              
+              <h3 style={{ color: 'red' }}>Yugo Types</h3>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '20px' }}>
-                <li>Players take turns placing a single Chip (of their color) on any empty space</li>
-                <li>An unbroken line (horizontal, vertical, or diagonal) of exactly 4 Chips of the same color makes a Chain</li>
-                <li>Lines longer than 4 of your own color are not allowed</li>
-              </ul>
-              
-              <h4 style={{ color: 'red' }}>Forming a Chain</h4>
-              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
-                <li>When a player creates a Chain:</li>
-                <ul style={{ listStyleType: 'circle', paddingLeft: '20px', marginTop: '10px' }}>
-                  <li>The last Chip placed becomes a Link (marked with a red indicator)</li>
-                  <li>All non-Link Chips in the Chain are removed from the board</li>
-                </ul>
-              </ul>
-              
-              <h3 style={{ color: 'red' }}>Link Types</h3>
-              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '20px' }}>
-                <li>A Link can never be moved or removed from the board</li>
-                <li>Links are marked differently depending on how many Chains are formed in a single move:</li>
+                <li>Yugos are marked differently depending on how many lines are formed in a single move:</li>
               </ul>
               <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0 30px 0', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #ddd' }}>
-                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Chains Formed</th>
-                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Link Type</th>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Lines Formed</th>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Yugo Type</th>
                     <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Marker Symbol</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>1</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Standard Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>1 line</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Single Yugo</td>
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
                       <div style={{ 
                         width: '12px', 
@@ -5106,12 +5100,12 @@ setOpponentDisconnected(false);
                         borderRadius: '50%', 
                         backgroundColor: '#e74c3c', 
                         display: 'inline-block' 
-                      }}></div>
+                      }}></div> (red dot)
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>2</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Double Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>2 intersecting lines at once</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Double Yugo</td>
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
                       <div style={{ 
                         width: '16px', 
@@ -5119,12 +5113,12 @@ setOpponentDisconnected(false);
                         backgroundColor: '#e74c3c', 
                         borderRadius: '50%',
                         display: 'inline-block' 
-                      }}></div>
+                      }}></div> (red oval)
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>3</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Triple Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>3 intersecting lines at once</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Triple Yugo</td>
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
                       <div style={{ 
                         width: '12px', 
@@ -5132,12 +5126,12 @@ setOpponentDisconnected(false);
                         backgroundColor: '#e74c3c', 
                         clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
                         display: 'inline-block' 
-                      }}></div>
+                      }}></div> (red triangle)
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>4</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Quadruple Link</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>4 intersecting lines at once</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Quadruple Yugo</td>
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
                       <div style={{ 
                         width: '12px', 
@@ -5145,31 +5139,23 @@ setOpponentDisconnected(false);
                         backgroundColor: '#e74c3c', 
                         transform: 'rotate(45deg)',
                         display: 'inline-block' 
-                      }}></div>
+                      }}></div> (red diamond)
                     </td>
                   </tr>
                 </tbody>
               </table>
               
-              <h3 style={{ color: 'red' }}>Winning the Game</h3>
+              <h3 style={{ color: 'red' }}>No Long Lines</h3>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
+                <li>At no time may either player create a line of more than 4 in a row of any combination of Migos and/or Yugos</li>
+              </ul>
+              
+              <h3 style={{ color: 'red' }}>Winning</h3>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '20px' }}>
-                <li>Primary win condition: Create a <strong>Lock</strong>
-                  <ul style={{ listStyleType: 'circle', paddingLeft: '20px', marginTop: '10px' }}>
-                    <li>A Lock is a chain of 4 Links of the same color in a straight line (horizontal, vertical, or diagonal)</li>
-                  </ul>
-                </li>
-                <li>Alternative win conditions:
-                  <ul style={{ listStyleType: 'circle', paddingLeft: '20px', marginTop: '10px' }}>
-                    <li>If the board fills up or no legal moves are possible:
-                      <ul style={{ listStyleType: 'square', paddingLeft: '20px', marginTop: '10px' }}>
-                        <li>The player with the most Links wins</li>
-                        <li>Equal number of Links results in a draw</li>
-                      </ul>
-                    </li>
-                    <li>If a player resigns, their opponent wins</li>
-                    <li>If using a clock, a player wins if their opponent's clock expires</li>
-                  </ul>
-                </li>
+                <li>Form an unbroken line (horizontal, vertical or diagonal) of exactly 4 Yugos of your own color and you win instantly with an Igo</li>
+                <li>If no Igo can be made and no legal moves are available to either player at any time, the game ends with a Wego, and the player with the most Yugos is declared the winner. If both players have the same number of Yugos, the game is drawn</li>
+                <li>If a player resigns, the opponent is declared the winner</li>
+                <li>If the players compete using a clock, a player is declared the winner if the opponent's clock runs out of time</li>
               </ul>
             </div>
 
