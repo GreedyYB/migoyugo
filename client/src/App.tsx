@@ -1900,10 +1900,10 @@ const setupNodeDemo = (container: HTMLElement, animationRef: React.MutableRefObj
           cell.appendChild(arrow);
           animationRef.current = setTimeout(() => {
             cell.removeChild(arrow);
-            const ion = createAnimatedIon('white', true);
-            cell.appendChild(ion);
+            const yugoIon = createAnimatedIon('white', true);
+            cell.appendChild(yugoIon);
             
-            // Highlight the vector and fade out the 3 white Migos
+            // Highlight the vector line
             for (let i = 1; i <= 4; i++) {
               const vectorCell = board.children[1 * 6 + i] as HTMLElement;
               vectorCell.style.backgroundColor = 'rgba(46, 204, 113, 0.3)';
@@ -1911,24 +1911,33 @@ const setupNodeDemo = (container: HTMLElement, animationRef: React.MutableRefObj
               vectorCell.style.transition = 'all 0.3s ease';
             }
             
-            // Fade out the first 3 white Migos after a short delay
-            setTimeout(() => {
+            // Wait 0.3 seconds after Yugo appears, then fade out the 3 Migos
+            animationRef.current = setTimeout(() => {
+              // Get the 3 white Migos (not the Yugo)
+              const migoElements: HTMLElement[] = [];
               for (let i = 1; i <= 3; i++) {
-                const vectorCell = board.children[1 * 6 + i] as HTMLElement;
-                const whiteIon = vectorCell.querySelector('.tutorial-demo-ion');
-                if (whiteIon && !whiteIon.classList.contains('node')) {
-                  whiteIon.classList.add('ion-fade');
-                  // Remove the element after fade animation completes
-                  setTimeout(() => {
-                    if (whiteIon.parentNode) {
-                      whiteIon.parentNode.removeChild(whiteIon);
-                    }
-                  }, 500);
+                const migoCell = board.children[1 * 6 + i] as HTMLElement;
+                const migoIon = migoCell.querySelector('.tutorial-demo-ion:not(.node)');
+                if (migoIon) {
+                  migoElements.push(migoIon as HTMLElement);
                 }
               }
-            }, 100);
+              
+              // Apply fade-out to each Migo
+              migoElements.forEach((migo) => {
+                migo.style.transition = 'opacity 0.5s ease-out';
+                migo.style.opacity = '0';
+                
+                // Remove the element after fade completes
+                setTimeout(() => {
+                  if (migo.parentNode) {
+                    migo.parentNode.removeChild(migo);
+                  }
+                }, 500);
+              });
+            }, 300);
             
-            // Wait 3 seconds, then fade everything
+            // Wait 3 seconds total, then fade everything
             animationRef.current = setTimeout(() => {
               // Fade out all remaining dots (black dots and node)
               Array.from(board.children).forEach(cell => {
