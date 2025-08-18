@@ -3884,27 +3884,27 @@ setOpponentDisconnected(false);
     },
     {
       title: "Building Yugos",
-      message: "Your first tactical step is to create a <b>Yugo</b>. A Yugo is created when you build an unbroken line of exactly 4 pieces of your own color, horizontal, vertical, or diagonal.",
+      message: "Your first tactical step is to create a <span style=\"color: red; font-weight: bold;\">Yugo</span>. A Yugo is created when you build an unbroken line of exactly 4 pieces of your own color, horizontal, vertical, or diagonal.",
       demo: "vector"
     },
     {
       title: "Yugos",
-      message: "When a Yugo is created, it is identified with a red mark in the middle of the piece. At that same moment, all Migos in the line of 4 disappear, while any Yugos already in that line remain. Yugos can never be moved or removed from the board.",
+      message: "When a <span style=\"color: red; font-weight: bold;\">Yugo</span> is created, it is identified with a red mark in the middle of the piece. At that same moment, all Migos in the line of 4 disappear, while any Yugos already in that line remain. Yugos can never be moved or removed from the board.",
       demo: "node"
     },
     {
       title: "No Long Lines",
-      message: "You cannot place a Migo that would create a line longer than 4 Migos of your color.",
+      message: "You may not place a Migo on any square that would create an unbroken line longer than 4 pieces (any combination of Migos/Yugos) of your own color.",
       demo: "long-line"
     },
     {
       title: "The Winning Goal",
-      message: "Win by forming an <b>Igo</b>. An Igo is an unbroken line of 4 Yugos of one color, horizontal, vertical or diagonal.",
+      message: "Win by forming an <span style=\"color: red; font-weight: bold;\">Igo</span>. An Igo is an unbroken line of 4 Yugos of one color, horizontal, vertical or diagonal.",
       demo: "nexus"
     },
     {
       title: "Alternative Win",
-      message: "<b>No legal moves:</b><br>If at any time either player is unable to play a legal move, or all 64 squares are covered, the game ends with a Wego, and the player with the most Yugos wins. If both players have the same number of Yugos, the game is a draw by Wego.<br><br><b>Timer expiry:</b><br>If players have chosen to play using a timer, the game will end immediately if one player runs out of time, and the opponent will be awarded the win.<br><br><b>Resignation:</b><br>A player may choose to resign a game at any point and this will award the win to their opponent.",
+      message: "<b>No legal moves:</b><br>If at any time either player is unable to play a legal move, or all 64 squares are covered, the game ends with a <span style=\"color: red; font-weight: bold;\">Wego</span>, and the player with the most Yugos wins. If both players have the same number of Yugos, the game is a draw by Wego.<br><br><b>Timer expiry:</b><br>If players have chosen to play using a timer, the game will end immediately if one player runs out of time, and the opponent will be awarded the win.<br><br><b>Resignation:</b><br>A player may choose to resign a game at any point and this will award the win to their opponent.",
       demo: null
     },
     {
