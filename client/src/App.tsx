@@ -3858,7 +3858,7 @@ setOpponentDisconnected(false);
   const tutorialSteps = [
     {
       title: "Basic Gameplay",
-      message: "<span style=\"color: red; font-weight: bold;\">migoyugo</span> is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing chips on empty cells.",
+      message: "<span style=\"color: red; font-weight: bold;\">Migoyugo</span> is played on an 8×8 board.<br>Players alternate turns,<br>white moves first, then black,<br>placing pieces called <span style=\"color: red; font-weight: bold;\">Migos</span> on empty squares.",
       demo: "board"
     },
     {
