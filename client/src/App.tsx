@@ -5068,7 +5068,7 @@ setOpponentDisconnected(false);
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '30px' }}>
                 <li>White always moves first by placing a piece, called a <strong>Migo</strong>, on any open square on the board</li>
                 <li>Players take turns placing Migos, alternating white and black</li>
-                <li>A player may place a Migo on any open square on the board, unless it will create a line longer than 4 pieces of their own colour</li>
+                <li>A player may place a Migo on any open square on the board, unless it will create an unbroken line longer than 4 pieces of their own colour</li>
               </ul>
               
               <h3 style={{ color: 'red' }}>The Yugo</h3>
@@ -5153,7 +5153,7 @@ setOpponentDisconnected(false);
               
               <h3 style={{ color: 'red' }}>Winning</h3>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', marginBottom: '20px' }}>
-                <li>Form an unbroken line (horizontal, vertical or diagonal) of exactly 4 Yugos of your own color and you win instantly with an Igo</li>
+                <li>Form an unbroken line (horizontal, vertical or diagonal) of exactly 4 Yugos of your own color and you win instantly with an <strong>Igo</strong></li>
                 <li>If no Igo can be made and no legal moves are available to either player at any time, the game ends with a <strong>Wego</strong>, and the player with the most Yugos is declared the winner. If both players have the same number of Yugos, the game is drawn</li>
                 <li>If a player resigns, the opponent is declared the winner</li>
                 <li>If the players compete using a clock, a player is declared the winner if the opponent's clock runs out of time</li>
