@@ -3862,8 +3862,8 @@ setOpponentDisconnected(false);
       demo: "board"
     },
     {
-      title: "Building Chains",
-      message: "Your first tactical step is to create <b>Chains</b>:<br>Chains are lines of exactly 4 chips of your color,<br>horizontal, vertical, or diagonal.",
+      title: "Building Yugos",
+      message: "Your first tactical step is to create a <b>Yugo</b>. A Yugo is created when you build an unbroken line of exactly 4 pieces of your own color, horizontal, vertical, or diagonal.",
       demo: "vector"
     },
     {
