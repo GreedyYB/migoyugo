@@ -3867,8 +3867,8 @@ setOpponentDisconnected(false);
       demo: "vector"
     },
     {
-      title: "Links",
-      message: "When a Chain is formed, the last chip placed becomes a <b>Link</b> (with a red mark) and remains on the board while all other (non-<b>Link</b>) chips in the Chain are removed.",
+      title: "Yugos",
+      message: "When a Yugo is created, it is identified with a red mark in the middle of the piece. At that same moment, all Migos in the line of 4 disappear, while any Yugos already in that line remain. Yugos can never be moved or removed from the board.",
       demo: "node"
     },
     {
