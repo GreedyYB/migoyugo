@@ -1903,20 +1903,30 @@ const setupNodeDemo = (container: HTMLElement, animationRef: React.MutableRefObj
             const ion = createAnimatedIon('white', true);
             cell.appendChild(ion);
             
-            // Highlight the vector and create node
+            // Highlight the vector and fade out the 3 white Migos
             for (let i = 1; i <= 4; i++) {
               const vectorCell = board.children[1 * 6 + i] as HTMLElement;
               vectorCell.style.backgroundColor = 'rgba(46, 204, 113, 0.3)';
               vectorCell.style.boxShadow = 'inset 0 0 10px rgba(46, 204, 113, 0.5)';
               vectorCell.style.transition = 'all 0.3s ease';
-              
-              if (i < 4) {
+            }
+            
+            // Fade out the first 3 white Migos after a short delay
+            setTimeout(() => {
+              for (let i = 1; i <= 3; i++) {
+                const vectorCell = board.children[1 * 6 + i] as HTMLElement;
                 const whiteIon = vectorCell.querySelector('.tutorial-demo-ion');
-                if (whiteIon) {
+                if (whiteIon && !whiteIon.classList.contains('node')) {
                   whiteIon.classList.add('ion-fade');
+                  // Remove the element after fade animation completes
+                  setTimeout(() => {
+                    if (whiteIon.parentNode) {
+                      whiteIon.parentNode.removeChild(whiteIon);
+                    }
+                  }, 500);
                 }
               }
-            }
+            }, 100);
             
             // Wait 3 seconds, then fade everything
             animationRef.current = setTimeout(() => {
