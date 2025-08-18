@@ -1913,20 +1913,22 @@ const setupNodeDemo = (container: HTMLElement, animationRef: React.MutableRefObj
             
             // Wait 0.3 seconds after Yugo appears, then fade out the 3 Migos
             animationRef.current = setTimeout(() => {
-              // Get the 3 white Migos (not the Yugo)
+              // Get the 3 white Migos (not the Yugo) - correct class name
               const migoElements: HTMLElement[] = [];
               for (let i = 1; i <= 3; i++) {
                 const migoCell = board.children[1 * 6 + i] as HTMLElement;
-                const migoIon = migoCell.querySelector('.tutorial-demo-ion:not(.node)');
+                const migoIon = migoCell.querySelector('.tutorial-demo-dot:not(.node)');
                 if (migoIon) {
                   migoElements.push(migoIon as HTMLElement);
                 }
               }
               
-              // Apply fade-out to each Migo
+              console.log('Found Migos to fade:', migoElements.length); // Debug log
+              
+              // Apply fade-out to each Migo using CSS class (to override !important)
               migoElements.forEach((migo) => {
-                migo.style.transition = 'opacity 0.5s ease-out';
-                migo.style.opacity = '0';
+                migo.classList.remove('ion-appear'); // Remove appear animation
+                migo.classList.add('ion-fade'); // Add fade animation
                 
                 // Remove the element after fade completes
                 setTimeout(() => {
