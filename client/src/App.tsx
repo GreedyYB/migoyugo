@@ -3904,7 +3904,7 @@ setOpponentDisconnected(false);
     },
     {
       title: "Alternative Win",
-      message: "<b>No legal moves:</b><br>If at any time either player is unable to play a legal move, the game ends and the player with the most Links wins.<br><br><b>Timer expiry:</b><br>If players have chosen to play using a timer, the game will end immediately if one player runs out of time, and the opponent will be awarded the win.<br><br><b>Resignation:</b><br>A player may choose to resign a game at any point and this will award the win to their opponent.",
+      message: "<b>No legal moves:</b><br>If at any time either player is unable to play a legal move, or all 64 squares are covered, the game ends with a Wego, and the player with the most Yugos wins. If both players have the same number of Yugos, the game is a draw by Wego.<br><br><b>Timer expiry:</b><br>If players have chosen to play using a timer, the game will end immediately if one player runs out of time, and the opponent will be awarded the win.<br><br><b>Resignation:</b><br>A player may choose to resign a game at any point and this will award the win to their opponent.",
       demo: null
     },
     {
@@ -3927,7 +3927,7 @@ setOpponentDisconnected(false);
     },
     {
       title: "Ready to Play!",
-      message: "You have two options - play against a human opponent or try your luck against our resident AI <b>CORE</b> (Cognitive, Operational Reasoning Engine).<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Chains or block your opponent?<br>Will you go for a Lock or fill the board and see who ends up with the most Links?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing <span style=\"color: red; font-weight: bold;\">migoyugo</span>!",
+      message: "You have two options - play against a human opponent or try your luck against one of the AI levels.<br><br>You can play with a timer or without.<br>Choose from a 3-minute game or up to an hour on the clock.<br>You can even choose increments from 2 to 10 seconds which add time to your clock after every move.<br>Once you run out of time, it's game over.<br><br>Is it better to build your own Yugos or block your opponent?<br>Will you go for an Igo or fill the board and see who ends up with the most Yugos?<br>The options are endless.<br><br>That's all you need to know!<br>Click 'Start' and enjoy playing <span style=\"color: red; font-weight: bold;\">Migoyugo</span>!",
       demo: null
     }
   ];
