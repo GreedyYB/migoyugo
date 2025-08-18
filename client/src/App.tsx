@@ -3894,12 +3894,12 @@ setOpponentDisconnected(false);
     },
     {
       title: "No Long Lines",
-      message: "You cannot place a chip that would create a line longer than 4 chips of your color.",
+      message: "You cannot place a Migo that would create a line longer than 4 Migos of your color.",
       demo: "long-line"
     },
     {
       title: "The Winning Goal",
-      message: "Win by forming a <b>Lock</b>:<br>A <b>Lock</b> is a line of 4 Links of one color!",
+      message: "Win by forming an <b>Igo</b>. An Igo is an unbroken line of 4 Yugos of one color, horizontal, vertical or diagonal.",
       demo: "nexus"
     },
     {
