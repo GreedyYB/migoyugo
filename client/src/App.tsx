@@ -4727,7 +4727,7 @@ setOpponentDisconnected(false);
     }
   })()}
 </span>
-                <span>Links: <span id="white-score">{gameState.scores.white}</span></span>
+                <span>Yugos: <span id="white-score">{gameState.scores.white}</span></span>
               </div>
               {timerEnabled && (
   <div className="player-timer" id="white-timer">
@@ -4801,7 +4801,7 @@ setOpponentDisconnected(false);
     }
   })()}
 </span>
-                              <span>Links: <span id="black-score">{gameState.scores.black}</span></span>
+                              <span>Yugos: <span id="black-score">{gameState.scores.black}</span></span>
             </div>
             {timerEnabled && (
   <div className="player-timer" id="black-timer">
