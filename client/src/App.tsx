@@ -2391,6 +2391,16 @@ const [opponentDisconnected, setOpponentDisconnected] = useState(false);
       (gameState.scores.white > gameState.scores.black ? 'White' : 
        gameState.scores.black > gameState.scores.white ? 'Black' : 'Draw') : 'Game in Progress';
     
+    // Helper function to get Yugo symbol based on vector count
+    const getYugoSymbol = (vectors: number) => {
+      if (vectors === 0) return '';
+      if (vectors === 1) return ' ●';  // Standard Yugo (dot)
+      if (vectors === 2) return ' ○';  // Double Yugo (small circle)
+      if (vectors === 3) return ' △';  // Triple Yugo (triangle)
+      if (vectors === 4) return ' ◇';  // Quadruple Yugo (diamond)
+      return ' ●'; // Fallback
+    };
+    
     let result = `Migoyugo Game Results\n`;
     result += `Date: ${date} ${time}\n`;
     result += `Mode: ${gameModeText}\n`;
@@ -2406,8 +2416,8 @@ const [opponentDisconnected, setOpponentDisconnected] = useState(false);
         
         const whiteNotation = whiteMove ? getNotation(whiteMove.col, whiteMove.row) : '';
         const blackNotation = blackMove ? getNotation(blackMove.col, blackMove.row) : '';
-        const whiteNode = whiteMove && whiteMove.vectors > 0 ? ' ●' : '';
-        const blackNode = blackMove && blackMove.vectors > 0 ? ' ●' : '';
+        const whiteNode = whiteMove ? getYugoSymbol(whiteMove.vectors) : '';
+        const blackNode = blackMove ? getYugoSymbol(blackMove.vectors) : '';
         
         result += `${moveNumber}. ${whiteNotation}${whiteNode}   ${blackNotation}${blackNode}\n`;
       }
