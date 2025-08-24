@@ -1515,7 +1515,7 @@ function mcts(
     while (depth < rolloutDepth) {
       const moves = getAllValidMoves(simBoard, simPlayer);
       if (moves.length === 0) {
-        // Node count tiebreak
+        // Yugo count tiebreak
         const whiteNodes = countNodes(simBoard, 'white');
         const blackNodes = countNodes(simBoard, 'black');
         if (whiteNodes > blackNodes) winner = 'white';
@@ -2900,11 +2900,20 @@ setOpponentDisconnected(false);
         if (moveData.gameOver) {
           let message = '';
           if (moveData.winner === 'draw') {
-            message = 'Game ended in a draw!';
+            if (moveData.wegoOccurred) {
+              message = 'The game is drawn with an even number of Yugos';
+            } else {
+              message = 'Game ended in a draw!';
+            }
           } else if (moveData.nexus) {
-            message = `${moveData.winner} wins with a Lock!`;
+            message = `${moveData.winner} wins with an Igo!`;
+          } else if (moveData.wegoOccurred) {
+            const nextPlayer = moveData.currentPlayer === 'white' ? 'black' : 'white';
+            const nextPlayerName = nextPlayer === 'white' ? 'White' : 'Black';
+            const winnerName = moveData.winner === 'white' ? 'White' : 'Black';
+            message = `${nextPlayerName} has no legal move.\n${winnerName} wins by Yugo count`;
           } else {
-            message = `${moveData.winner} wins by node count!`;
+            message = `${moveData.winner} wins by Yugo count!`;
           }
           // Add 1 second delay for players to see the final move
           setTimeout(() => {
@@ -3419,11 +3428,13 @@ setOpponentDisconnected(false);
       playSound('chip'); // Regular chip placement
     }
     
+    let wegoOccurred = false;
     if (!nexus) {
       // Check if next player has legal moves
       const nextPlayer = currentPlayer === 'white' ? 'black' : 'white';
       if (!hasLegalMoves(newBoard, nextPlayer)) {
         gameOver = true;
+        wegoOccurred = true;
         if (newScores.white > newScores.black) winner = 'white';
         else if (newScores.black > newScores.white) winner = 'black';
         else winner = 'draw';
@@ -3454,11 +3465,20 @@ setOpponentDisconnected(false);
       
       let message = '';
       if (winner === 'draw') {
-        message = 'Game ended in a draw!';
+        if (wegoOccurred) {
+          message = 'The game is drawn with an even number of Yugos';
+        } else {
+          message = 'Game ended in a draw!';
+        }
       } else if (nexus) {
-        message = `${winner} wins with a Lock!`;
+        message = `${winner} wins with an Igo!`;
+      } else if (wegoOccurred) {
+        const nextPlayer = currentPlayer === 'white' ? 'black' : 'white';
+        const nextPlayerName = nextPlayer === 'white' ? 'White' : 'Black';
+        const winnerName = winner === 'white' ? 'White' : 'Black';
+        message = `${nextPlayerName} has no legal move.\n${winnerName} wins by Yugo count`;
       } else {
-        message = `${winner} wins by node count!`;
+        message = `${winner} wins by Yugo count!`;
       }
       // Add 1 second delay for players to see the final move
       setTimeout(() => {

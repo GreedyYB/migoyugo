@@ -1101,6 +1101,7 @@ io.on('connection', (socket) => {
     const nexus = checkForNexus(game.board, row, col, playerColor);
     let gameOver = false;
     let winner = null;
+    let wegoOccurred = false;
     
     if (nexus) {
       gameOver = true;
@@ -1113,6 +1114,7 @@ io.on('connection', (socket) => {
       // Check if next player has legal moves
       if (!hasLegalMoves(game.board, game.currentPlayer)) {
         gameOver = true;
+        wegoOccurred = true;
         const whiteNodes = countNodes(game.board, 'white');
         const blackNodes = countNodes(game.board, 'black');
         
@@ -1152,6 +1154,7 @@ io.on('connection', (socket) => {
       gameOver,
       winner,
       nexus,
+      wegoOccurred,
       timers: game.timers,
       timestamp: Date.now()
     };
