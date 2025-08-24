@@ -2399,13 +2399,18 @@ const [opponentDisconnected, setOpponentDisconnected] = useState(false);
     
     if (moveHistory.length > 0) {
       result += `Move History:\n`;
-      moveHistory.forEach((move, index) => {
-        const moveNumber = Math.floor(index / 2) + 1;
-        const player = move.player === 'white' ? 'W' : 'B';
-        const notation = getNotation(move.col, move.row);
-        const nodeIndicator = move.vectors > 0 ? ' ●' : '';
-        result += `${moveNumber}. ${player}${notation}${nodeIndicator}\n`;
-      });
+      for (let i = 0; i < moveHistory.length; i += 2) {
+        const moveNumber = Math.floor(i / 2) + 1;
+        const whiteMove = moveHistory[i];
+        const blackMove = moveHistory[i + 1];
+        
+        const whiteNotation = whiteMove ? getNotation(whiteMove.col, whiteMove.row) : '';
+        const blackNotation = blackMove ? getNotation(blackMove.col, blackMove.row) : '';
+        const whiteNode = whiteMove && whiteMove.vectors > 0 ? ' ●' : '';
+        const blackNode = blackMove && blackMove.vectors > 0 ? ' ●' : '';
+        
+        result += `${moveNumber}. ${whiteNotation}${whiteNode}   ${blackNotation}${blackNode}\n`;
+      }
     }
     
     return result;
