@@ -2380,7 +2380,36 @@ const [opponentDisconnected, setOpponentDisconnected] = useState(false);
     requestedBy?: string;
     waitingForResponse?: boolean;
   }>({ requested: false, fromPlayer: null });
-  const [toast, setToast] = useState<string>('');
+  const [toast, setToast] = useState<string | null>('');
+
+  // Generate copyable game results
+  const generateGameResults = () => {
+    const date = new Date().toLocaleDateString();
+    const time = new Date().toLocaleTimeString();
+    const gameModeText = gameMode === 'online' ? 'Online Game' : 'Local Game';
+    const winner = gameState.gameStatus === 'finished' ? 
+      (gameState.scores.white > gameState.scores.black ? 'White' : 
+       gameState.scores.black > gameState.scores.white ? 'Black' : 'Draw') : 'Game in Progress';
+    
+    let result = `Migoyugo Game Results\n`;
+    result += `Date: ${date} ${time}\n`;
+    result += `Mode: ${gameModeText}\n`;
+    result += `Result: ${winner}\n`;
+    result += `Final Score - White: ${gameState.scores.white} Yugos, Black: ${gameState.scores.black} Yugos\n\n`;
+    
+    if (moveHistory.length > 0) {
+      result += `Move History:\n`;
+      moveHistory.forEach((move, index) => {
+        const moveNumber = Math.floor(index / 2) + 1;
+        const player = move.player === 'white' ? 'W' : 'B';
+        const notation = getNotation(move.col, move.row);
+        const nodeIndicator = move.vectors > 0 ? ' ●' : '';
+        result += `${moveNumber}. ${player}${notation}${nodeIndicator}\n`;
+      });
+    }
+    
+    return result;
+  };
   const [showResignConfirmation, setShowResignConfirmation] = useState(false);
   const [showResignDrawModal, setShowResignDrawModal] = useState(false);
   const [showDrawOffer, setShowDrawOffer] = useState(false);
@@ -5827,6 +5856,22 @@ setOpponentDisconnected(false);
                     style={{ backgroundColor: '#28a745', color: 'white' }}
                   >
                     📋 Review Game
+                  </button>
+                  <button 
+                    className="btn" 
+                    onClick={() => {
+                      const gameResults = generateGameResults();
+                      navigator.clipboard.writeText(gameResults).then(() => {
+                        setToast('Game results copied to clipboard!');
+                        setTimeout(() => setToast(''), 3000);
+                      }).catch(() => {
+                        setToast('Failed to copy results');
+                        setTimeout(() => setToast(''), 3000);
+                      });
+                    }}
+                    style={{ backgroundColor: '#17a2b8', color: 'white' }}
+                  >
+                    📋 Copy Results
                   </button>
                   <button className="btn" onClick={() => setNotification(prev => ({ ...prev, show: false }))}>
                     Close
