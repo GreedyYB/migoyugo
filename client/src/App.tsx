@@ -4966,10 +4966,10 @@ setOpponentDisconnected(false);
               </div>
             )}
 
-            {/* Game log */}
+            {/* Move History */}
             <div id="game-log-container">
               <div className="review-button-container" style={{ width: '236px', margin: '15px auto 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h2 style={{ fontSize: '1.2em', margin: '0' }}>Game Log</h2>
+                <h2 style={{ fontSize: '1.2em', margin: '0' }}>Move History</h2>
                 {moveHistory.length > 0 && !isReviewMode && (
                   <button 
                     className="review-button" 
